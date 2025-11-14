@@ -1,6 +1,6 @@
 {
   "name": "codebase-search",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "private": true,
   "description": "Intelligent codebase search with TF-IDF - Core library and MCP server",
   "workspaces": [

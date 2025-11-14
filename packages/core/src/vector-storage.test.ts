@@ -9,7 +9,7 @@ import path from 'node:path';
 
 describe('VectorStorage', () => {
   let storage: VectorStorage;
-  const testIndexPath = '/tmp/test-vector-index.hnsw';
+  const testIndexPath = `/tmp/test-vector-index-${process.pid}-${Date.now()}.hnsw`;
 
   beforeEach(() => {
     // Clean up any existing test files

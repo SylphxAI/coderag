@@ -4,6 +4,7 @@ export default defineConfig({
   title: 'CodeRAG',
   description: 'Lightning-fast hybrid code search (TF-IDF + Vector) - RAG-ready for AI assistants',
   base: '/',
+  ignoreDeadLinks: true,
 
   themeConfig: {
     logo: '/logo.svg',

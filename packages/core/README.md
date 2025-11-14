@@ -46,6 +46,32 @@ for (const result of results) {
 }
 ```
 
+### Watch Mode (Auto-Update Index)
+
+```typescript
+import { CodebaseIndexer } from '@sylphx/codebase-search';
+
+const indexer = new CodebaseIndexer({
+  codebaseRoot: '/path/to/project',
+  onFileChange: (event) => {
+    console.log(`File ${event.type}: ${event.path}`);
+  },
+});
+
+// Index with watch mode enabled
+await indexer.index({
+  watch: true, // Enable automatic index updates
+});
+
+console.log('Watching for file changes...');
+
+// Index automatically updates when files change
+// Search results are always up-to-date
+
+// Stop watching when done
+await indexer.stopWatch();
+```
+
 ### Using Individual Components
 
 ```typescript
@@ -105,6 +131,9 @@ interface IndexerOptions {
 
 - `async index(options?: IndexerOptions): Promise<void>` - Index the codebase
 - `async search(query: string, options?: SearchOptions): Promise<SearchResult[]>` - Search the codebase
+- `async startWatch(): Promise<void>` - Start watching for file changes
+- `async stopWatch(): Promise<void>` - Stop watching for file changes
+- `isWatchEnabled(): boolean` - Check if watching is enabled
 - `getStatus(): IndexingStatus` - Get current indexing status
 - `async getIndexedCount(): Promise<number>` - Get count of indexed files
 

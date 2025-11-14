@@ -91,22 +91,21 @@
 ---
 
 ### 3. Incremental Indexing (Priority: HIGH)
-**Status:** ❌ Full re-index only
+**Status:** ✅ Implemented in v1.1.0
 
-**Current Limitation:**
-- Re-indexes entire codebase on every change
-- No change detection
-- Inefficient for large projects
+**Completed:**
+- ✅ File change detection (add, change, delete events)
+- ✅ Automatic re-indexing on file changes
+- ✅ Watch mode with chokidar
+- ✅ Debounced updates (500ms)
+- ✅ .gitignore integration for watch
 
-**Needed:**
-- File change detection (mtime, content hash)
-- Partial re-indexing
-- Watch mode for automatic updates
-- Debounced indexing
+**Remaining Optimization:**
+- ⚠️ Currently rebuilds entire TF-IDF index on each change
+- Could optimize to only update affected documents
+- Need benchmarks for large codebases
 
-**Impact:** Slow for large codebases, wastes resources
-
-**Estimate:** 1-2 weeks
+**Impact:** Search results now always up-to-date
 
 ---
 

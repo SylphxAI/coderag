@@ -19,7 +19,8 @@ npm install @sylphx/codebase-search
 - 📁 .gitignore support
 - 🚀 Fast in-memory indexing
 - 🎯 Code-aware tokenization
-- 💾 Lightweight (only depends on `ignore`)
+- 👁️ **File watching with auto-index updates**
+- 💾 Lightweight (minimal dependencies)
 
 **Usage:**
 ```typescript
@@ -28,12 +29,15 @@ import { CodebaseIndexer } from '@sylphx/codebase-search';
 const indexer = new CodebaseIndexer({
   codebaseRoot: '/path/to/project',
   maxFileSize: 1048576, // 1MB
+  onFileChange: (event) => {
+    console.log(`File ${event.type}: ${event.path}`);
+  },
 });
 
-// Index the codebase
-await indexer.index();
+// Index with watch mode (auto-updates on file changes)
+await indexer.index({ watch: true });
 
-// Search
+// Search (always up-to-date!)
 const results = await indexer.search('user authentication', {
   limit: 10,
   includeContent: true,

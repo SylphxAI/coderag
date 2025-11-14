@@ -6,7 +6,7 @@ export interface CodebaseFile {
   path: string;
   content: string;
   size: number;
-  mtime: number;
+  mtime: number | Date;
   language?: string;
   hash: string;
 }

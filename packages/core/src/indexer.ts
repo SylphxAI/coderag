@@ -3,7 +3,9 @@
  */
 
 import path from 'node:path';
-import { loadGitignore, scanFiles, simpleHash, type ScanResult } from './utils.js';
+import fs from 'node:fs/promises';
+import type chokidar from 'chokidar';
+import { loadGitignore, scanFiles, simpleHash, isTextFile, detectLanguage, type ScanResult } from './utils.js';
 import { MemoryStorage, type CodebaseFile } from './storage.js';
 import { buildSearchIndex, type SearchIndex } from './tfidf.js';
 
@@ -11,6 +13,14 @@ export interface IndexerOptions {
   codebaseRoot?: string;
   maxFileSize?: number;
   onProgress?: (current: number, total: number, file: string) => void;
+  watch?: boolean;
+  onFileChange?: (event: FileChangeEvent) => void;
+}
+
+export interface FileChangeEvent {
+  type: 'add' | 'change' | 'unlink';
+  path: string;
+  timestamp: number;
 }
 
 export interface IndexingStatus {
@@ -23,8 +33,14 @@ export interface IndexingStatus {
 
 export class CodebaseIndexer {
   private codebaseRoot: string;
+  private maxFileSize: number;
   private storage: MemoryStorage;
   private searchIndex: SearchIndex | null = null;
+  private watcher: any = null;
+  private isWatching = false;
+  private onFileChangeCallback?: (event: FileChangeEvent) => void;
+  private pendingUpdates = new Map<string, NodeJS.Timeout>();
+  private ignoreFilter: any = null;
   private status: IndexingStatus = {
     isIndexing: false,
     progress: 0,
@@ -34,7 +50,9 @@ export class CodebaseIndexer {
 
   constructor(options: IndexerOptions = {}) {
     this.codebaseRoot = options.codebaseRoot || process.cwd();
+    this.maxFileSize = options.maxFileSize || 1048576; // 1MB
     this.storage = new MemoryStorage();
+    this.onFileChangeCallback = options.onFileChange;
   }
 
   /**
@@ -61,7 +79,8 @@ export class CodebaseIndexer {
 
     try {
       // Load .gitignore
-      const ignoreFilter = loadGitignore(this.codebaseRoot);
+      this.ignoreFilter = loadGitignore(this.codebaseRoot);
+      const ignoreFilter = this.ignoreFilter;
 
       // Scan files
       console.error('[INFO] Scanning codebase...');
@@ -106,6 +125,11 @@ export class CodebaseIndexer {
       this.status.progress = 100;
 
       console.error(`[SUCCESS] Indexed ${scannedFiles.length} files`);
+
+      // Start watching if requested
+      if (options.watch) {
+        await this.startWatch();
+      }
     } catch (error) {
       console.error('[ERROR] Failed to index codebase:', error);
       throw error;
@@ -113,6 +137,171 @@ export class CodebaseIndexer {
       this.status.isIndexing = false;
       this.status.currentFile = undefined;
     }
+  }
+
+  /**
+   * Start watching for file changes
+   */
+  async startWatch(): Promise<void> {
+    if (this.isWatching) {
+      console.error('[WARN] Already watching for changes');
+      return;
+    }
+
+    if (!this.ignoreFilter) {
+      this.ignoreFilter = loadGitignore(this.codebaseRoot);
+    }
+
+    console.error('[INFO] Starting file watcher...');
+
+    const chokidarModule = await import('chokidar');
+    this.watcher = chokidarModule.default.watch(this.codebaseRoot, {
+      ignored: [
+        '**/node_modules/**',
+        '**/.git/**',
+        '**/dist/**',
+        '**/build/**',
+        '**/.next/**',
+        '**/.turbo/**',
+      ],
+      ignoreInitial: true,
+      persistent: true,
+      awaitWriteFinish: {
+        stabilityThreshold: 300,
+        pollInterval: 100,
+      },
+    });
+
+    this.watcher.on('add', (filePath) => this.handleFileChange('add', filePath));
+    this.watcher.on('change', (filePath) => this.handleFileChange('change', filePath));
+    this.watcher.on('unlink', (filePath) => this.handleFileChange('unlink', filePath));
+
+    this.isWatching = true;
+    console.error('[SUCCESS] File watcher started');
+  }
+
+  /**
+   * Stop watching for file changes
+   */
+  async stopWatch(): Promise<void> {
+    if (!this.isWatching || !this.watcher) {
+      return;
+    }
+
+    console.error('[INFO] Stopping file watcher...');
+    await this.watcher.close();
+    this.watcher = null;
+    this.isWatching = false;
+
+    // Clear pending updates
+    for (const timeout of this.pendingUpdates.values()) {
+      clearTimeout(timeout);
+    }
+    this.pendingUpdates.clear();
+
+    console.error('[SUCCESS] File watcher stopped');
+  }
+
+  /**
+   * Handle file change events with debouncing
+   */
+  private handleFileChange(type: 'add' | 'change' | 'unlink', absolutePath: string): void {
+    const relativePath = path.relative(this.codebaseRoot, absolutePath);
+
+    // Check if file should be ignored
+    if (this.ignoreFilter?.ignores(relativePath)) {
+      return;
+    }
+
+    // Debounce updates (wait 500ms after last change)
+    const existing = this.pendingUpdates.get(relativePath);
+    if (existing) {
+      clearTimeout(existing);
+    }
+
+    const timeout = setTimeout(async () => {
+      this.pendingUpdates.delete(relativePath);
+      await this.processFileChange(type, relativePath, absolutePath);
+    }, 500);
+
+    this.pendingUpdates.set(relativePath, timeout);
+  }
+
+  /**
+   * Process file change and update index
+   */
+  private async processFileChange(
+    type: 'add' | 'change' | 'unlink',
+    relativePath: string,
+    absolutePath: string
+  ): Promise<void> {
+    const event: FileChangeEvent = {
+      type,
+      path: relativePath,
+      timestamp: Date.now(),
+    };
+
+    try {
+      if (type === 'unlink') {
+        // Remove from storage and rebuild index
+        await this.storage.deleteFile(relativePath);
+        console.error(`[FILE] Removed: ${relativePath}`);
+      } else {
+        // Check if file is text and within size limit
+        const stats = await fs.stat(absolutePath);
+        if (stats.size > this.maxFileSize) {
+          console.error(`[FILE] Skipped (too large): ${relativePath}`);
+          return;
+        }
+
+        if (!isTextFile(absolutePath)) {
+          console.error(`[FILE] Skipped (binary): ${relativePath}`);
+          return;
+        }
+
+        // Read and index file
+        const content = await fs.readFile(absolutePath, 'utf-8');
+        const codebaseFile: CodebaseFile = {
+          path: relativePath,
+          content,
+          size: stats.size,
+          mtime: stats.mtime,
+          language: detectLanguage(relativePath),
+          hash: simpleHash(content),
+        };
+
+        await this.storage.storeFile(codebaseFile);
+        console.error(`[FILE] ${type === 'add' ? 'Added' : 'Updated'}: ${relativePath}`);
+      }
+
+      // Rebuild search index
+      await this.rebuildSearchIndex();
+
+      // Notify callback
+      this.onFileChangeCallback?.(event);
+    } catch (error) {
+      console.error(`[ERROR] Failed to process file change (${relativePath}):`, error);
+    }
+  }
+
+  /**
+   * Rebuild search index from current storage
+   */
+  private async rebuildSearchIndex(): Promise<void> {
+    const allFiles = await this.storage.getAllFiles();
+    const documents = allFiles.map((file) => ({
+      uri: `file://${file.path}`,
+      content: file.content,
+    }));
+
+    this.searchIndex = buildSearchIndex(documents);
+  }
+
+  /**
+   * Check if currently watching for changes
+   */
+  isWatchEnabled(): boolean {
+    return this.isWatching;
   }
 
   /**

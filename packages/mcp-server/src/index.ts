@@ -66,13 +66,18 @@ async function main() {
     Logger.info('📚 Starting automatic indexing...');
     try {
       await indexer.index({
+        watch: true, // Enable file watching
         onProgress: (current, total, file) => {
           if (current % 100 === 0 || current === total) {
             Logger.info(`Indexing: ${current}/${total} files (${file})`);
           }
         },
+        onFileChange: (event) => {
+          Logger.info(`File ${event.type}: ${event.path}`);
+        },
       });
       Logger.success(`✓ Indexed ${await indexer.getIndexedCount()} files`);
+      Logger.info('👁️  Watching for file changes...');
     } catch (error) {
       Logger.error('Failed to index codebase', error);
       Logger.info('⚠️  Continuing without index (search will fail until indexed)');

@@ -9,17 +9,17 @@
 - Code-aware tokenization (camelCase, snake_case, etc.)
 - MCP server integration
 - Basic file scanning and filtering
-- Watch mode for development
+- **File watching with auto-index updates (v1.1.0)**
+- **Incremental index updates on file changes (v1.1.0)**
 - Incremental TypeScript builds
 - Monorepo structure with Turbo
 
 ### ❌ Critical Missing Features
 1. **Tests** - No test coverage
 2. **Persistent index** - Currently in-memory only (re-indexes on restart)
-3. **Incremental indexing** - Full re-index on every change
-4. **Symbol search** - No AST-based search
-5. **CI/CD pipeline**
-6. **Code quality tools** (linting, formatting)
+3. **Symbol search** - No AST-based search
+4. **CI/CD pipeline**
+5. **Code quality tools** (linting, formatting)
 
 ---
 
@@ -67,11 +67,13 @@
 - [ ] Index versioning and migration
 - [ ] Configurable storage backends (memory/disk)
 
-### Incremental Indexing
-- [ ] File change detection (mtime, hash)
-- [ ] Partial re-indexing for changed files
-- [ ] Watch mode for automatic re-indexing
-- [ ] Debounced indexing on file changes
+### Incremental Indexing ✅ (Partially Complete in v1.1.0)
+- [x] File change detection (mtime, hash)
+- [x] Partial re-indexing for changed files
+- [x] Watch mode for automatic re-indexing
+- [x] Debounced indexing on file changes
+- [ ] Optimize full index rebuild (currently rebuilds entire index on each change)
+- [ ] Smart index updates (only update affected documents)
 
 ### Performance Optimizations
 - [ ] Worker threads for large codebases

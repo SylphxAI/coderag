@@ -87,6 +87,33 @@ export class CodebaseIndexer {
     this.status.indexedFiles = 0;
 
     try {
+      // Try to load existing index from persistent storage
+      if (this.storage instanceof PersistentStorage) {
+        const existingCount = await this.storage.count();
+        if (existingCount > 0) {
+          console.error(`[INFO] Found existing index with ${existingCount} files`);
+          console.error('[INFO] Loading index from database...');
+
+          const loaded = await this.loadSearchIndexFromStorage();
+          if (loaded) {
+            console.error('[SUCCESS] Index loaded from database');
+            this.status.progress = 100;
+            this.status.indexedFiles = existingCount;
+            this.status.totalFiles = existingCount;
+
+            // Start watching if requested
+            if (options.watch) {
+              await this.startWatch();
+            }
+
+            this.status.isIndexing = false;
+            return;
+          } else {
+            console.error('[WARN] Failed to load index, rebuilding...');
+          }
+        }
+      }
+
       // Load .gitignore
       this.ignoreFilter = loadGitignore(this.codebaseRoot);
       const ignoreFilter = this.ignoreFilter;
@@ -361,6 +388,83 @@ export class CodebaseIndexer {
       }
 
       await this.storage.storeDocumentVectors(filePath, terms);
+    }
+  }
+
+  /**
+   * Load search index from persistent storage
+   */
+  private async loadSearchIndexFromStorage(): Promise<boolean> {
+    if (!(this.storage instanceof PersistentStorage)) {
+      return false;
+    }
+
+    try {
+      // Load IDF scores
+      const idf = await this.storage.getIdfScores();
+      if (idf.size === 0) {
+        return false;
+      }
+
+      // Load all files
+      const files = await this.storage.getAllFiles();
+      if (files.length === 0) {
+        return false;
+      }
+
+      // Reconstruct document vectors
+      const documentVectors: Array<{
+        uri: string;
+        terms: Map<string, number>;
+        rawTerms: Map<string, number>;
+        magnitude: number;
+      }> = [];
+
+      for (const file of files) {
+        const vectors = await this.storage.getDocumentVectors(file.path);
+        if (!vectors) {
+          continue;
+        }
+
+        // Build terms and rawTerms maps
+        const terms = new Map<string, number>();
+        const rawTerms = new Map<string, number>();
+
+        for (const [term, data] of vectors.entries()) {
+          terms.set(term, data.tfidf);
+          rawTerms.set(term, data.rawFreq);
+        }
+
+        // Calculate magnitude
+        let sumSquares = 0;
+        for (const tfidf of terms.values()) {
+          sumSquares += tfidf * tfidf;
+        }
+        const magnitude = Math.sqrt(sumSquares);
+
+        documentVectors.push({
+          uri: `file://${file.path}`,
+          terms,
+          rawTerms,
+          magnitude,
+        });
+      }
+
+      // Build search index
+      this.searchIndex = {
+        documents: documentVectors,
+        idf,
+        totalDocuments: documentVectors.length,
+        metadata: {
+          generatedAt: new Date().toISOString(),
+          version: '1.0.0',
+        },
+      };
+
+      return true;
+    } catch (error) {
+      console.error('[ERROR] Failed to load search index from storage:', error);
+      return false;
     }
   }
 

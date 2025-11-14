@@ -1,230 +1,307 @@
-# Roadmap
+# Codebase Search Roadmap
 
-## Current Status (v1.0.0)
+## ✅ Completed Features (v1.0)
 
-### ✅ Completed
-- TF-IDF based text search
-- .gitignore support
-- In-memory indexing
-- Code-aware tokenization (camelCase, snake_case, etc.)
-- MCP server integration
-- Basic file scanning and filtering
-- **File watching with auto-index updates (v1.1.0)**
-- **Incremental index updates on file changes (v1.1.0)**
-- Incremental TypeScript builds
-- Monorepo structure with Turbo
+### Core Search (Q1 2025)
+- [x] TF-IDF based search ranking
+- [x] Code-aware tokenization (identifiers, keywords)
+- [x] .gitignore support
+- [x] Language detection
+- [x] Comprehensive test suite (150+ tests)
+- [x] CI/CD pipeline with GitHub Actions
 
-### ❌ Critical Missing Features
-1. **Tests** - No test coverage
-2. **Persistent index** - Currently in-memory only (re-indexes on restart)
-3. **Symbol search** - No AST-based search
-4. **CI/CD pipeline**
-5. **Code quality tools** (linting, formatting)
+### File Watching (Q1 2025)
+- [x] Real-time file monitoring with chokidar
+- [x] Debounced updates (500ms)
+- [x] Automatic index updates on file add/change/delete
+- [x] Graceful handling of file operations
 
----
+### Persistent Storage (Q1 2025)
+- [x] SQLite database with Drizzle ORM
+- [x] Store file metadata and content
+- [x] Store TF-IDF vectors per document
+- [x] Store global IDF scores
+- [x] Load existing index on startup
+- [x] WAL mode for better concurrency
+- [x] Database migrations
 
-## Phase 1: Foundation (v1.1.0) - Q1 2025 ✅ (Partially Complete)
-
-**Goal:** Establish production-ready quality and reliability
-
-### Testing Infrastructure ✅ (Mostly Complete)
-- [x] Unit tests for core TF-IDF algorithms (52 tests, 82.67% coverage)
-- [x] Storage tests (100% coverage)
-- [x] TF-IDF tests (100% coverage)
-- [x] Utils tests (48% coverage - file scanning needs more tests)
-- [x] Test coverage reporting (Vitest + v8)
-- [ ] Integration tests for indexing pipeline
-- [ ] MCP server tests
-- [ ] Benchmark suite
-
-### Code Quality ✅ (Complete)
-- [x] ESLint configuration (TypeScript support)
-- [x] Prettier formatting (configured)
-- [ ] Pre-commit hooks (husky - next)
-- [ ] Type coverage improvements (`strict: true`)
-
-### CI/CD ✅ (Complete)
-- [x] GitHub Actions workflow
-  - [x] Run tests on PR
-  - [x] Type checking
-  - [x] Build validation
-  - [x] Coverage upload (Codecov)
-- [ ] Automated releases
-- [ ] npm publishing workflow
-
-### Documentation ✅ (Complete)
-- [x] API documentation (inline JSDoc)
-- [x] Architecture documentation
-- [x] Roadmap
-- [x] Feature analysis
-- [ ] Contributing guide
-- [ ] Performance benchmarks
+### MCP Integration (Q1 2025)
+- [x] MCP server implementation
+- [x] Claude Desktop integration
+- [x] Auto-indexing on startup
+- [x] Watch mode enabled by default
 
 ---
 
-## Phase 2: Persistence & Performance (v1.2.0) - Q2 2025
+## 🚧 In Progress
 
-**Goal:** Make search fast and persistent across restarts
-
-### Persistent Index
-- [ ] SQLite-based index storage
-- [ ] Serialize/deserialize TF-IDF vectors
-- [ ] Index versioning and migration
-- [ ] Configurable storage backends (memory/disk)
-
-### Incremental Indexing ✅ (Partially Complete in v1.1.0)
-- [x] File change detection (mtime, hash)
-- [x] Partial re-indexing for changed files
-- [x] Watch mode for automatic re-indexing
-- [x] Debounced indexing on file changes
-- [ ] Optimize full index rebuild (currently rebuilds entire index on each change)
-- [ ] Smart index updates (only update affected documents)
-
-### Performance Optimizations
-- [ ] Worker threads for large codebases
-- [ ] Streaming file processing
+### Performance Optimizations (Q2 2025)
+- [ ] Parallel file scanning
+- [ ] Lazy loading of file content
 - [ ] Index compression
 - [ ] Query result caching
-- [ ] Benchmark improvements (target: <50ms search time)
+- [ ] Batch database operations
 
 ---
 
-## Phase 3: AST & Symbol Search (v2.0.0) - Q2-Q3 2025
+## 🎯 Planned Features
 
-**Goal:** Enable semantic, structure-aware code search
+### AST Analysis & Symbol Search (Q2 2025)
+**Priority: High**
 
-### AST Parsing
-- [ ] TypeScript/JavaScript AST parsing (using `@typescript/vfs` or similar)
-- [ ] Python AST parsing
-- [ ] Go AST parsing
-- [ ] Rust AST parsing (via tree-sitter)
-- [ ] Language-agnostic tree-sitter integration
+Implement Abstract Syntax Tree (AST) analysis for precise symbol-level search:
 
-### Symbol Extraction
-- [ ] Extract all symbols (functions, classes, interfaces, types, variables)
-- [ ] Symbol metadata (location, kind, scope, visibility)
-- [ ] Import/export relationships
-- [ ] Symbol signatures
+- [ ] **AST Parser Integration**
+  - TypeScript/JavaScript (using @typescript-eslint/parser or swc)
+  - Python (using tree-sitter-python)
+  - Go (using tree-sitter-go)
+  - Rust (using tree-sitter-rust)
+  - Java (using tree-sitter-java)
 
-### Symbol Search
-- [ ] Search by symbol name
-- [ ] Search by symbol kind (e.g., "find all functions")
-- [ ] Search by symbol signature
-- [ ] Go-to-definition support
-- [ ] Find all references
-- [ ] Find implementations
+- [ ] **Symbol Extraction**
+  - Function/method definitions
+  - Class/interface definitions
+  - Variable/constant declarations
+  - Type definitions
+  - Import/export statements
+  - Comments and documentation
 
-### Structural Search
-- [ ] Query language for structural patterns
-- [ ] AST-based pattern matching
-- [ ] Type-aware search (e.g., "functions returning Promise<User>")
-- [ ] Scope-aware search
+- [ ] **Symbol Search**
+  - Search by symbol type (function, class, variable, etc.)
+  - Find all references to a symbol
+  - Find all implementations of an interface
+  - Find all callers of a function
+  - Search within specific scopes (file, module, package)
 
----
+- [ ] **Symbol Metadata Storage**
+  - New database table for symbols
+  - Symbol name, type, location (file, line, column)
+  - Scope information (parent symbol, visibility)
+  - Signature information (parameters, return type)
+  - Documentation/comments
 
-## Phase 4: Advanced Features (v2.1.0+) - Q3-Q4 2025
+- [ ] **Enhanced Search API**
+  ```typescript
+  // Symbol-specific search
+  await indexer.searchSymbols({
+    name: 'getUserData',
+    type: 'function',
+    scope: 'src/api',
+  });
 
-**Goal:** Add powerful semantic and cross-reference capabilities
+  // Find references
+  await indexer.findReferences({
+    symbol: 'UserService',
+    type: 'class',
+  });
 
-### Cross-Reference Analysis
-- [ ] Call graph generation
-- [ ] Import dependency graph
-- [ ] Find unused exports
-- [ ] Dead code detection
-- [ ] Circular dependency detection
+  // Find implementations
+  await indexer.findImplementations('IUserRepository');
+  ```
 
-### Semantic Search
-- [ ] Embeddings-based semantic search (optional, using local models)
-- [ ] Similar code fragment search
-- [ ] Code clone detection
-- [ ] Search by documentation/comments
+**Benefits:**
+- Precise symbol-level search vs. text-based search
+- Understand code structure and relationships
+- Better code navigation and refactoring support
+- Language-aware search (respects semantics)
+- Foundation for code intelligence features
 
-### Language Server Protocol (LSP)
-- [ ] LSP server implementation
-- [ ] Editor integrations (VSCode, Neovim, etc.)
-- [ ] Real-time symbol indexing
-- [ ] Code navigation
-
-### Enhanced MCP Server
-- [ ] Real-time index updates
-- [ ] Streaming search results
-- [ ] Symbol search via MCP tool
-- [ ] Multi-repo indexing
-- [ ] Index statistics and diagnostics
-
----
-
-## Phase 5: Ecosystem & Integrations (v3.0.0) - 2026
-
-**Goal:** Build a rich ecosystem of integrations
-
-### Platform Integrations
-- [ ] GitHub API integration (search across repos)
-- [ ] GitLab integration
-- [ ] Bitbucket integration
-- [ ] Self-hosted Git support
-
-### AI Integrations
-- [ ] RAG (Retrieval-Augmented Generation) support
-- [ ] Code summarization
-- [ ] Intelligent query expansion
-- [ ] Natural language to structural query
-
-### CLI Tool
-- [ ] Standalone CLI for terminal use
-- [ ] Interactive search UI (TUI)
-- [ ] Query result formatting (JSON, table, etc.)
-- [ ] Configuration file support
-
-### Plugins & Extensions
-- [ ] Plugin API for custom analyzers
-- [ ] Custom tokenizers
-- [ ] Custom ranking algorithms
-- [ ] Language support plugins
+**Technical Approach:**
+- Use tree-sitter for universal AST parsing (supports 40+ languages)
+- Incremental parsing for fast updates
+- Store symbol locations and metadata in SQLite
+- Index symbols alongside TF-IDF vectors
+- Hybrid search: combine TF-IDF and symbol search for best results
 
 ---
 
-## Long-Term Vision
+### Smart Incremental Indexing (Q2 2025)
+**Priority: Medium**
 
-### Multi-Language Support
-Expand AST support to cover:
-- Java, C#, C++
-- Ruby, PHP
-- Swift, Kotlin
-- Elixir, Clojure
-- And more...
+- [ ] **Hash-based Change Detection**
+  - Compare file hashes to detect changes
+  - Skip unchanged files on re-index
+  - Only rebuild affected TF-IDF vectors
 
-### Distributed Indexing
-- Index sharding for massive codebases
-- Distributed search across multiple machines
-- Cloud-native deployment
+- [ ] **Partial Index Updates**
+  - Update only changed documents
+  - Recalculate IDF scores incrementally
+  - Maintain index consistency
 
-### Advanced Analytics
-- Code complexity metrics
-- Code quality scoring
-- Technical debt analysis
-- Change impact analysis
+- [ ] **Background Indexing**
+  - Queue-based indexing for large codebases
+  - Progress reporting
+  - Cancellation support
 
----
-
-## Contributing
-
-We welcome contributions! Check our [Contributing Guide](./CONTRIBUTING.md) for details.
-
-**Priority Areas for Contributors:**
-1. **Tests** - Help us reach 80%+ coverage
-2. **AST Parsers** - Add support for more languages
-3. **Documentation** - Improve examples and guides
-4. **Performance** - Optimize indexing and search
+**Benefits:**
+- Faster re-indexing (only changed files)
+- Lower resource usage
+- Better user experience for large codebases
 
 ---
 
-## Release Schedule
+### Advanced Search Features (Q2-Q3 2025)
+**Priority: Medium**
 
-- **v1.1.0** - Q1 2025 (Testing & Quality)
-- **v1.2.0** - Q2 2025 (Persistence & Performance)
-- **v2.0.0** - Q3 2025 (AST & Symbol Search)
-- **v2.1.0** - Q4 2025 (Advanced Features)
-- **v3.0.0** - 2026 (Ecosystem)
+- [ ] **Fuzzy Search**
+  - Levenshtein distance for typo tolerance
+  - Phonetic matching
+  - Configurable similarity threshold
 
-**Note:** Dates are estimates and subject to change based on community feedback and priorities.
+- [ ] **Regular Expression Search**
+  - Regex pattern matching
+  - Syntax highlighting in results
+  - Performance optimizations
+
+- [ ] **Multi-language Support**
+  - Language-specific tokenization
+  - Language-specific stop words
+  - Polyglot codebase support
+
+- [ ] **Search Filters**
+  - Filter by language
+  - Filter by file path pattern
+  - Filter by date range
+  - Filter by file size
+
+- [ ] **Search Ranking Improvements**
+  - BM25 algorithm (alternative to TF-IDF)
+  - Learning to rank (ML-based ranking)
+  - User feedback integration
+
+---
+
+### Code Intelligence (Q3 2025)
+**Priority: Low**
+
+Building on AST analysis:
+
+- [ ] **Code Navigation**
+  - Go to definition
+  - Go to implementation
+  - Go to type definition
+  - Find all references
+
+- [ ] **Code Completion**
+  - Context-aware suggestions
+  - Import suggestions
+  - Symbol suggestions
+
+- [ ] **Refactoring Support**
+  - Rename symbol across codebase
+  - Extract function/method
+  - Move symbol to different file
+
+- [ ] **Code Quality**
+  - Dead code detection
+  - Unused imports detection
+  - Circular dependency detection
+
+---
+
+### Enterprise Features (Q3-Q4 2025)
+**Priority: Low**
+
+- [ ] **Multi-repository Support**
+  - Index multiple repositories
+  - Cross-repository search
+  - Repository management UI
+
+- [ ] **Team Features**
+  - Shared index across team
+  - Collaborative annotations
+  - Code ownership tracking
+
+- [ ] **Advanced Security**
+  - Encrypted database
+  - Access control
+  - Audit logging
+
+- [ ] **Analytics**
+  - Search query analytics
+  - Usage statistics
+  - Performance metrics
+
+---
+
+### Documentation & Ecosystem (Ongoing)
+
+- [ ] **Documentation**
+  - API reference
+  - Architecture guide
+  - Performance tuning guide
+  - Best practices
+
+- [ ] **Integrations**
+  - VS Code extension
+  - JetBrains plugin
+  - Vim plugin
+  - Emacs package
+
+- [ ] **Developer Experience**
+  - CLI tool for testing
+  - Web UI for visualization
+  - Debug mode with detailed logs
+  - Performance profiling tools
+
+---
+
+## 📝 Research & Exploration
+
+### Future Possibilities
+
+- **Semantic Search**
+  - Vector embeddings for code semantics
+  - AI-powered code understanding
+  - Natural language queries
+
+- **Code Graph Analysis**
+  - Dependency graph
+  - Call graph
+  - Data flow analysis
+  - Control flow analysis
+
+- **Language Models Integration**
+  - Code summarization
+  - Code explanation
+  - Code generation suggestions
+
+- **Real-time Collaboration**
+  - Live index updates across team
+  - Shared search history
+  - Collaborative annotations
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! See areas where you can help:
+
+1. **AST Analysis** - Help implement tree-sitter integration
+2. **Performance** - Optimize indexing and search algorithms
+3. **Language Support** - Add support for more languages
+4. **Documentation** - Improve docs and examples
+5. **Testing** - Add more test coverage
+
+---
+
+## 📅 Release Schedule
+
+- **v1.0** (Q1 2025) - Core features + persistent storage ✅
+- **v1.1** (Q2 2025) - AST analysis + symbol search
+- **v1.2** (Q2 2025) - Smart incremental indexing
+- **v2.0** (Q3 2025) - Advanced search + code intelligence
+- **v2.1** (Q4 2025) - Enterprise features
+
+---
+
+## 💬 Feedback
+
+We'd love to hear your thoughts! Please:
+- Open an issue for feature requests
+- Join discussions for roadmap input
+- Share your use cases and pain points
+
+---
+
+**Last Updated**: 2025-01-15

@@ -16,10 +16,11 @@ import { createOpenAI } from '@ai-sdk/openai';
  * Embedding Provider Config
  */
 export interface EmbeddingConfig {
-  readonly provider: 'openai' | 'mock';
-  readonly model: 'text-embedding-3-small' | 'text-embedding-3-large' | 'text-embedding-ada-002';
+  readonly provider: 'openai' | 'openai-compatible' | 'mock';
+  readonly model: string; // Any model name (e.g., 'text-embedding-3-small', 'text-embedding-ada-002', or custom)
   readonly dimensions: number;
   readonly apiKey?: string;
+  readonly baseURL?: string; // For OpenAI-compatible endpoints (OpenRouter, Together AI, etc.)
   readonly batchSize?: number;
 }
 
@@ -65,15 +66,17 @@ export const generateMockEmbedding = (text: string, dimensions: number): number[
 
 /**
  * Get dimensions for OpenAI model
+ * Returns undefined for unknown models (must be specified in config)
  */
-const getModelDimensions = (model: EmbeddingConfig['model']): number => {
+const getModelDimensions = (model: string): number | undefined => {
   switch (model) {
     case 'text-embedding-3-large':
       return 3072;
     case 'text-embedding-3-small':
     case 'text-embedding-ada-002':
-    default:
       return 1536;
+    default:
+      return undefined; // For custom models, dimensions must be specified
   }
 };
 
@@ -82,24 +85,39 @@ const getModelDimensions = (model: EmbeddingConfig['model']): number => {
  */
 export const createDefaultConfig = (): EmbeddingConfig => {
   const apiKey = process.env.OPENAI_API_KEY;
-  const model = (process.env.EMBEDDING_MODEL ||
-    'text-embedding-3-small') as EmbeddingConfig['model'];
+  const baseURL = process.env.OPENAI_BASE_URL; // Support custom base URL
+  const model = process.env.EMBEDDING_MODEL || 'text-embedding-3-small';
+  const customDimensions = process.env.EMBEDDING_DIMENSIONS
+    ? parseInt(process.env.EMBEDDING_DIMENSIONS, 10)
+    : undefined;
+
+  // Determine provider type
+  let provider: EmbeddingConfig['provider'] = 'mock';
+  if (apiKey) {
+    provider = baseURL ? 'openai-compatible' : 'openai';
+  }
+
+  // Get dimensions (from env, model default, or fallback)
+  const dimensions = customDimensions || getModelDimensions(model) || 1536;
 
   return {
-    provider: apiKey ? 'openai' : 'mock',
+    provider,
     model,
-    dimensions: getModelDimensions(model),
+    dimensions,
     apiKey,
+    baseURL,
     batchSize: 10,
   };
 };
 
 /**
  * Create OpenAI embedding model instance
+ * Supports both official OpenAI and OpenAI-compatible endpoints
  */
 const createEmbeddingModel = (config: EmbeddingConfig) => {
   const provider = createOpenAI({
     apiKey: config.apiKey || process.env.OPENAI_API_KEY,
+    baseURL: config.baseURL, // Support custom endpoints (OpenRouter, Together AI, etc.)
   });
 
   return provider.embedding(config.model);
@@ -174,6 +192,13 @@ export const createEmbeddingProvider = (config: EmbeddingConfig): EmbeddingProvi
   switch (config.provider) {
     case 'openai':
       console.error(`[INFO] Creating OpenAI provider: ${config.model} (${config.dimensions} dims)`);
+      return createOpenAIProvider(config);
+
+    case 'openai-compatible':
+      console.error(
+        `[INFO] Creating OpenAI-compatible provider: ${config.model} (${config.dimensions} dims)`,
+        config.baseURL ? `at ${config.baseURL}` : ''
+      );
       return createOpenAIProvider(config);
 
     case 'mock':

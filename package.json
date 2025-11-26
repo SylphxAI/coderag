@@ -12,16 +12,17 @@
     "test": "turbo run test",
     "clean": "turbo run clean",
     "type-check": "turbo run type-check",
-    "lint": "eslint packages/*/src/**/*.ts",
-    "lint:fix": "eslint packages/*/src/**/*.ts --fix",
-    "format": "prettier --write \"packages/*/src/**/*.{ts,json,md}\"",
-    "format:check": "prettier --check \"packages/*/src/**/*.{ts,json,md}\"",
+    "lint": "turbo lint",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
     "docs:dev": "cd docs && bun run docs:dev",
     "docs:build": "cd docs && bun run docs:build",
     "docs:preview": "cd docs && bun run docs:preview",
     "changeset": "changeset",
     "version": "changeset version",
-    "release": "turbo run build && changeset publish"
+    "release": "turbo run build && changeset publish",
+    "typecheck": "turbo typecheck"
   },
   "devDependencies": {
     "@changesets/cli": "^2.29.7",

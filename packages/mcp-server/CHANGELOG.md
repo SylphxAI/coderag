@@ -1,5 +1,33 @@
 # @sylphx/codebase-search-mcp
 
+## 0.3.0 (2025-11-27)
+
+### ✨ Features
+
+- **mcp-server:** add exports field and tests to reach 98% health ([bb4b7cb](https://github.com/SylphxAI/coderag/commit/bb4b7cb02a3e0ece0ac738cb9a3c63752be3a863))
+
+### ♻️ Refactoring
+
+- **mcp-server:** migrate to @sylphx/mcp-server-sdk ([a2183b2](https://github.com/SylphxAI/coderag/commit/a2183b20467f0a1123e0995d1df1c6f6b39b4414))
+
+### 📚 Documentation
+
+- **mcp:** add multi-tool setup instructions ([7516082](https://github.com/SylphxAI/coderag/commit/75160826409235677de297a54432dcf4245b98c0))
+- update all READMEs with current package names and features ([fe7b08f](https://github.com/SylphxAI/coderag/commit/fe7b08fc0cccf482e38a1840aa929ad24219883a))
+
+### 💅 Styles
+
+- apply biome formatting to package.json ([cde2403](https://github.com/SylphxAI/coderag/commit/cde24033e02b1e800521f83de94eef44e3f37fe7))
+
+### 🔧 Chores
+
+- **deps:** update @sylphx/mcp-server-sdk to 1.1.1 ([0ca6dd7](https://github.com/SylphxAI/coderag/commit/0ca6dd7ff027f332a16a36a4fb935f6e19427f51))
+- **deps:** update @sylphx/mcp-server-sdk to 0.2.1 ([517ab4a](https://github.com/SylphxAI/coderag/commit/517ab4a7d806d4c05df7ab1875ee18672562ae21))
+- update @sylphx/biome-config to 0.4.0 and add extends ([ba5e30f](https://github.com/SylphxAI/coderag/commit/ba5e30f9b2862a559ec350c8e5e80f98e6ca8112))
+- add prepack scripts to build before publish ([79ca05f](https://github.com/SylphxAI/coderag/commit/79ca05fb4b20aebd9c4ccc4610fd3a468de0cb13))
+- update biome config and apply formatting ([467acdb](https://github.com/SylphxAI/coderag/commit/467acdb8c6c4f5b18e39147f05fde70317b1e64d))
+- remove banned dependencies and add prepublishOnly script ([ce6a23a](https://github.com/SylphxAI/coderag/commit/ce6a23a35203f18b4b3e8d635a71845b1af98efa))
+
 ## 0.2.0 (2025-11-27)
 
 ### ✨ Features

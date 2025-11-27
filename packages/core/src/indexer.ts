@@ -232,7 +232,7 @@ export class CodebaseIndexer {
 	/**
 	 * Start watching for file changes
 	 */
-	async startWatch(): Promise<void> {
+	async startWatch(usePolling = false): Promise<void> {
 		if (this.isWatching) {
 			console.error('[WARN] Already watching for changes')
 			return
@@ -242,7 +242,7 @@ export class CodebaseIndexer {
 			this.ignoreFilter = loadGitignore(this.codebaseRoot)
 		}
 
-		console.error('[INFO] Starting file watcher...')
+		console.error(`[INFO] Starting file watcher${usePolling ? ' (polling mode)' : ''}...`)
 
 		const chokidarModule = await import('chokidar')
 		this.watcher = chokidarModule.default.watch(this.codebaseRoot, {
@@ -256,6 +256,8 @@ export class CodebaseIndexer {
 			],
 			ignoreInitial: true,
 			persistent: true,
+			usePolling,
+			interval: usePolling ? 1000 : undefined,
 			awaitWriteFinish: {
 				stabilityThreshold: 300,
 				pollInterval: 100,
@@ -267,21 +269,28 @@ export class CodebaseIndexer {
 		this.watcher.on('unlink', (filePath) => this.handleFileChange('unlink', filePath))
 
 		// Handle watcher errors (e.g., EMFILE: too many open files)
-		this.watcher.on('error', (error: NodeJS.ErrnoException) => {
-			if (error.code === 'EMFILE') {
-				console.error('[WARN] Too many open files - file watcher disabled')
-				console.error('[WARN] Run "ulimit -n 10240" to increase file limit')
+		this.watcher.on('error', async (error: NodeJS.ErrnoException) => {
+			if (error.code === 'EMFILE' && !usePolling) {
+				console.error('[WARN] Too many open files - switching to polling mode')
+				// Close current watcher and restart with polling
+				this.isWatching = false
+				await this.watcher?.close().catch(() => {})
+				this.watcher = null
+				// Restart with polling mode
+				await this.startWatch(true)
 			} else {
 				console.error('[WARN] File watcher error:', error.message)
+				// For other errors or if already in polling mode, disable watching
+				this.isWatching = false
+				this.watcher?.close().catch(() => {})
+				this.watcher = null
 			}
-			// Stop watching on error to prevent crashes
-			this.isWatching = false
-			this.watcher?.close().catch(() => {})
-			this.watcher = null
 		})
 
 		this.isWatching = true
-		console.error('[SUCCESS] File watcher started')
+		console.error(
+			`[SUCCESS] File watcher started${usePolling ? ' (polling mode - slower but more reliable)' : ''}`
+		)
 	}
 
 	/**

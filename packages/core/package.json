@@ -33,7 +33,6 @@
 	],
 	"scripts": {
 		"build": "tsc",
-		"prepack": "bun run build",
 		"dev": "tsc --watch",
 		"test": "vitest run",
 		"test:watch": "vitest",

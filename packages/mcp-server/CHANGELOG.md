@@ -1,5 +1,20 @@
 # @sylphx/codebase-search-mcp
 
+## 0.2.0 (2025-11-27)
+
+### ✨ Features
+
+- **mcp-server:** add exports field and tests to reach 98% health ([bb4b7cb](https://github.com/SylphxAI/coderag/commit/bb4b7cb02a3e0ece0ac738cb9a3c63752be3a863))
+
+### ♻️ Refactoring
+
+- **mcp-server:** migrate to @sylphx/mcp-server-sdk ([a2183b2](https://github.com/SylphxAI/coderag/commit/a2183b20467f0a1123e0995d1df1c6f6b39b4414))
+
+### 🔧 Chores
+
+- update biome config and apply formatting ([467acdb](https://github.com/SylphxAI/coderag/commit/467acdb8c6c4f5b18e39147f05fde70317b1e64d))
+- remove banned dependencies and add prepublishOnly script ([ce6a23a](https://github.com/SylphxAI/coderag/commit/ce6a23a35203f18b4b3e8d635a71845b1af98efa))
+
 ## 0.1.0
 
 ### Minor Changes

@@ -26,10 +26,7 @@ describe('MCP Server', () => {
 		const args = ['--root=/test/path', '--max-size=2097152', '--no-auto-index']
 
 		const codebaseRoot = args.find((arg) => arg.startsWith('--root='))?.split('=')[1]
-		const maxFileSize = parseInt(
-			args.find((arg) => arg.startsWith('--max-size='))?.split('=')[1] || '1048576',
-			10
-		)
+		const maxFileSize = parseInt(args.find((arg) => arg.startsWith('--max-size='))?.split('=')[1] || '1048576', 10)
 		const autoIndex = !args.includes('--no-auto-index')
 
 		expect(codebaseRoot).toBe('/test/path')
@@ -40,10 +37,7 @@ describe('MCP Server', () => {
 	test('default values when no arguments provided', () => {
 		const args: string[] = []
 
-		const maxFileSize = parseInt(
-			args.find((arg) => arg.startsWith('--max-size='))?.split('=')[1] || '1048576',
-			10
-		)
+		const maxFileSize = parseInt(args.find((arg) => arg.startsWith('--max-size='))?.split('=')[1] || '1048576', 10)
 		const autoIndex = !args.includes('--no-auto-index')
 
 		expect(maxFileSize).toBe(1048576) // 1MB default

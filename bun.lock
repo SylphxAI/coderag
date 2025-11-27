@@ -6,11 +6,11 @@
       "name": "codebase-search",
       "devDependencies": {
         "@biomejs/biome": "^2.3.8",
-        "@sylphx/biome-config": "^0.1.0",
+        "@sylphx/biome-config": "^0.4.0",
         "@sylphx/bump": "^0.6.2",
-        "@sylphx/doctor": "^1.22.0",
+        "@sylphx/doctor": "^1.23.1",
         "lefthook": "^2.0.4",
-        "turbo": "^2.6.0",
+        "turbo": "^2.6.1",
         "typescript": "^5.9.3",
         "vitepress": "^1.6.4",
         "vue": "^3.5.25",
@@ -337,7 +337,7 @@
 
     "@shikijs/vscode-textmate": ["@shikijs/vscode-textmate@10.0.2", "", {}, "sha512-83yeghZ2xxin3Nj8z1NMd/NCuca+gsYXswywDy5bHvwlWL8tpTQmzGeUuHd9FC3E/SBEMvzJRwWEOz5gGes9Qg=="],
 
-    "@sylphx/biome-config": ["@sylphx/biome-config@0.1.0", "", { "peerDependencies": { "@biomejs/biome": "^1.9.0" } }, "sha512-C1e9OkwCwXVHuHOmZ5WYzZryUVfdwAbITFKQ0ibK9dUS+d2nA7dqb7w3vU5D94Pp11z7BA6vHvShGav2C/u60g=="],
+    "@sylphx/biome-config": ["@sylphx/biome-config@0.4.0", "", { "peerDependencies": { "@biomejs/biome": "^2.0.0" } }, "sha512-fvIZ5H61VfbQzp2X2E5FoRtzUBS03rGvuaxby6MoP4fmgXaYS35CWgU+zswKoo2DAriBbIKfWkYsT/Bn2ih0HA=="],
 
     "@sylphx/bump": ["@sylphx/bump@0.6.2", "", { "dependencies": { "citty": "^0.1.6", "consola": "^3.4.2", "defu": "^6.1.4", "picocolors": "^1.1.1", "semver": "^7.6.3" }, "bin": { "bump": "dist/cli.js" } }, "sha512-NxzKU0oz2rXX1/Nt2Yaaw1DiXAVrUVjKBAIkzPJ/dS4MuFKDU7swJcrbHIdr28S/nGAiUyqsDXJhbbKOaYCUVQ=="],
 
@@ -345,7 +345,7 @@
 
     "@sylphx/coderag-mcp": ["@sylphx/coderag-mcp@workspace:packages/mcp-server"],
 
-    "@sylphx/doctor": ["@sylphx/doctor@1.22.0", "", { "dependencies": { "citty": "^0.1.6", "consola": "^3.4.2", "defu": "^6.1.4", "jiti": "^2.4.2", "picocolors": "^1.1.1" }, "bin": { "doctor": "dist/cli.js" } }, "sha512-bLH5mbTpPR0kxlaIgEE8SHjSHvfCbS5yAAra9PrIV/bPZQcCnw5A+WlXVQPr0oX/OSWoaAREi13V3emgLya3pg=="],
+    "@sylphx/doctor": ["@sylphx/doctor@1.23.1", "", { "dependencies": { "citty": "^0.1.6", "consola": "^3.4.2", "defu": "^6.1.4", "jiti": "^2.4.2", "picocolors": "^1.1.1" }, "bin": { "doctor": "dist/cli.js" } }, "sha512-ttdJfLnET45pkpV7Sue5W9OhrDY6jhNPfjRCLc2Q1FRWpS2u0gkVdrHYtu9cYQ37cbqxicimjKfRadKd35bwVg=="],
 
     "@sylphx/mcp-server-sdk": ["@sylphx/mcp-server-sdk@0.2.0", "", { "peerDependencies": { "typescript": "^5.0.0", "zod": "^4.0.0" }, "optionalPeers": ["zod"] }, "sha512-2tXLfCc7s3F5rQPJt1sRvex9fZI8lmwdvCUBDiihNfJ1bukoLau2sjV3U5itj6T8DTeGoRKAoETbdOLgYhrawg=="],
 

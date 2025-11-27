@@ -3,13 +3,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import {
-	buildSearchIndex,
-	calculateCosineSimilarity,
-	type DocumentVector,
-	searchDocuments,
-	tokenize,
-} from './tfidf.js'
+import { buildSearchIndex, calculateCosineSimilarity, type DocumentVector, searchDocuments, tokenize } from './tfidf.js'
 
 describe('TF-IDF', () => {
 	describe('tokenize', () => {
@@ -79,9 +73,7 @@ describe('TF-IDF', () => {
 
 	describe('buildSearchIndex', () => {
 		it('should build index for single document', () => {
-			const documents = [
-				{ uri: 'file://test.ts', content: 'function getUserData() { return user.data; }' },
-			]
+			const documents = [{ uri: 'file://test.ts', content: 'function getUserData() { return user.data; }' }]
 
 			const index = buildSearchIndex(documents)
 

@@ -1,16 +1,179 @@
 # @sylphx/coderag-mcp
 
-MCP server for intelligent codebase search - integrates with Claude Desktop.
+MCP server for intelligent codebase search - RAG-ready for AI assistants.
 
-## Installation
+## Quick Start
+
+Using [Claude Desktop](#with-claude-desktop), [VS Code](#with-vs-code), [Cursor](#with-cursor), [Claude Code](#with-claude-code), or [other MCP clients](#with-other-mcp-clients).
+
+### Standard Config
+
+```json
+{
+  "mcpServers": {
+    "coderag": {
+      "command": "npx",
+      "args": ["-y", "@sylphx/coderag-mcp", "--root=/path/to/project"]
+    }
+  }
+}
+```
+
+### With Claude Desktop
+
+<details>
+<summary>Installation</summary>
+
+Add to your `claude_desktop_config.json`:
+
+**macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+**Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "coderag": {
+      "command": "npx",
+      "args": ["-y", "@sylphx/coderag-mcp", "--root=/path/to/project"]
+    }
+  }
+}
+```
+
+</details>
+
+### With VS Code
+
+<details>
+<summary>Installation</summary>
+
+Add to your VS Code settings (JSON):
+
+```json
+{
+  "mcp": {
+    "servers": {
+      "coderag": {
+        "command": "npx",
+        "args": ["-y", "@sylphx/coderag-mcp", "--root=${workspaceFolder}"]
+      }
+    }
+  }
+}
+```
+
+Or add to `.vscode/mcp.json` in your project:
+
+```json
+{
+  "servers": {
+    "coderag": {
+      "command": "npx",
+      "args": ["-y", "@sylphx/coderag-mcp", "--root=${workspaceFolder}"]
+    }
+  }
+}
+```
+
+</details>
+
+### With Cursor
+
+<details>
+<summary>Installation</summary>
+
+Add to your Cursor MCP config:
+
+**macOS**: `~/.cursor/mcp.json`
+**Windows**: `%USERPROFILE%\.cursor\mcp.json`
+
+```json
+{
+  "mcpServers": {
+    "coderag": {
+      "command": "npx",
+      "args": ["-y", "@sylphx/coderag-mcp", "--root=/path/to/project"]
+    }
+  }
+}
+```
+
+</details>
+
+### With Windsurf
+
+<details>
+<summary>Installation</summary>
+
+Add to your Windsurf MCP config:
+
+**macOS**: `~/.codeium/windsurf/mcp_config.json`
+**Windows**: `%USERPROFILE%\.codeium\windsurf\mcp_config.json`
+
+```json
+{
+  "mcpServers": {
+    "coderag": {
+      "command": "npx",
+      "args": ["-y", "@sylphx/coderag-mcp", "--root=/path/to/project"]
+    }
+  }
+}
+```
+
+</details>
+
+### With Claude Code
+
+<details>
+<summary>Installation</summary>
 
 ```bash
+claude mcp add coderag -- npx -y @sylphx/coderag-mcp --root=/path/to/project
+```
+
+</details>
+
+### With Other MCP Clients
+
+<details>
+<summary>Installation</summary>
+
+Use the [standard config](#standard-config) format. All MCP-compatible clients should work with:
+
+```json
+{
+  "mcpServers": {
+    "coderag": {
+      "command": "npx",
+      "args": ["-y", "@sylphx/coderag-mcp", "--root=/path/to/project"]
+    }
+  }
+}
+```
+
+**Using bun:**
+
+```json
+{
+  "mcpServers": {
+    "coderag": {
+      "command": "bunx",
+      "args": ["@sylphx/coderag-mcp", "--root=/path/to/project"]
+    }
+  }
+}
+```
+
+**Global install:**
+
+```bash
+npm install -g @sylphx/coderag-mcp
+# or
 bun add -g @sylphx/coderag-mcp
 ```
 
-## Claude Desktop Setup
-
-Add to `claude_desktop_config.json`:
+Then use `coderag-mcp` as the command:
 
 ```json
 {
@@ -22,6 +185,8 @@ Add to `claude_desktop_config.json`:
   }
 }
 ```
+
+</details>
 
 ## Options
 

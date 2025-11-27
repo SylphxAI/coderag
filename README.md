@@ -1,329 +1,132 @@
-# Codebase Search
+# CodeRAG
 
-Intelligent codebase search using TF-IDF - Core library and MCP server.
+Lightning-fast hybrid code search (TF-IDF + Vector) - RAG-ready for AI assistants.
 
 ## 📦 Packages
 
-This monorepo contains two packages:
+| Package | Version | Description |
+|---------|---------|-------------|
+| [@sylphx/coderag](./packages/core) | [![npm](https://img.shields.io/npm/v/@sylphx/coderag)](https://www.npmjs.com/package/@sylphx/coderag) | Core search library |
+| [@sylphx/coderag-mcp](./packages/mcp-server) | [![npm](https://img.shields.io/npm/v/@sylphx/coderag-mcp)](https://www.npmjs.com/package/@sylphx/coderag-mcp) | MCP server for Claude |
 
-### [@sylphx/codebase-search](./packages/core)
+## ✨ Features
 
-Core library for intelligent codebase search. Use this if you want to integrate codebase search directly into your application.
+- 🔍 **Hybrid Search** - TF-IDF + Vector search with RRF fusion
+- 🌳 **AST-based Chunking** - Smart code splitting using [Synth](https://github.com/SylphxAI/synth) parsers
+- 🚀 **Fast Indexing** - 1000-2000 files/second with SQLite persistence
+- 👁️ **File Watching** - Real-time index updates on file changes
+- 💾 **Persistent Storage** - Instant startup (<100ms) with cached index
+- ⚡ **Incremental Updates** - Smart delta updates, not full rebuilds
+- 🧠 **Embeddings Ready** - Vector search with OpenAI embeddings
+- 📦 **MCP Integration** - Works with Claude Desktop out of the box
+
+## 🚀 Quick Start
+
+### As a Library
 
 ```bash
-npm install @sylphx/codebase-search
+bun add @sylphx/coderag
 ```
 
-**Features:**
-- 🔍 **TF-IDF based search ranking** - Intelligent relevance scoring
-- 📁 **.gitignore support** - Respects your ignore patterns
-- 🚀 **Fast indexing with SQLite persistence** - 1000-2000 files/second
-- 🎯 **Code-aware tokenization** - Language-specific term extraction
-- 👁️ **File watching with auto-index updates** - Real-time synchronization
-- 💾 **Persistent storage (SQLite + Drizzle ORM)** - Instant startup (<100ms)
-- ⚡ **Incremental TF-IDF updates** - Smart delta updates, not full rebuilds
-- 🧠 **Hash-based change detection** - Skip unchanged files
-- 💨 **LRU search cache** - Lightning-fast repeated queries
-- 📦 **Batch database operations** - 10x faster bulk inserts
-- 🌐 **Embeddings interface** - Ready for semantic search (OpenAI SDK)
-
-**Usage:**
 ```typescript
-import { CodebaseIndexer, PersistentStorage } from '@sylphx/codebase-search';
+import { CodebaseIndexer, PersistentStorage } from '@sylphx/coderag'
 
-// Use persistent storage for faster startup
-const storage = new PersistentStorage({
-  codebaseRoot: '/path/to/project'
-});
-
+const storage = new PersistentStorage({ codebaseRoot: './my-project' })
 const indexer = new CodebaseIndexer({
-  codebaseRoot: '/path/to/project',
-  storage, // Optional: uses PersistentStorage by default in MCP
-  maxFileSize: 1048576, // 1MB
-  onFileChange: (event) => {
-    console.log(`File ${event.type}: ${event.path}`);
-  },
-});
+  codebaseRoot: './my-project',
+  storage,
+})
 
-// Index with watch mode (auto-updates on file changes)
-// On first run: indexes all files
-// On subsequent runs: loads from database instantly!
-await indexer.index({ watch: true });
+// Index codebase (instant on subsequent runs)
+await indexer.index({ watch: true })
 
-// Search (always up-to-date!)
-const results = await indexer.search('user authentication', {
-  limit: 10,
-  includeContent: true,
-});
+// Search
+const results = await indexer.search('authentication logic', { limit: 10 })
 ```
 
-### [@sylphx/codebase-search-mcp](./packages/mcp-server)
-
-MCP (Model Context Protocol) server for codebase search. Use this to add codebase search to Claude Desktop or other MCP clients.
+### As MCP Server (Claude Desktop)
 
 ```bash
-npm install -g @sylphx/codebase-search-mcp
+bun add -g @sylphx/coderag-mcp
 ```
 
-**Claude Desktop Configuration:**
+Add to `claude_desktop_config.json`:
+
 ```json
 {
   "mcpServers": {
-    "codebase-search": {
-      "command": "codebase-search-mcp",
-      "args": [
-        "--root=/path/to/your/project",
-        "--max-size=1048576"
-      ]
+    "coderag": {
+      "command": "coderag-mcp",
+      "args": ["--root=/path/to/project"]
     }
   }
 }
 ```
 
-## 🚀 Quick Start
-
-### For Library Users
-
-```bash
-# Install core library
-npm install @sylphx/codebase-search
-
-# Or use in your project
-import { CodebaseIndexer } from '@sylphx/codebase-search';
-```
-
-### For MCP Users
-
-```bash
-# Install MCP server globally
-npm install -g @sylphx/codebase-search-mcp
-
-# Configure in Claude Desktop (see above)
-```
-
-### For Development
-
-```bash
-# Clone the repo
-git clone https://github.com/SylphxAI/codebase-search.git
-cd codebase-search
-
-# Install dependencies
-bun install
-
-# Build all packages
-bun run build
-
-# Run tests
-bun run test
-```
-
 ## 🏗️ Architecture
 
 ```
-codebase-search/
+coderag/
 ├── packages/
-│   ├── core/                    # Core search library
+│   ├── core/                  # @sylphx/coderag
 │   │   ├── src/
-│   │   │   ├── index.ts            # Public API exports
-│   │   │   ├── indexer.ts          # Codebase indexing + watch
-│   │   │   ├── tfidf.ts            # TF-IDF implementation
-│   │   │   ├── storage.ts          # In-memory storage
-│   │   │   ├── storage-persistent.ts # SQLite storage
-│   │   │   ├── db/
-│   │   │   │   ├── client.ts       # Database client
-│   │   │   │   ├── schema.ts       # Drizzle schema
-│   │   │   │   └── migrations.ts   # Schema migrations
-│   │   │   └── utils.ts            # File scanning utilities
+│   │   │   ├── indexer.ts        # Codebase indexing + watch
+│   │   │   ├── tfidf.ts          # TF-IDF implementation
+│   │   │   ├── ast-chunking.ts   # AST-based code chunking
+│   │   │   ├── hybrid-search.ts  # TF-IDF + Vector fusion
+│   │   │   ├── vector-storage.ts # Vector storage for embeddings
+│   │   │   ├── embeddings.ts     # OpenAI embeddings provider
+│   │   │   └── storage-persistent.ts  # SQLite storage
 │   │   └── package.json
 │   │
-│   └── mcp-server/              # MCP server
+│   └── mcp-server/            # @sylphx/coderag-mcp
 │       ├── src/
-│       │   ├── index.ts            # Server entry point
-│       │   └── tool.ts             # MCP tool registration
+│       │   └── index.ts          # MCP server (uses @sylphx/mcp-server-sdk)
 │       └── package.json
 │
-├── docs/                        # Documentation
-├── package.json                 # Workspace root
-└── turbo.json                  # Turbo configuration
-```
-
-## 📚 Documentation
-
-- [Core API Documentation](./packages/core/README.md)
-- [MCP Server Documentation](./packages/mcp-server/README.md)
-- [How It Works](./docs/how-it-works.md) (Coming soon)
-- [Contributing Guide](./CONTRIBUTING.md) (Coming soon)
-
-## 🔧 Development
-
-### Prerequisites
-
-- Node.js >= 18
-- Bun (recommended) or npm/yarn/pnpm
-
-### Commands
-
-```bash
-# Install dependencies
-bun install
-
-# Build all packages
-bun run build
-
-# Run tests
-bun run test
-
-# Type check
-bun run type-check
-
-# Clean build artifacts
-bun run clean
-```
-
-### Workspace Structure
-
-This is a monorepo managed with:
-- **Workspaces** - For package management
-- **Turbo** - For build orchestration
-
-Packages are linked using `workspace:*` protocol, allowing local development without publishing.
-
-## 🤝 Use Cases
-
-### As a Library
-
-```typescript
-// Direct integration in your app
-import { CodebaseIndexer, searchDocuments } from '@sylphx/codebase-search';
-
-const indexer = new CodebaseIndexer({ codebaseRoot: './src' });
-await indexer.index();
-
-const results = await indexer.search('authentication logic');
-// Returns ranked results with snippets
-```
-
-### As an MCP Server
-
-Configure in Claude Desktop to enable codebase search directly in your AI conversations.
-
-### Custom Integrations
-
-```typescript
-// Use individual components
-import { buildSearchIndex, searchDocuments } from '@sylphx/codebase-search';
-
-const index = buildSearchIndex(documents);
-const results = searchDocuments('query', index);
-```
-
-### Advanced Features
-
-#### Embeddings for Semantic Search
-
-```typescript
-import { createEmbeddingProvider, cosineSimilarity } from '@sylphx/codebase-search';
-
-// Initialize embedding provider (requires OPENAI_API_KEY environment variable)
-const provider = await createEmbeddingProvider({
-  provider: 'openai',
-  model: 'text-embedding-3-small',
-  dimensions: 1536,
-});
-
-// Generate embeddings for documents
-const embeddings = await provider.generateEmbeddings([
-  'user authentication code',
-  'database connection logic',
-  'API endpoint handlers',
-]);
-
-// Calculate similarity between query and documents
-const queryEmbedding = await provider.generateEmbedding('login system');
-const similarities = embeddings.map(emb => cosineSimilarity(queryEmbedding, emb));
-```
-
-#### Search Cache Statistics
-
-```typescript
-// The indexer automatically uses LRU caching for search results
-const indexer = new CodebaseIndexer({ codebaseRoot: './src' });
-await indexer.index();
-
-// First search - cache miss
-await indexer.search('authentication');
-// [CACHE MISS] Query: "authentication"
-
-// Second search - cache hit (instant!)
-await indexer.search('authentication');
-// [CACHE HIT] Query: "authentication"
-```
-
-#### Batch Operations for Performance
-
-```typescript
-import { PersistentStorage } from '@sylphx/codebase-search';
-
-const storage = new PersistentStorage({ codebaseRoot: './project' });
-
-// Batch file storage (10x faster than one-by-one)
-const files = [/* ... array of CodebaseFile objects ... */];
-await storage.storeFiles(files); // Uses transaction + batching
-
-// Batch document vector storage
-const documents = [/* ... array of documents with terms ... */];
-await storage.storeManyDocumentVectors(documents);
-```
-
-#### Incremental Updates
-
-```typescript
-// The indexer automatically uses incremental updates when files change
-// - Only updates affected terms and documents
-// - Recalculates IDF scores for changed terms only
-// - Skips full rebuild unless >20% of files changed
-
-const indexer = new CodebaseIndexer({
-  codebaseRoot: './src',
-  watch: true, // Enable file watching
-  onFileChange: (event) => {
-    console.log(`File ${event.type}: ${event.path}`);
-  },
-});
-
-await indexer.index({ watch: true });
-// [INFO] Using incremental update engine
-// [SUCCESS] Incremental update: 3 docs, 15 terms, 12ms
+├── docs/                      # VitePress documentation
+└── examples/                  # Usage examples
 ```
 
 ## 📊 Performance
 
-- **Initial Indexing**: ~1000-2000 files/second
-- **Startup with Existing Index**: <100ms (loads from database)
-- **Search Speed**: <100ms for most queries
-- **Memory Usage**: ~1-2 MB per 1000 files
-- **Storage**: SQLite database in `.codebase-search/index.db`
+| Metric | Value |
+|--------|-------|
+| Initial indexing | ~1000-2000 files/sec |
+| Startup with cache | <100ms |
+| Search latency | <50ms |
+| Memory per 1000 files | ~1-2 MB |
 
-## 🔒 Privacy
+## 🔧 Development
 
-- All indexing and search happens locally
-- No data is sent to external servers
-- Respects .gitignore patterns
+```bash
+# Clone
+git clone https://github.com/SylphxAI/coderag.git
+cd coderag
+
+# Install
+bun install
+
+# Build
+bun run build
+
+# Test
+bun run test
+
+# Lint
+bun run lint
+```
 
 ## 📝 License
 
 MIT
 
-## 🙏 Credits
-
-Built by [SylphxAI](https://github.com/SylphxAI)
-
-## 📮 Support
-
-- GitHub Issues: https://github.com/SylphxAI/codebase-search/issues
-- Discussions: https://github.com/SylphxAI/codebase-search/discussions
-
 ---
 
-Made with ❤️ for developers who love fast, local code search.
+<div align="center">
+
+**Powered by [Sylphx](https://github.com/SylphxAI)**
+
+Built with [@sylphx/synth](https://github.com/SylphxAI/synth) · [@sylphx/mcp-server-sdk](https://github.com/SylphxAI/mcp-server-sdk) · [@sylphx/doctor](https://github.com/SylphxAI/doctor)
+
+</div>

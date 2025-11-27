@@ -1,255 +1,150 @@
-# @sylphx/codebase-search
+# @sylphx/coderag
 
-Core library for intelligent codebase search using TF-IDF.
+Core library for intelligent codebase search using hybrid TF-IDF + Vector search.
 
 ## Installation
 
 ```bash
-npm install @sylphx/codebase-search
+bun add @sylphx/coderag
 ```
 
-## Usage
+## Features
 
-### Basic Example
+- 🔍 **Hybrid Search** - Combines TF-IDF and vector search with RRF fusion
+- 🌳 **AST-based Chunking** - Smart code splitting using Synth parsers
+- 💾 **Persistent Storage** - SQLite-backed index for instant startup
+- ⚡ **Incremental Updates** - Only reindex changed files
+- 👁️ **File Watching** - Auto-update index on file changes
+- 🧠 **Embeddings** - OpenAI embeddings for semantic search
+
+## Quick Start
 
 ```typescript
-import { CodebaseIndexer } from '@sylphx/codebase-search';
+import { CodebaseIndexer, PersistentStorage } from '@sylphx/coderag'
 
-// Create indexer
+// Create indexer with persistent storage
+const storage = new PersistentStorage({ codebaseRoot: './my-project' })
 const indexer = new CodebaseIndexer({
-  codebaseRoot: '/path/to/project',
-  maxFileSize: 1048576, // 1MB
-});
+  codebaseRoot: './my-project',
+  storage,
+})
 
-// Index the codebase
-await indexer.index({
-  onProgress: (current, total, file) => {
-    console.log(`Indexing ${current}/${total}: ${file}`);
-  },
-});
+// Index (instant on subsequent runs)
+await indexer.index({ watch: true })
 
 // Search
-const results = await indexer.search('user authentication', {
-  limit: 10,
-  includeContent: true,
-  fileExtensions: ['.ts', '.tsx'],
-  pathFilter: 'src',
-  excludePaths: ['node_modules', 'dist'],
-});
-
-// Display results
-for (const result of results) {
-  console.log(`${result.path} (score: ${result.score})`);
-  if (result.snippet) {
-    console.log(result.snippet);
-  }
-}
-```
-
-### Watch Mode (Auto-Update Index)
-
-```typescript
-import { CodebaseIndexer } from '@sylphx/codebase-search';
-
-const indexer = new CodebaseIndexer({
-  codebaseRoot: '/path/to/project',
-  onFileChange: (event) => {
-    console.log(`File ${event.type}: ${event.path}`);
-  },
-});
-
-// Index with watch mode enabled
-await indexer.index({
-  watch: true, // Enable automatic index updates
-});
-
-console.log('Watching for file changes...');
-
-// Index automatically updates when files change
-// Search results are always up-to-date
-
-// Stop watching when done
-await indexer.stopWatch();
-```
-
-### Using Individual Components
-
-```typescript
-import { buildSearchIndex, searchDocuments } from '@sylphx/codebase-search';
-
-// Prepare documents
-const documents = [
-  { uri: 'file://src/auth.ts', content: 'export function authenticate() { ... }' },
-  { uri: 'file://src/user.ts', content: 'export class User { ... }' },
-];
-
-// Build search index
-const index = buildSearchIndex(documents);
-
-// Search
-const results = searchDocuments('authenticate user', index, {
-  limit: 5,
-  minScore: 0.1,
-});
-```
-
-### File Scanning
-
-```typescript
-import { scanFiles, loadGitignore } from '@sylphx/codebase-search';
-
-// Load .gitignore patterns
-const ignoreFilter = loadGitignore('/path/to/project');
-
-// Scan files
-const files = scanFiles('/path/to/project', {
-  ignoreFilter,
-  codebaseRoot: '/path/to/project',
-  maxFileSize: 1048576,
-});
-
-console.log(`Found ${files.length} files`);
+const results = await indexer.search('authentication', { limit: 10 })
 ```
 
 ## API
 
 ### `CodebaseIndexer`
 
-Main class for codebase indexing and search.
-
-#### Constructor Options
+Main class for indexing and searching.
 
 ```typescript
-interface IndexerOptions {
-  codebaseRoot?: string;      // Default: process.cwd()
-  maxFileSize?: number;        // Default: 1048576 (1MB)
-  onProgress?: (current: number, total: number, file: string) => void;
-}
+const indexer = new CodebaseIndexer({
+  codebaseRoot: string,          // Project root path
+  storage?: Storage,             // Storage backend (default: in-memory)
+  maxFileSize?: number,          // Max file size in bytes (default: 1MB)
+  onFileChange?: (event) => void // File change callback
+})
+
+// Methods
+await indexer.index(options)     // Index codebase
+await indexer.search(query, options) // Search
+await indexer.startWatch()       // Start file watcher
+await indexer.stopWatch()        // Stop file watcher
 ```
 
-#### Methods
+### `PersistentStorage`
 
-- `async index(options?: IndexerOptions): Promise<void>` - Index the codebase
-- `async search(query: string, options?: SearchOptions): Promise<SearchResult[]>` - Search the codebase
-- `async startWatch(): Promise<void>` - Start watching for file changes
-- `async stopWatch(): Promise<void>` - Stop watching for file changes
-- `isWatchEnabled(): boolean` - Check if watching is enabled
-- `getStatus(): IndexingStatus` - Get current indexing status
-- `async getIndexedCount(): Promise<number>` - Get count of indexed files
+SQLite-backed persistent storage.
 
-#### Search Options
+```typescript
+const storage = new PersistentStorage({
+  codebaseRoot: string,          // Project root (for .coderag/ folder)
+  dbPath?: string                // Custom database path
+})
+```
+
+### `buildSearchIndex` / `searchDocuments`
+
+Low-level TF-IDF functions.
+
+```typescript
+import { buildSearchIndex, searchDocuments } from '@sylphx/coderag'
+
+const documents = [
+  { uri: 'file://auth.ts', content: '...' },
+  { uri: 'file://user.ts', content: '...' },
+]
+
+const index = buildSearchIndex(documents)
+const results = searchDocuments('auth', index, { limit: 5 })
+```
+
+### AST Chunking
+
+Smart code chunking using Synth parsers.
+
+```typescript
+import { chunkCodeByAST } from '@sylphx/coderag'
+
+const chunks = await chunkCodeByAST(code, 'typescript', {
+  maxChunkSize: 1500,
+  minChunkSize: 100,
+})
+// Returns: [{ content, type, startLine, endLine }, ...]
+```
+
+Supported languages: JavaScript, TypeScript, HTML, JSON, YAML, Markdown
+
+### Vector Storage
+
+For semantic search with embeddings.
+
+```typescript
+import { VectorStorage, createEmbeddingProvider } from '@sylphx/coderag'
+
+const provider = await createEmbeddingProvider({
+  provider: 'openai',
+  model: 'text-embedding-3-small',
+})
+
+const vectorStorage = new VectorStorage()
+await vectorStorage.addDocument('doc1', embedding, { path: 'auth.ts' })
+
+const results = await vectorStorage.search(queryEmbedding, { limit: 5 })
+```
+
+## Search Options
 
 ```typescript
 interface SearchOptions {
-  limit?: number;              // Max results (default: 10)
-  includeContent?: boolean;    // Include snippets (default: true)
-  fileExtensions?: string[];   // Filter by extensions
-  pathFilter?: string;         // Filter by path pattern
-  excludePaths?: string[];     // Exclude paths
+  limit?: number           // Max results (default: 10)
+  includeContent?: boolean // Include snippets (default: true)
+  fileExtensions?: string[] // Filter by extension
+  pathFilter?: string      // Filter by path pattern
+  excludePaths?: string[]  // Exclude paths
 }
 ```
-
-#### Search Result
-
-```typescript
-interface SearchResult {
-  path: string;                // Relative file path
-  score: number;               // Relevance score
-  matchedTerms: string[];      // Matched search terms
-  language?: string;           // Detected language
-  size: number;                // File size in bytes
-  snippet?: string;            // Code snippet (if includeContent)
-}
-```
-
-### `buildSearchIndex()`
-
-Build TF-IDF search index from documents.
-
-```typescript
-function buildSearchIndex(
-  documents: Array<{ uri: string; content: string }>
-): SearchIndex
-```
-
-### `searchDocuments()`
-
-Search documents using TF-IDF.
-
-```typescript
-function searchDocuments(
-  query: string,
-  index: SearchIndex,
-  options?: {
-    limit?: number;
-    minScore?: number;
-  }
-): Array<{ uri: string; score: number; matchedTerms: string[] }>
-```
-
-### `scanFiles()`
-
-Scan directory for files.
-
-```typescript
-function scanFiles(
-  dir: string,
-  options?: {
-    ignoreFilter?: Ignore;
-    codebaseRoot?: string;
-    maxFileSize?: number;
-  }
-): ScanResult[]
-```
-
-### `loadGitignore()`
-
-Load .gitignore patterns.
-
-```typescript
-function loadGitignore(codebaseRoot: string): Ignore
-```
-
-## How It Works
-
-1. **File Scanning** - Recursively scans directory respecting .gitignore
-2. **Tokenization** - Extracts identifiers (camelCase, snake_case, etc.)
-3. **TF-IDF Calculation** - Calculates term frequency and inverse document frequency
-4. **Indexing** - Stores document vectors for fast search
-5. **Search** - Uses cosine similarity to rank results
-
-### Search Ranking
-
-Results are ranked using:
-- **Cosine Similarity** - Angle between query and document vectors
-- **Exact Match Boost** - 1.5x for exact term matches
-- **Phrase Match Boost** - 2.0x when all query terms found
-
-## Supported File Types
-
-- TypeScript/JavaScript (`.ts`, `.tsx`, `.js`, `.jsx`)
-- Python (`.py`)
-- Java (`.java`)
-- Go (`.go`)
-- Rust (`.rs`)
-- C/C++ (`.c`, `.cpp`, `.h`, `.hpp`)
-- C# (`.cs`)
-- Ruby (`.rb`)
-- PHP (`.php`)
-- Swift (`.swift`)
-- Kotlin (`.kt`)
-- JSON (`.json`)
-- YAML (`.yaml`, `.yml`)
-- TOML (`.toml`)
-- Markdown (`.md`)
-- And more...
 
 ## Performance
 
-- **Indexing**: ~1000-2000 files/second
-- **Search**: <100ms typical
-- **Memory**: ~1-2 MB per 1000 files
+| Metric | Value |
+|--------|-------|
+| Indexing speed | ~1000-2000 files/sec |
+| Startup with cache | <100ms |
+| Search latency | <50ms |
+| Memory per 1000 files | ~1-2 MB |
 
 ## License
 
 MIT
+
+---
+
+**Powered by [Sylphx](https://github.com/SylphxAI)**
+
+Built with [@sylphx/synth](https://github.com/SylphxAI/synth)

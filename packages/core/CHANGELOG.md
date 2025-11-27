@@ -1,5 +1,12 @@
 # @sylphx/codebase-search
 
+## 0.1.8 (2025-11-27)
+
+### 🐛 Bug Fixes
+
+- **core:** fallback to polling mode on EMFILE error ([ec473f2](https://github.com/SylphxAI/coderag/commit/ec473f27f653729b44c80dacec5feff6851e3b72))
+- **core:** handle EMFILE error in file watcher gracefully ([58849a2](https://github.com/SylphxAI/coderag/commit/58849a2c6c18b82bbe41cc478fe151d81a129554))
+
 ## 0.1.7 (2025-11-27)
 
 ### 🐛 Bug Fixes

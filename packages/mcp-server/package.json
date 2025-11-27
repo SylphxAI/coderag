@@ -28,7 +28,7 @@
 	},
 	"dependencies": {
 		"@sylphx/coderag": "workspace:*",
-		"@sylphx/mcp-server-sdk": "^0.2.1",
+		"@sylphx/mcp-server-sdk": "^1.1.1",
 		"zod": "^4.1.12"
 	},
 	"devDependencies": {

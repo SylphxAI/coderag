@@ -1,5 +1,11 @@
 # @sylphx/codebase-search
 
+## 0.1.6 (2025-11-27)
+
+### 🐛 Bug Fixes
+
+- simplify prepack to just build own package ([87a7e95](https://github.com/SylphxAI/coderag/commit/87a7e951219554b8a42ee7c6b61965fe264c0fa8))
+
 ## 0.1.5 (2025-11-27)
 
 ### 🐛 Bug Fixes

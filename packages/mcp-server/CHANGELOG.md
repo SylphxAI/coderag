@@ -1,5 +1,12 @@
 # @sylphx/codebase-search-mcp
 
+## 0.3.3 (2025-11-27)
+
+### 🐛 Bug Fixes
+
+- **mcp-server:** use ^0.1.5 for @sylphx/coderag to fix workspace:* resolution ([9ba44b7](https://github.com/SylphxAI/coderag/commit/9ba44b713c76ee54775752d447a5683b9368f72e))
+- simplify prepack to just build own package ([87a7e95](https://github.com/SylphxAI/coderag/commit/87a7e951219554b8a42ee7c6b61965fe264c0fa8))
+
 ## 0.3.2 (2025-11-27)
 
 ### 🐛 Bug Fixes

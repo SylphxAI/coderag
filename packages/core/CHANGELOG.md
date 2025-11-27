@@ -1,5 +1,12 @@
 # @sylphx/codebase-search
 
+## 0.1.5 (2025-11-27)
+
+### 🐛 Bug Fixes
+
+- use bunx turbo in prepack for CI compatibility ([301fdec](https://github.com/SylphxAI/coderag/commit/301fdecf1d917fb90de96e15f870edbc2f4f7a1e))
+- add prepack scripts with turbo for proper builds ([59fafd1](https://github.com/SylphxAI/coderag/commit/59fafd15ad3759d2ceaeee2a207b8bb1dfa1601f))
+
 ## 0.1.4 (2025-11-27)
 
 ### 🐛 Bug Fixes

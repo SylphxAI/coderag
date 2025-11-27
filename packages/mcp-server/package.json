@@ -19,7 +19,7 @@
 	],
 	"scripts": {
 		"build": "tsc",
-		"prepack": "bun run build",
+		"prepack": "cd ../core && bun run build && cd ../mcp-server && bun run build",
 		"dev": "bun run src/index.ts",
 		"start": "node dist/index.js",
 		"test": "bun test",

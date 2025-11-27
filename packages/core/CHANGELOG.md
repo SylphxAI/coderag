@@ -1,5 +1,41 @@
 # @sylphx/codebase-search
 
+## 0.1.2 (2025-11-27)
+
+### ♻️ Refactoring
+
+- **vector:** replace hnswlib-node with LanceDB ([2c8da9b](https://github.com/SylphxAI/coderag/commit/2c8da9b34905df36df82a4744e8a81b884587dbe))
+
+### 📚 Documentation
+
+- add @sylphx package credits to READMEs ([155a445](https://github.com/SylphxAI/coderag/commit/155a44592de320e0a84deb16872df01ff83ebbb0))
+- update all READMEs with current package names and features ([fe7b08f](https://github.com/SylphxAI/coderag/commit/fe7b08fc0cccf482e38a1840aa929ad24219883a))
+
+### 🔧 Chores
+
+- update @sylphx/biome-config to 0.4.0 and add extends ([ba5e30f](https://github.com/SylphxAI/coderag/commit/ba5e30f9b2862a559ec350c8e5e80f98e6ca8112))
+- add prepack scripts to build before publish ([79ca05f](https://github.com/SylphxAI/coderag/commit/79ca05fb4b20aebd9c4ccc4610fd3a468de0cb13))
+- update biome config and apply formatting ([467acdb](https://github.com/SylphxAI/coderag/commit/467acdb8c6c4f5b18e39147f05fde70317b1e64d))
+- remove banned dependencies and add prepublishOnly script ([ce6a23a](https://github.com/SylphxAI/coderag/commit/ce6a23a35203f18b4b3e8d635a71845b1af98efa))
+
+## 0.1.1 (2025-11-27)
+
+### ♻️ Refactoring
+
+- **vector:** replace hnswlib-node with LanceDB ([2c8da9b](https://github.com/SylphxAI/coderag/commit/2c8da9b34905df36df82a4744e8a81b884587dbe))
+
+### 📚 Documentation
+
+- add @sylphx package credits to READMEs ([155a445](https://github.com/SylphxAI/coderag/commit/155a44592de320e0a84deb16872df01ff83ebbb0))
+- update all READMEs with current package names and features ([fe7b08f](https://github.com/SylphxAI/coderag/commit/fe7b08fc0cccf482e38a1840aa929ad24219883a))
+
+### 🔧 Chores
+
+- update @sylphx/biome-config to 0.4.0 and add extends ([ba5e30f](https://github.com/SylphxAI/coderag/commit/ba5e30f9b2862a559ec350c8e5e80f98e6ca8112))
+- add prepack scripts to build before publish ([79ca05f](https://github.com/SylphxAI/coderag/commit/79ca05fb4b20aebd9c4ccc4610fd3a468de0cb13))
+- update biome config and apply formatting ([467acdb](https://github.com/SylphxAI/coderag/commit/467acdb8c6c4f5b18e39147f05fde70317b1e64d))
+- remove banned dependencies and add prepublishOnly script ([ce6a23a](https://github.com/SylphxAI/coderag/commit/ce6a23a35203f18b4b3e8d635a71845b1af98efa))
+
 ## 0.1.0
 
 ### Minor Changes

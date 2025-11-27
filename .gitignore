@@ -15,3 +15,7 @@ coverage/
 .env
 .env.local
 .vercel
+
+# LanceDB
+*.lance
+:memory:

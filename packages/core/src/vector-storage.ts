@@ -1,11 +1,9 @@
 /**
- * Vector Storage using HNSW Index
- * High-performance approximate nearest neighbor search
+ * Vector Storage using LanceDB
+ * High-performance embedded vector database
  */
 
-import fs from 'node:fs'
-import path from 'node:path'
-import { HierarchicalNSW } from 'hnswlib-node'
+import * as lancedb from '@lancedb/lancedb'
 
 /**
  * Vector Document
@@ -19,7 +17,7 @@ export interface VectorDocument {
 		readonly content?: string // Content snippet (for preview)
 		readonly category?: string // Category
 		readonly path?: string // File path
-		readonly [key: string]: any // Other metadata
+		readonly [key: string]: unknown // Other metadata
 	}
 }
 
@@ -29,7 +27,7 @@ export interface VectorDocument {
 export interface VectorSearchResult {
 	readonly doc: VectorDocument
 	readonly similarity: number // 0-1, higher is more similar
-	readonly distance: number // Raw distance (cosine distance)
+	readonly distance: number // Raw distance
 }
 
 /**
@@ -37,10 +35,8 @@ export interface VectorSearchResult {
  */
 export interface VectorStorageOptions {
 	readonly dimensions: number // Vector dimensions (1536 for OpenAI)
-	readonly indexPath?: string // Index file path
-	readonly maxElements?: number // Maximum elements (default 10000)
-	readonly efConstruction?: number // HNSW construction parameter (default 200)
-	readonly m?: number // HNSW M parameter (default 16)
+	readonly dbPath?: string // Database path (default: in-memory)
+	readonly tableName?: string // Table name (default: "vectors")
 }
 
 /**
@@ -52,114 +48,190 @@ export interface VectorStorageStats {
 	readonly indexSize: number
 }
 
+// Internal record type for LanceDB
+interface VectorRecord {
+	id: string
+	vector: number[]
+	type: string
+	language: string
+	content: string
+	category: string
+	path: string
+	metadata_json: string // Store extra metadata as JSON
+	[key: string]: unknown // Index signature for LanceDB compatibility
+}
+
 /**
- * Vector Storage with HNSW Index
+ * Vector Storage with LanceDB
  */
 export class VectorStorage {
-	private index: HierarchicalNSW
-	private documents: Map<number, VectorDocument>
-	private idToIndex: Map<string, number> // doc.id -> internal index
-	private indexToId: Map<number, string> // internal index -> doc.id
-	private nextId: number = 0
+	private db: lancedb.Connection | null = null
+	private table: lancedb.Table | null = null
 	private dimensions: number
-	private indexPath?: string
-	private maxElements: number
+	private dbPath: string
+	private tableName: string
+	private initialized: boolean = false
 
 	constructor(options: VectorStorageOptions) {
 		this.dimensions = options.dimensions
-		this.indexPath = options.indexPath
-		this.maxElements = options.maxElements || 10000
-		this.documents = new Map()
-		this.idToIndex = new Map()
-		this.indexToId = new Map()
+		this.dbPath = options.dbPath || ':memory:'
+		this.tableName = options.tableName || 'vectors'
+	}
 
-		// Initialize HNSW index
-		this.index = new HierarchicalNSW('cosine', this.dimensions)
+	/**
+	 * Initialize the database connection
+	 */
+	private async ensureInitialized(): Promise<void> {
+		if (this.initialized) return
 
-		if (this.indexPath && fs.existsSync(this.indexPath)) {
-			this.load()
-		} else {
-			const efConstruction = options.efConstruction || 200
-			const m = options.m || 16
+		this.db = await lancedb.connect(this.dbPath)
 
-			this.index.initIndex(this.maxElements, m, efConstruction)
-			this.index.setEf(50) // Search-time parameter
+		// Check if table exists
+		const tables = await this.db.tableNames()
+		if (tables.includes(this.tableName)) {
+			this.table = await this.db.openTable(this.tableName)
+		}
+
+		this.initialized = true
+	}
+
+	/**
+	 * Create table if it doesn't exist
+	 */
+	private async ensureTable(sampleVector: number[]): Promise<void> {
+		await this.ensureInitialized()
+
+		if (this.table) return
+
+		// Create table with first record as schema
+		// Use empty strings instead of null to help LanceDB infer types
+		const initialRecord: VectorRecord = {
+			id: '__schema__',
+			vector: sampleVector,
+			type: 'code',
+			language: '',
+			content: '',
+			category: '',
+			path: '',
+			metadata_json: '{}',
+		}
+
+		this.table = await this.db!.createTable(this.tableName, [initialRecord])
+
+		// Delete the schema record
+		await this.table.delete('id = "__schema__"')
+	}
+
+	/**
+	 * Convert VectorDocument to LanceDB record
+	 */
+	private docToRecord(doc: VectorDocument): VectorRecord {
+		const { type, language, content, category, path, ...rest } = doc.metadata
+		return {
+			id: doc.id,
+			vector: doc.embedding as number[],
+			type,
+			language: language || '',
+			content: content || '',
+			category: category || '',
+			path: path || '',
+			metadata_json: JSON.stringify(rest),
+		}
+	}
+
+	/**
+	 * Convert LanceDB record to VectorDocument
+	 */
+	private recordToDoc(record: VectorRecord): VectorDocument {
+		const extraMetadata = JSON.parse(record.metadata_json || '{}')
+		return {
+			id: record.id,
+			embedding: record.vector,
+			metadata: {
+				type: record.type as 'code' | 'knowledge',
+				...(record.language && { language: record.language }),
+				...(record.content && { content: record.content }),
+				...(record.category && { category: record.category }),
+				...(record.path && { path: record.path }),
+				...extraMetadata,
+			},
 		}
 	}
 
 	/**
 	 * Add document to vector storage
 	 */
-	addDocument(doc: VectorDocument): void {
-		if (this.idToIndex.has(doc.id)) {
-			throw new Error(`Document with id ${doc.id} already exists`)
-		}
-
+	async addDocument(doc: VectorDocument): Promise<void> {
 		if (doc.embedding.length !== this.dimensions) {
 			throw new Error(
 				`Embedding dimensions (${doc.embedding.length}) don't match index dimensions (${this.dimensions})`
 			)
 		}
 
-		const internalId = this.nextId++
+		await this.ensureTable(doc.embedding as number[])
 
-		// Add to HNSW index
-		this.index.addPoint(doc.embedding as number[], internalId)
+		// Check if exists
+		if (await this.hasDocument(doc.id)) {
+			throw new Error(`Document with id ${doc.id} already exists`)
+		}
 
-		// Store document metadata
-		this.documents.set(internalId, doc)
-		this.idToIndex.set(doc.id, internalId)
-		this.indexToId.set(internalId, doc.id)
+		const record = this.docToRecord(doc)
+		await this.table!.add([record])
 	}
 
 	/**
 	 * Add multiple documents in batch
 	 */
-	addDocuments(docs: readonly VectorDocument[]): void {
-		for (const doc of docs) {
-			this.addDocument(doc)
+	async addDocuments(docs: readonly VectorDocument[]): Promise<void> {
+		if (docs.length === 0) return
+
+		const firstDoc = docs[0]
+		if (firstDoc.embedding.length !== this.dimensions) {
+			throw new Error(
+				`Embedding dimensions (${firstDoc.embedding.length}) don't match index dimensions (${this.dimensions})`
+			)
 		}
+
+		await this.ensureTable(firstDoc.embedding as number[])
+
+		const records = docs.map((doc) => this.docToRecord(doc))
+		await this.table!.add(records)
 	}
 
 	/**
 	 * Update document (delete + add)
 	 */
-	updateDocument(doc: VectorDocument): void {
-		if (this.idToIndex.has(doc.id)) {
-			this.deleteDocument(doc.id)
-		}
-		this.addDocument(doc)
+	async updateDocument(doc: VectorDocument): Promise<void> {
+		await this.deleteDocument(doc.id)
+		await this.addDocument(doc)
 	}
 
 	/**
 	 * Delete document
-	 * Note: hnswlib doesn't support true deletion, so we remove from our maps
-	 * The vector still exists in the index but won't be returned in results
 	 */
-	deleteDocument(docId: string): boolean {
-		const internalId = this.idToIndex.get(docId)
-		if (internalId === undefined) {
-			return false
-		}
+	async deleteDocument(docId: string): Promise<boolean> {
+		await this.ensureInitialized()
 
-		this.documents.delete(internalId)
-		this.idToIndex.delete(docId)
-		this.indexToId.delete(internalId)
+		if (!this.table) return false
 
+		const exists = await this.hasDocument(docId)
+		if (!exists) return false
+
+		await this.table.delete(`id = "${docId.replace(/"/g, '\\"')}"`)
 		return true
 	}
 
 	/**
 	 * Search for similar vectors
 	 */
-	search(
+	async search(
 		queryVector: readonly number[],
 		options: {
 			readonly k?: number
 			readonly minScore?: number
 			readonly filter?: (doc: VectorDocument) => boolean
 		} = {}
-	): VectorSearchResult[] {
+	): Promise<VectorSearchResult[]> {
 		const k = options.k || 10
 		const minScore = options.minScore || 0
 
@@ -169,48 +241,35 @@ export class VectorStorage {
 			)
 		}
 
-		if (this.documents.size === 0) {
-			return []
-		}
+		await this.ensureInitialized()
 
-		// Search HNSW index (get more for filtering)
-		const searchK = Math.min(k * 2, this.index.getCurrentCount())
-		const searchResults = this.index.searchKnn(queryVector as number[], searchK)
+		if (!this.table) return []
+
+		// Search with extra results for filtering
+		const searchK = options.filter ? k * 3 : k
+		const searchResults = await this.table
+			.search(queryVector as number[])
+			.limit(searchK)
+			.toArray()
 
 		const results: VectorSearchResult[] = []
 
-		for (let i = 0; i < searchResults.neighbors.length; i++) {
-			const internalId = searchResults.neighbors[i]
-			const distance = searchResults.distances[i]
+		for (const result of searchResults) {
+			const distance = result._distance as number
+			// LanceDB uses L2 distance by default, convert to similarity
+			// For cosine distance: similarity = 1 - distance
+			// For L2: we use 1 / (1 + distance) as approximation
+			const similarity = 1 / (1 + distance)
 
-			// Convert distance to similarity (cosine: 1 - distance)
-			const similarity = 1 - distance
+			if (similarity < minScore) continue
 
-			// Skip if below threshold
-			if (similarity < minScore) {
-				continue
-			}
+			const doc = this.recordToDoc(result as unknown as VectorRecord)
 
-			// Get document
-			const doc = this.documents.get(internalId)
-			if (!doc) {
-				continue // Document was deleted
-			}
+			if (options.filter && !options.filter(doc)) continue
 
-			// Apply filter if provided
-			if (options.filter && !options.filter(doc)) {
-				continue
-			}
+			results.push({ doc, similarity, distance })
 
-			results.push({
-				doc,
-				similarity,
-				distance,
-			})
-
-			if (results.length >= k) {
-				break
-			}
+			if (results.length >= k) break
 		}
 
 		return results
@@ -219,119 +278,92 @@ export class VectorStorage {
 	/**
 	 * Get document by ID
 	 */
-	getDocument(docId: string): VectorDocument | undefined {
-		const internalId = this.idToIndex.get(docId)
-		if (internalId === undefined) {
-			return undefined
-		}
-		return this.documents.get(internalId)
+	async getDocument(docId: string): Promise<VectorDocument | undefined> {
+		await this.ensureInitialized()
+
+		if (!this.table) return undefined
+
+		const results = await this.table
+			.query()
+			.where(`id = "${docId.replace(/"/g, '\\"')}"`)
+			.limit(1)
+			.toArray()
+
+		if (results.length === 0) return undefined
+
+		return this.recordToDoc(results[0] as unknown as VectorRecord)
 	}
 
 	/**
 	 * Get all documents
 	 */
-	getAllDocuments(): readonly VectorDocument[] {
-		return Array.from(this.documents.values())
+	async getAllDocuments(): Promise<readonly VectorDocument[]> {
+		await this.ensureInitialized()
+
+		if (!this.table) return []
+
+		const results = await this.table.query().toArray()
+		return results.map((r) => this.recordToDoc(r as unknown as VectorRecord))
 	}
 
 	/**
 	 * Check if document exists
 	 */
-	hasDocument(docId: string): boolean {
-		return this.idToIndex.has(docId)
+	async hasDocument(docId: string): Promise<boolean> {
+		await this.ensureInitialized()
+
+		if (!this.table) return false
+
+		const results = await this.table
+			.query()
+			.where(`id = "${docId.replace(/"/g, '\\"')}"`)
+			.limit(1)
+			.toArray()
+
+		return results.length > 0
 	}
 
 	/**
 	 * Get statistics
 	 */
-	getStats(): VectorStorageStats {
+	async getStats(): Promise<VectorStorageStats> {
+		await this.ensureInitialized()
+
+		if (!this.table) {
+			return {
+				totalDocuments: 0,
+				dimensions: this.dimensions,
+				indexSize: 0,
+			}
+		}
+
+		const count = await this.table.countRows()
+
 		return {
-			totalDocuments: this.documents.size,
+			totalDocuments: count,
 			dimensions: this.dimensions,
-			indexSize: this.index.getCurrentCount(),
+			indexSize: count,
 		}
-	}
-
-	/**
-	 * Save index to disk
-	 */
-	save(savePath?: string): void {
-		const targetPath = savePath || this.indexPath
-		if (!targetPath) {
-			throw new Error('No index path specified')
-		}
-
-		// Ensure directory exists
-		const dir = path.dirname(targetPath)
-		if (!fs.existsSync(dir)) {
-			fs.mkdirSync(dir, { recursive: true })
-		}
-
-		// Save HNSW index
-		this.index.writeIndexSync(targetPath)
-
-		// Save document metadata
-		const metadata = {
-			documents: Array.from(this.documents.entries()),
-			idToIndex: Array.from(this.idToIndex.entries()),
-			indexToId: Array.from(this.indexToId.entries()),
-			nextId: this.nextId,
-			dimensions: this.dimensions,
-			maxElements: this.maxElements,
-		}
-
-		fs.writeFileSync(`${targetPath}.metadata.json`, JSON.stringify(metadata, null, 2))
-
-		console.error(`[INFO] Vector index saved to ${targetPath}`)
-	}
-
-	/**
-	 * Load index from disk
-	 */
-	load(loadPath?: string): void {
-		const targetPath = loadPath || this.indexPath
-		if (!targetPath) {
-			throw new Error('No index path specified')
-		}
-
-		if (!fs.existsSync(targetPath)) {
-			throw new Error(`Index file not found: ${targetPath}`)
-		}
-
-		// Load HNSW index
-		this.index.readIndexSync(targetPath)
-
-		// Load document metadata
-		const metadataPath = `${targetPath}.metadata.json`
-		if (!fs.existsSync(metadataPath)) {
-			throw new Error(`Metadata file not found: ${metadataPath}`)
-		}
-
-		const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf-8'))
-
-		this.documents = new Map(metadata.documents)
-		this.idToIndex = new Map(metadata.idToIndex)
-		this.indexToId = new Map(metadata.indexToId)
-		this.nextId = metadata.nextId
-		this.dimensions = metadata.dimensions
-		this.maxElements = metadata.maxElements || this.maxElements
-
-		console.error(
-			`[INFO] Vector index loaded: ${this.documents.size} documents, ${this.dimensions} dimensions`
-		)
 	}
 
 	/**
 	 * Clear all data
 	 */
-	clear(): void {
-		this.documents.clear()
-		this.idToIndex.clear()
-		this.indexToId.clear()
-		this.nextId = 0
+	async clear(): Promise<void> {
+		await this.ensureInitialized()
 
-		// Reinitialize index
-		this.index = new HierarchicalNSW('cosine', this.dimensions)
-		this.index.initIndex(this.maxElements)
+		if (this.table && this.db) {
+			await this.db.dropTable(this.tableName)
+			this.table = null
+		}
+	}
+
+	/**
+	 * Close database connection
+	 */
+	async close(): Promise<void> {
+		this.db = null
+		this.table = null
+		this.initialized = false
 	}
 }

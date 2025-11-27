@@ -53,7 +53,7 @@ export async function hybridSearch(
 				console.error('[INFO] Using vector search only')
 
 				const queryEmbedding = await embeddingProvider.generateEmbedding(query)
-				const vectorResults = vectorStorage.search(queryEmbedding, {
+				const vectorResults = await vectorStorage.search(queryEmbedding, {
 					k: limit,
 					minScore: minScore,
 				})
@@ -87,7 +87,7 @@ export async function hybridSearch(
 
 			// 1. Vector search
 			const queryEmbedding = await embeddingProvider.generateEmbedding(query)
-			const vectorResults = vectorStorage.search(queryEmbedding, {
+			const vectorResults = await vectorStorage.search(queryEmbedding, {
 				k: limit * 2, // Get more for merging
 				minScore: 0, // Get all results for merging
 			})

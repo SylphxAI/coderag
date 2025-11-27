@@ -79,11 +79,11 @@ export class CodebaseIndexer {
 
 		// Initialize vector storage if embedding provider is available
 		if (this.embeddingProvider) {
-			const vectorPath = path.join(this.codebaseRoot, '.codebase-search', 'vectors.hnsw')
+			const vectorDbPath = path.join(this.codebaseRoot, '.codebase-search', 'vectors.lance')
 
 			this.vectorStorage = new VectorStorage({
 				dimensions: this.embeddingProvider.dimensions,
-				indexPath: vectorPath,
+				dbPath: vectorDbPath,
 			})
 			console.error(
 				`[INFO] Vector storage initialized: ${this.embeddingProvider.dimensions} dimensions`
@@ -824,7 +824,7 @@ export class CodebaseIndexer {
 						},
 					}
 
-					this.vectorStorage.addDocument(doc)
+					await this.vectorStorage.addDocument(doc)
 				}
 
 				processed += batch.length
@@ -835,10 +835,9 @@ export class CodebaseIndexer {
 			}
 		}
 
-		// Save vector index
-		this.vectorStorage.save()
+		// LanceDB auto-persists, no need to save
 		const elapsedTime = Date.now() - startTime
-		console.error(`[SUCCESS] Vector index built and saved (${processed} files, ${elapsedTime}ms)`)
+		console.error(`[SUCCESS] Vector index built (${processed} files, ${elapsedTime}ms)`)
 	}
 
 	/**
@@ -864,8 +863,7 @@ export class CodebaseIndexer {
 				},
 			}
 
-			this.vectorStorage.updateDocument(doc)
-			this.vectorStorage.save()
+			await this.vectorStorage.updateDocument(doc)
 			console.error(`[VECTOR] Updated: ${filePath}`)
 		} catch (error) {
 			console.error(`[ERROR] Failed to update vector for ${filePath}:`, error)
@@ -880,9 +878,8 @@ export class CodebaseIndexer {
 			return
 		}
 
-		const deleted = this.vectorStorage.deleteDocument(`file://${filePath}`)
+		const deleted = await this.vectorStorage.deleteDocument(`file://${filePath}`)
 		if (deleted) {
-			this.vectorStorage.save()
 			console.error(`[VECTOR] Deleted: ${filePath}`)
 		}
 	}

@@ -27,7 +27,7 @@
 		"clean": "rm -rf dist"
 	},
 	"dependencies": {
-		"@sylphx/coderag": "workspace:*",
+		"@sylphx/coderag": "^0.1.3",
 		"@sylphx/mcp-server-sdk": "^1.1.1",
 		"zod": "^4.1.12"
 	},

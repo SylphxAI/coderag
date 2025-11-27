@@ -36,6 +36,9 @@ jobs:
       - name: Build packages
         run: bun run build
 
+      - name: Setup npm auth
+        run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" >> ~/.npmrc
+
       - uses: SylphxAI/bump@main
         id: bump
         with:

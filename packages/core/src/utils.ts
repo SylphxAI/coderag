@@ -164,7 +164,13 @@ export function scanFiles(dir: string, options: ScanOptions = {}): ScanResult[] 
 	const maxFileSize = options.maxFileSize || 1024 * 1024 // 1MB default
 
 	function scan(currentDir: string) {
-		const entries = fs.readdirSync(currentDir, { withFileTypes: true })
+		let entries: fs.Dirent[]
+		try {
+			entries = fs.readdirSync(currentDir, { withFileTypes: true })
+		} catch (_error) {
+			// Skip directories that can't be read (permissions, etc.)
+			return
+		}
 
 		for (const entry of entries) {
 			const fullPath = path.join(currentDir, entry.name)

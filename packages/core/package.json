@@ -33,7 +33,7 @@
 	],
 	"scripts": {
 		"build": "tsc",
-		"prepack": "cd ../.. && turbo run build --filter=@sylphx/coderag",
+		"prepack": "cd ../.. && bunx turbo run build --filter=@sylphx/coderag",
 		"dev": "tsc --watch",
 		"test": "vitest run",
 		"test:watch": "vitest",

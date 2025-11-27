@@ -19,7 +19,7 @@
 	],
 	"scripts": {
 		"build": "tsc",
-		"prepack": "cd ../.. && turbo run build --filter=@sylphx/coderag-mcp...",
+		"prepack": "cd ../.. && bunx turbo run build --filter=@sylphx/coderag-mcp...",
 		"dev": "bun run src/index.ts",
 		"start": "node dist/index.js",
 		"test": "bun test",

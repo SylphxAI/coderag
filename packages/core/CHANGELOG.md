@@ -1,5 +1,11 @@
 # @sylphx/codebase-search
 
+## 0.1.10 (2025-11-28)
+
+### 🐛 Bug Fixes
+
+- **core:** replace chokidar with @parcel/watcher for native FSEvents ([34d3568](https://github.com/SylphxAI/coderag/commit/34d35686e9b38167c1bb07ee67d7acfce9e18df5))
+
 ## 0.1.9 (2025-11-28)
 
 ### 🐛 Bug Fixes

@@ -1,5 +1,13 @@
 # @sylphx/codebase-search
 
+## 0.1.17 (2025-11-28)
+
+### ✨ Features
+
+- **core:** add multi-language AST support with config-driven registry ([c2a6e68](https://github.com/SylphxAI/coderag/commit/c2a6e68141b7e094567add6112f5a44bedec8e2d))
+- **core:** update embedding/vector search to use chunk-level indexing ([5580d0b](https://github.com/SylphxAI/coderag/commit/5580d0b9fdfc0d2b2a26ba2d8a0362e80f034141))
+- **core:** implement chunk-level indexing for BM25 search ([ff4c51b](https://github.com/SylphxAI/coderag/commit/ff4c51ba743df9e1dd7a828dc8b250ef6acd5f0e))
+
 ## 0.1.16 (2025-11-28)
 
 ### 🐛 Bug Fixes

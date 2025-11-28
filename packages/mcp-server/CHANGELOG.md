@@ -1,5 +1,11 @@
 # @sylphx/codebase-search-mcp
 
+## 0.3.22 (2025-11-28)
+
+### ✨ Features
+
+- **core:** implement chunk-level indexing for BM25 search ([ff4c51b](https://github.com/SylphxAI/coderag/commit/ff4c51ba743df9e1dd7a828dc8b250ef6acd5f0e))
+
 ## 0.3.21 (2025-11-28)
 
 ### 📦 Dependencies

@@ -207,7 +207,7 @@ export function searchDocuments(
 
 	// Process query
 	const queryVector = processQuery(query, index.idf)
-	const queryTokens = tokenize(query)
+	const queryTokens = [...new Set(tokenize(query))]
 
 	// Calculate similarity for each document
 	const results = index.documents.map((doc) => {

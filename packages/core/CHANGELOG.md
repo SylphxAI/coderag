@@ -1,5 +1,29 @@
 # @sylphx/codebase-search
 
+## 0.1.13 (2025-11-28)
+
+### ✨ Features
+
+- **core:** add incremental diff detection for stale indexes ([84c878b](https://github.com/SylphxAI/coderag/commit/84c878b1827ea57f227f9fd37f538e8b06c25355))
+- **core:** move storage to ~/.coderag with project isolation ([cd4a7f3](https://github.com/SylphxAI/coderag/commit/cd4a7f355d5045dc6b386f4f41d28869d2dcaf55))
+
+### 🐛 Bug Fixes
+
+- **core:** improve search accuracy and optimize SQL queries ([d4d8668](https://github.com/SylphxAI/coderag/commit/d4d86681de328f71ba782380f84364ac79c9d1f7))
+- **core:** true incremental TF-IDF updates without loading all files ([c99467d](https://github.com/SylphxAI/coderag/commit/c99467d9f47ee54eb9b6a50f85beac2f7978ef89))
+
+### ⚡️ Performance
+
+- **core:** pre-compute TF-IDF magnitude for memory-efficient search ([4ef2c05](https://github.com/SylphxAI/coderag/commit/4ef2c056f31c3568731ffb477a69710456945926))
+
+### ♻️ Refactoring
+
+- **core:** use StarCoder2 tokenizer exclusively ([0dd28b9](https://github.com/SylphxAI/coderag/commit/0dd28b9f182c4688eab3fb006d1781c9bac7a0b1))
+
+### 🔧 Chores
+
+- **core:** auto-cleanup old .codebase-search folders ([91a218c](https://github.com/SylphxAI/coderag/commit/91a218c5d9c7772a545e29ffeae80bcd57ead656))
+
 ## 0.1.12 (2025-11-28)
 
 ### ⚡️ Performance

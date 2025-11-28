@@ -1,5 +1,11 @@
 # @sylphx/codebase-search
 
+## 0.1.16 (2025-11-28)
+
+### 🐛 Bug Fixes
+
+- **core:** improve snippet scoring to prioritize unique matched terms ([1e4d474](https://github.com/SylphxAI/coderag/commit/1e4d4749877d76f48d72b55e152a771b37240b22))
+
 ## 0.1.15 (2025-11-28)
 
 ### ✨ Features

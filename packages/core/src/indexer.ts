@@ -53,7 +53,7 @@ export class CodebaseIndexer {
 	private incrementalEngine: IncrementalTFIDF | null = null
 	private pendingFileChanges: IncrementalUpdate[] = []
 	private searchCache: LRUCache<SearchResult[]>
-	private watcher: any = null
+	private watcher: import('@parcel/watcher').AsyncSubscription | null = null
 	private isWatching = false
 	private onFileChangeCallback?: (event: FileChangeEvent) => void
 	private pendingUpdates = new Map<string, NodeJS.Timeout>()
@@ -231,8 +231,9 @@ export class CodebaseIndexer {
 
 	/**
 	 * Start watching for file changes
+	 * Uses @parcel/watcher which provides native FSEvents on macOS
 	 */
-	async startWatch(usePolling = false): Promise<void> {
+	async startWatch(): Promise<void> {
 		if (this.isWatching) {
 			console.error('[WARN] Already watching for changes')
 			return
@@ -242,75 +243,69 @@ export class CodebaseIndexer {
 			this.ignoreFilter = loadGitignore(this.codebaseRoot)
 		}
 
-		console.error(`[INFO] Starting file watcher${usePolling ? ' (polling mode)' : ''}...`)
+		console.error('[INFO] Starting file watcher (native FSEvents)...')
 
-		const chokidarModule = await import('chokidar')
+		const watcher = await import('@parcel/watcher')
 
-		// Use gitignore patterns for watcher
-		const ignoredPatterns = [
-			'**/node_modules/**',
-			'**/.git/**',
-			'**/dist/**',
-			'**/build/**',
-			'**/.next/**',
-			'**/.turbo/**',
-			'**/.cache/**',
-			'**/coverage/**',
-			'**/*.log',
-		]
+		// Subscribe to file changes
+		this.watcher = await watcher.subscribe(
+			this.codebaseRoot,
+			(err, events) => {
+				if (err) {
+					console.error('[WARN] File watcher error:', err.message)
+					return
+				}
 
-		this.watcher = chokidarModule.default.watch(this.codebaseRoot, {
-			ignored: (filePath: string) => {
-				// Check hardcoded patterns
-				for (const pattern of ignoredPatterns) {
-					if (filePath.includes(pattern.replace(/\*\*/g, '').replace(/\*/g, ''))) {
-						return true
+				for (const event of events) {
+					const absolutePath = event.path
+					const relativePath = path.relative(this.codebaseRoot, absolutePath)
+
+					// Skip ignored files
+					if (this.shouldIgnore(relativePath)) {
+						continue
 					}
-				}
-				// Check gitignore
-				if (this.ignoreFilter) {
-					const relativePath = path.relative(this.codebaseRoot, filePath)
-					return this.ignoreFilter.ignores(relativePath)
-				}
-				return false
-			},
-			ignoreInitial: true,
-			persistent: true,
-			usePolling,
-			interval: usePolling ? 1000 : undefined,
-			awaitWriteFinish: {
-				stabilityThreshold: 300,
-				pollInterval: 100,
-			},
-		})
 
-		this.watcher.on('add', (filePath) => this.handleFileChange('add', filePath))
-		this.watcher.on('change', (filePath) => this.handleFileChange('change', filePath))
-		this.watcher.on('unlink', (filePath) => this.handleFileChange('unlink', filePath))
+					// Map @parcel/watcher event types to our types
+					const eventType =
+						event.type === 'create' ? 'add' : event.type === 'delete' ? 'unlink' : 'change'
 
-		// Handle watcher errors (e.g., EMFILE: too many open files)
-		this.watcher.on('error', async (error: NodeJS.ErrnoException) => {
-			if (error.code === 'EMFILE' && !usePolling) {
-				console.error('[WARN] Too many open files - switching to polling mode')
-				// Close current watcher and restart with polling
-				this.isWatching = false
-				await this.watcher?.close().catch(() => {})
-				this.watcher = null
-				// Restart with polling mode
-				await this.startWatch(true)
-			} else {
-				console.error('[WARN] File watcher error:', error.message)
-				// For other errors or if already in polling mode, disable watching
-				this.isWatching = false
-				this.watcher?.close().catch(() => {})
-				this.watcher = null
+					this.handleFileChange(eventType, absolutePath)
+				}
+			},
+			{
+				// Use native backend (FSEvents on macOS, inotify on Linux)
+				backend: undefined, // auto-detect best backend
+				ignore: [
+					'**/node_modules/**',
+					'**/.git/**',
+					'**/dist/**',
+					'**/build/**',
+					'**/.next/**',
+					'**/.turbo/**',
+					'**/.cache/**',
+					'**/coverage/**',
+					'**/*.log',
+				],
 			}
-		})
+		)
 
 		this.isWatching = true
-		console.error(
-			`[SUCCESS] File watcher started${usePolling ? ' (polling mode - slower but more reliable)' : ''}`
-		)
+		console.error('[SUCCESS] File watcher started (native FSEvents)')
+	}
+
+	/**
+	 * Check if a file should be ignored
+	 */
+	private shouldIgnore(relativePath: string): boolean {
+		// Skip empty paths
+		if (!relativePath) return true
+
+		// Check gitignore
+		if (this.ignoreFilter?.ignores(relativePath)) {
+			return true
+		}
+
+		return false
 	}
 
 	/**
@@ -322,7 +317,7 @@ export class CodebaseIndexer {
 		}
 
 		console.error('[INFO] Stopping file watcher...')
-		await this.watcher.close()
+		await this.watcher.unsubscribe()
 		this.watcher = null
 		this.isWatching = false
 

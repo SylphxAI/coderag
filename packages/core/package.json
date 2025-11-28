@@ -55,7 +55,7 @@
 		"@sylphx/synth-yaml": "latest",
 		"ai": "^4.0.35",
 		"better-sqlite3": "^11.8.1",
-		"chokidar": "^4.0.3",
+		"@parcel/watcher": "^2.5.1",
 		"drizzle-orm": "^0.36.4",
 		"ignore": "^7.0.5"
 	},

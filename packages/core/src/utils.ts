@@ -155,6 +155,17 @@ export interface ScanResult {
 }
 
 /**
+ * File metadata without content (memory optimization)
+ */
+export interface FileMetadata {
+	path: string
+	absolutePath: string
+	size: number
+	mtime: number
+	language?: string
+}
+
+/**
  * Scan files in directory with .gitignore support
  */
 export function scanFiles(dir: string, options: ScanOptions = {}): ScanResult[] {
@@ -217,6 +228,77 @@ export function scanFiles(dir: string, options: ScanOptions = {}): ScanResult[] 
 
 	scan(dir)
 	return results
+}
+
+/**
+ * Scan file metadata only (without reading content) - Memory optimization
+ * Returns generator that yields file metadata one at a time
+ */
+export function* scanFileMetadata(dir: string, options: ScanOptions = {}): Generator<FileMetadata> {
+	const ignoreFilter = options.ignoreFilter
+	const codebaseRoot = options.codebaseRoot || dir
+	const maxFileSize = options.maxFileSize || 1024 * 1024 // 1MB default
+
+	function* scan(currentDir: string): Generator<FileMetadata> {
+		let entries: fs.Dirent[]
+		try {
+			entries = fs.readdirSync(currentDir, { withFileTypes: true })
+		} catch (_error) {
+			// Skip directories that can't be read (permissions, etc.)
+			return
+		}
+
+		for (const entry of entries) {
+			const fullPath = path.join(currentDir, entry.name)
+			const relativePath = path.relative(codebaseRoot, fullPath)
+
+			// Skip ignored files
+			if (ignoreFilter?.ignores(relativePath)) {
+				continue
+			}
+
+			if (entry.isDirectory()) {
+				yield* scan(fullPath)
+			} else if (entry.isFile()) {
+				try {
+					const stats = fs.statSync(fullPath)
+
+					// Skip files that are too large
+					if (stats.size > maxFileSize) {
+						continue
+					}
+
+					// Only process text files
+					if (!isTextFile(fullPath)) {
+						continue
+					}
+
+					yield {
+						path: relativePath,
+						absolutePath: fullPath,
+						size: stats.size,
+						mtime: stats.mtimeMs,
+						language: detectLanguage(fullPath),
+					}
+				} catch (_error) {
+					// Skip files that can't be read (permissions, etc.)
+				}
+			}
+		}
+	}
+
+	yield* scan(dir)
+}
+
+/**
+ * Read file content (separate from scanning for memory efficiency)
+ */
+export function readFileContent(absolutePath: string): string | null {
+	try {
+		return fs.readFileSync(absolutePath, 'utf8')
+	} catch (_error) {
+		return null
+	}
 }
 
 /**

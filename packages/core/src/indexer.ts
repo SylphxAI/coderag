@@ -12,10 +12,11 @@ import { PersistentStorage } from './storage-persistent.js'
 import { buildSearchIndex, type SearchIndex } from './tfidf.js'
 import {
 	detectLanguage,
+	type FileMetadata,
 	isTextFile,
 	loadGitignore,
-	type ScanResult,
-	scanFiles,
+	readFileContent,
+	scanFileMetadata,
 	simpleHash,
 } from './utils.js'
 import { type VectorDocument, VectorStorage } from './vector-storage.js'
@@ -29,6 +30,7 @@ export interface IndexerOptions {
 	onFileChange?: (event: FileChangeEvent) => void
 	embeddingProvider?: EmbeddingProvider
 	vectorBatchSize?: number // Default: 10
+	indexingBatchSize?: number // Default: 50 - files processed per batch (Memory optimization)
 }
 
 export interface FileChangeEvent {
@@ -67,6 +69,7 @@ export class CodebaseIndexer {
 	private vectorStorage?: VectorStorage
 	private embeddingProvider?: EmbeddingProvider
 	private vectorBatchSize: number
+	private indexingBatchSize: number
 
 	constructor(options: IndexerOptions = {}) {
 		this.codebaseRoot = options.codebaseRoot || process.cwd()
@@ -76,6 +79,7 @@ export class CodebaseIndexer {
 		this.searchCache = new LRUCache<SearchResult[]>(100, 5) // 100 entries, 5 min TTL
 		this.embeddingProvider = options.embeddingProvider
 		this.vectorBatchSize = options.vectorBatchSize || 10
+		this.indexingBatchSize = options.indexingBatchSize || 50 // Memory optimization
 
 		// Initialize vector storage if embedding provider is available
 		if (this.embeddingProvider) {
@@ -145,61 +149,97 @@ export class CodebaseIndexer {
 			this.ignoreFilter = loadGitignore(this.codebaseRoot)
 			const ignoreFilter = this.ignoreFilter
 
-			// Scan files
-			console.error('[INFO] Scanning codebase...')
-			const scannedFiles = scanFiles(this.codebaseRoot, {
+			// Phase 1: Scan file metadata only (no content loaded - Memory optimization)
+			console.error('[INFO] Scanning codebase (metadata only)...')
+			const fileMetadataList: FileMetadata[] = []
+			for (const metadata of scanFileMetadata(this.codebaseRoot, {
 				ignoreFilter,
 				codebaseRoot: this.codebaseRoot,
 				maxFileSize: options.maxFileSize,
-			})
-
-			this.status.totalFiles = scannedFiles.length
-			console.error(`[INFO] Found ${scannedFiles.length} files`)
-
-			// Prepare all files for storage
-			const codebaseFiles: CodebaseFile[] = scannedFiles.map((file, i) => {
-				this.status.currentFile = file.path
-				this.status.indexedFiles = i + 1
-				this.status.progress = Math.round(((i + 1) / scannedFiles.length) * 50) // 0-50% for file scanning
-				options.onProgress?.(i + 1, scannedFiles.length, file.path)
-
-				return {
-					path: file.path,
-					content: file.content,
-					size: file.size,
-					mtime: file.mtime,
-					language: file.language,
-					hash: simpleHash(file.content),
-				}
-			})
-
-			// Use batch operation if available (much faster for large datasets)
-			if (this.storage.storeFiles) {
-				console.error('[INFO] Using batch storage operation')
-				await this.storage.storeFiles(codebaseFiles)
-			} else {
-				// Fallback to one-by-one storage
-				for (const file of codebaseFiles) {
-					await this.storage.storeFile(file)
-				}
+			})) {
+				fileMetadataList.push(metadata)
 			}
 
-			// Build search index
-			console.error('[INFO] Building search index...')
-			const documents = scannedFiles.map((file) => ({
-				uri: `file://${file.path}`,
-				content: file.content,
-			}))
+			this.status.totalFiles = fileMetadataList.length
+			console.error(`[INFO] Found ${fileMetadataList.length} files`)
 
-			this.searchIndex = buildSearchIndex(documents)
+			// Phase 2: Process files in batches (Memory optimization)
+			// Only batch content is in memory at any time
+			console.error(`[INFO] Processing files in batches of ${this.indexingBatchSize}...`)
+
+			// Initialize incremental engine for batch building
+			this.incrementalEngine = new IncrementalTFIDF()
+
+			const batchSize = this.indexingBatchSize
+			let processedCount = 0
+
+			for (let i = 0; i < fileMetadataList.length; i += batchSize) {
+				const batchMetadata = fileMetadataList.slice(i, i + batchSize)
+				const batchFiles: CodebaseFile[] = []
+				const batchUpdates: import('./incremental-tfidf.js').IncrementalUpdate[] = []
+
+				// Read content for this batch only
+				for (const metadata of batchMetadata) {
+					const content = readFileContent(metadata.absolutePath)
+					if (content === null) continue
+
+					const codebaseFile: CodebaseFile = {
+						path: metadata.path,
+						content,
+						size: metadata.size,
+						mtime: new Date(metadata.mtime),
+						language: metadata.language,
+						hash: simpleHash(content),
+					}
+					batchFiles.push(codebaseFile)
+
+					// Prepare incremental update
+					batchUpdates.push({
+						type: 'add',
+						uri: `file://${metadata.path}`,
+						newContent: content,
+					})
+
+					processedCount++
+					this.status.currentFile = metadata.path
+					this.status.indexedFiles = processedCount
+					this.status.progress = Math.round((processedCount / fileMetadataList.length) * 50)
+					options.onProgress?.(processedCount, fileMetadataList.length, metadata.path)
+				}
+
+				// Store batch to database
+				if (batchFiles.length > 0) {
+					if (this.storage.storeFiles) {
+						await this.storage.storeFiles(batchFiles)
+					} else {
+						for (const file of batchFiles) {
+							await this.storage.storeFile(file)
+						}
+					}
+
+					// Add batch to incremental engine (builds index incrementally)
+					await this.incrementalEngine.applyUpdates(batchUpdates)
+				}
+
+				// Clear batch references for GC
+				batchFiles.length = 0
+				batchUpdates.length = 0
+			}
+
+			// Build final search index from incremental engine
+			console.error('[INFO] Finalizing search index...')
+			const indexData = this.incrementalEngine.getIndex()
+			this.searchIndex = {
+				documents: indexData.documents,
+				idf: indexData.idf,
+				totalDocuments: indexData.totalDocuments,
+				metadata: {
+					generatedAt: new Date().toISOString(),
+					version: '1.0.0',
+				},
+			}
 			this.status.progress = 75
-
-			// Initialize incremental engine for future updates
-			this.incrementalEngine = new IncrementalTFIDF(
-				this.searchIndex.documents,
-				this.searchIndex.idf
-			)
-			console.error('[INFO] Incremental update engine initialized')
+			console.error('[INFO] Incremental index engine initialized')
 
 			// Persist TF-IDF vectors if using persistent storage
 			if (this.storage instanceof PersistentStorage) {
@@ -210,11 +250,11 @@ export class CodebaseIndexer {
 
 			// Build vector index if embedding provider available
 			if (this.embeddingProvider && this.vectorStorage) {
-				await this.buildVectorIndex(scannedFiles)
+				await this.buildVectorIndexFromMetadata(fileMetadataList)
 			}
 
 			this.status.progress = 100
-			console.error(`[SUCCESS] Indexed ${scannedFiles.length} files`)
+			console.error(`[SUCCESS] Indexed ${fileMetadataList.length} files`)
 
 			// Start watching if requested
 			if (options.watch) {
@@ -821,9 +861,10 @@ export class CodebaseIndexer {
 	}
 
 	/**
-	 * Build vector index from scanned files
+	 * Build vector index from file metadata (Memory optimization)
+	 * Reads file content on-demand instead of holding all in memory
 	 */
-	private async buildVectorIndex(files: ScanResult[]): Promise<void> {
+	private async buildVectorIndexFromMetadata(files: FileMetadata[]): Promise<void> {
 		if (!this.embeddingProvider || !this.vectorStorage) {
 			return
 		}
@@ -835,33 +876,45 @@ export class CodebaseIndexer {
 		let processed = 0
 
 		for (let i = 0; i < files.length; i += batchSize) {
-			const batch = files.slice(i, i + batchSize)
-			const contents = batch.map((f) => f.content)
+			const batchMetadata = files.slice(i, i + batchSize)
+
+			// Read content for this batch only (Memory optimization)
+			const batchContents: Array<{ metadata: FileMetadata; content: string }> = []
+			for (const metadata of batchMetadata) {
+				const content = readFileContent(metadata.absolutePath)
+				if (content !== null) {
+					batchContents.push({ metadata, content })
+				}
+			}
+
+			if (batchContents.length === 0) continue
 
 			try {
 				// Generate embeddings for batch
-				const embeddings = await this.embeddingProvider.generateEmbeddings(contents)
+				const embeddings = await this.embeddingProvider.generateEmbeddings(
+					batchContents.map((b) => b.content)
+				)
 
 				// Add to vector storage
-				for (let j = 0; j < batch.length; j++) {
-					const file = batch[j]
+				for (let j = 0; j < batchContents.length; j++) {
+					const { metadata, content } = batchContents[j]
 					const embedding = embeddings[j]
 
 					const doc: VectorDocument = {
-						id: `file://${file.path}`,
+						id: `file://${metadata.path}`,
 						embedding,
 						metadata: {
 							type: 'code',
-							language: file.language,
-							content: file.content.substring(0, 500), // Preview
-							path: file.path,
+							language: metadata.language,
+							content: content.substring(0, 500), // Preview
+							path: metadata.path,
 						},
 					}
 
 					await this.vectorStorage.addDocument(doc)
 				}
 
-				processed += batch.length
+				processed += batchContents.length
 				console.error(`[INFO] Generated embeddings: ${processed}/${files.length} files`)
 			} catch (error) {
 				console.error(`[ERROR] Failed to generate embeddings for batch ${i}:`, error)

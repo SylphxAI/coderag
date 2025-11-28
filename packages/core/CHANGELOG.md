@@ -1,5 +1,11 @@
 # @sylphx/codebase-search
 
+## 0.1.15 (2025-11-28)
+
+### ✨ Features
+
+- **core:** improve snippet extraction with block-based approach ([4258a9d](https://github.com/SylphxAI/coderag/commit/4258a9d9af65bae345947da83a1b39326b659a38))
+
 ## 0.1.14 (2025-11-28)
 
 ### ✨ Features

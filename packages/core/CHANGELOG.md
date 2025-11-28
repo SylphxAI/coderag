@@ -1,5 +1,13 @@
 # @sylphx/codebase-search
 
+## 0.1.12 (2025-11-28)
+
+### ⚡️ Performance
+
+- **core:** add SQL-based search for low memory mode ([e7b49d4](https://github.com/SylphxAI/coderag/commit/e7b49d40d9953cb956544f484e528e61c75cccf4))
+- **core:** add batch file processing for memory optimization ([d241428](https://github.com/SylphxAI/coderag/commit/d241428ab9e6048fa040d786ac04a875d4252ad0))
+- **core:** optimize search CPU and memory usage ([cbfb4d9](https://github.com/SylphxAI/coderag/commit/cbfb4d995a859585aae32d676356dd7d7ad8492e))
+
 ## 0.1.11 (2025-11-28)
 
 ### 🐛 Bug Fixes

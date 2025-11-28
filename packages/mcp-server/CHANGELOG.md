@@ -1,5 +1,11 @@
 # @sylphx/codebase-search-mcp
 
+## 0.3.14 (2025-11-28)
+
+### 🐛 Bug Fixes
+
+- **mcp:** start indexing before server.start() to run concurrently ([00bba86](https://github.com/SylphxAI/coderag/commit/00bba86be87ac9d1cc7e08e7272853579a9a7e82))
+
 ## 0.3.13 (2025-11-28)
 
 ### 🐛 Bug Fixes

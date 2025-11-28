@@ -1,22 +1,18 @@
 /**
  * Codebase indexer service
+ * Uses chunk-level indexing for better search granularity
  */
 
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import { chunkCodeByAST } from './ast-chunking.js'
 import { getCoderagDataDir } from './db/client.js'
 import type { EmbeddingProvider } from './embeddings.js'
 import { IncrementalTFIDF, type IncrementalUpdate } from './incremental-tfidf.js'
 import { createCacheKey, LRUCache } from './search-cache.js'
 import { type CodebaseFile, MemoryStorage, type Storage } from './storage.js'
-import { PersistentStorage } from './storage-persistent.js'
-import {
-	buildSearchIndex,
-	getQueryTokens,
-	type SearchIndex,
-	searchDocumentsFromStorage,
-	tokenize,
-} from './tfidf.js'
+import { type ChunkData, PersistentStorage } from './storage-persistent.js'
+import { buildSearchIndex, getQueryTokens, type SearchIndex, tokenize } from './tfidf.js'
 import {
 	detectLanguage,
 	type FileMetadata,
@@ -178,7 +174,7 @@ export class CodebaseIndexer {
 
 	/**
 	 * Process incremental changes (add, update, delete files)
-	 * Uses SQL-based updates - never loads all files into memory
+	 * Uses chunk-level indexing with SQL-based updates
 	 */
 	private async processIncrementalChanges(
 		diff: FileDiff,
@@ -188,18 +184,18 @@ export class CodebaseIndexer {
 		const persistentStorage = this.storage as PersistentStorage
 
 		// Step 1: Get terms for deleted files (before deleting, for IDF recalculation)
-		let deletedTerms = new Set<string>()
+		let _deletedTerms = new Set<string>()
 		if (diff.deleted.length > 0) {
 			console.error(`[INFO] Getting terms for ${diff.deleted.length} deleted files...`)
-			deletedTerms = await persistentStorage.getTermsForFiles(diff.deleted)
+			_deletedTerms = await persistentStorage.getTermsForFiles(diff.deleted)
 
 			console.error(`[INFO] Deleting ${diff.deleted.length} removed files...`)
 			await persistentStorage.deleteFiles(diff.deleted)
 		}
 
-		// Step 2: Process added and changed files
+		// Step 2: Process added and changed files - chunk and index
 		const filesToProcess = [...diff.added, ...diff.changed]
-		const documentsToIndex: Array<{ filePath: string; content: string }> = []
+		let totalChunks = 0
 
 		if (filesToProcess.length > 0) {
 			console.error(`[INFO] Processing ${filesToProcess.length} files...`)
@@ -210,6 +206,7 @@ export class CodebaseIndexer {
 			for (let i = 0; i < filesToProcess.length; i += batchSize) {
 				const batchMetadata = filesToProcess.slice(i, i + batchSize)
 				const batchFiles: CodebaseFile[] = []
+				const fileChunks: Array<{ filePath: string; chunks: ChunkData[] }> = []
 
 				for (const metadata of batchMetadata) {
 					const content = readFileContent(metadata.absolutePath)
@@ -234,56 +231,111 @@ export class CodebaseIndexer {
 						hash: newHash,
 					}
 					batchFiles.push(codebaseFile)
-					documentsToIndex.push({ filePath: metadata.path, content })
+
+					// Chunk the file using AST
+					const chunks = await chunkCodeByAST(content, metadata.path)
+					const chunkData: ChunkData[] = chunks.map((chunk) => ({
+						content: chunk.content,
+						type: chunk.type,
+						startLine: chunk.startLine,
+						endLine: chunk.endLine,
+						metadata: chunk.metadata,
+					}))
+					fileChunks.push({ filePath: metadata.path, chunks: chunkData })
+					totalChunks += chunkData.length
 
 					processedCount++
 					this.status.currentFile = metadata.path
-					this.status.progress = Math.round((processedCount / filesToProcess.length) * 50)
+					this.status.progress = Math.round((processedCount / filesToProcess.length) * 30)
 					options.onProgress?.(processedCount, filesToProcess.length, metadata.path)
 				}
 
-				// Store batch to database (file content only)
+				// Store batch to database (file content)
 				if (batchFiles.length > 0) {
 					await persistentStorage.storeFiles(batchFiles)
+				}
+
+				// Store chunks for this batch
+				if (fileChunks.length > 0) {
+					const chunkIdMap = await persistentStorage.storeManyChunks(fileChunks)
+
+					// Build TF-IDF vectors for chunks
+					const chunkVectors: Array<{
+						chunkId: number
+						terms: Map<string, { tf: number; tfidf: number; rawFreq: number }>
+						tokenCount: number
+					}> = []
+
+					for (const fc of fileChunks) {
+						const chunkIds = chunkIdMap.get(fc.filePath)
+						if (!chunkIds) continue
+
+						for (let j = 0; j < fc.chunks.length; j++) {
+							const chunk = fc.chunks[j]
+							const chunkId = chunkIds[j]
+							if (!chunkId) continue
+
+							// Tokenize chunk content
+							const tokens = await tokenize(chunk.content)
+							const termFreq = new Map<string, number>()
+							for (const token of tokens) {
+								termFreq.set(token, (termFreq.get(token) || 0) + 1)
+							}
+
+							// Calculate TF
+							const totalTerms = tokens.length
+							if (totalTerms === 0) continue
+
+							const terms = new Map<string, { tf: number; tfidf: number; rawFreq: number }>()
+							for (const [term, freq] of termFreq) {
+								terms.set(term, {
+									tf: freq / totalTerms,
+									tfidf: 0, // Will be calculated after IDF rebuild
+									rawFreq: freq,
+								})
+							}
+
+							chunkVectors.push({ chunkId, terms, tokenCount: totalTerms })
+						}
+					}
+
+					// Store chunk vectors
+					if (chunkVectors.length > 0) {
+						await persistentStorage.storeManyChunkVectors(chunkVectors)
+					}
 				}
 			}
 		}
 
-		// Step 3: Store document vectors for changed files (SQL-based, memory efficient)
-		console.error('[INFO] Updating document vectors...')
-		const addedTerms = await persistentStorage.storeDocumentVectorsForFiles(
-			documentsToIndex,
-			tokenize
-		)
-		this.status.progress = 70
+		this.status.progress = 50
 
-		// Step 4: Rebuild IDF scores from vectors (SQL-based)
+		// Step 3: Rebuild IDF scores from vectors (SQL-based)
 		console.error('[INFO] Recalculating IDF scores...')
 		await persistentStorage.rebuildIdfScoresFromVectors()
-		this.status.progress = 85
+		this.status.progress = 70
 
-		// Step 5: Recalculate TF-IDF scores (SQL-based batch update)
+		// Step 4: Recalculate TF-IDF scores (SQL-based batch update)
 		console.error('[INFO] Updating TF-IDF scores...')
 		await persistentStorage.recalculateTfidfScores()
+		this.status.progress = 80
+
+		// Step 5: Update pre-computed magnitudes (for cosine similarity search)
+		console.error('[INFO] Updating chunk magnitudes...')
+		await persistentStorage.updateChunkMagnitudes()
 		this.status.progress = 90
 
-		// Step 6: Update pre-computed magnitudes (for cosine similarity search)
-		console.error('[INFO] Updating file magnitudes...')
-		await persistentStorage.updateFileMagnitudes()
-
-		// Step 7: Update average document length (for BM25)
+		// Step 6: Update average document length (for BM25)
 		console.error('[INFO] Updating average document length...')
 		await persistentStorage.updateAverageDocLength()
 		this.status.progress = 95
 
-		// Step 8: Invalidate search cache
+		// Step 7: Invalidate search cache
 		this.searchCache.invalidate()
 		console.error('[INFO] Search cache invalidated')
 
 		// Log summary
-		const totalAffectedTerms = new Set([...deletedTerms, ...addedTerms]).size
 		console.error(
-			`[SUCCESS] Incremental update complete: ${documentsToIndex.length} files indexed, ${totalAffectedTerms} terms affected`
+			`[SUCCESS] Incremental update complete: ${filesToProcess.length - diff.changed.length} files added, ${diff.changed.length} changed, ${diff.deleted.length} deleted, ${totalChunks} chunks indexed`
 		)
 	}
 
@@ -376,19 +428,27 @@ export class CodebaseIndexer {
 			this.status.totalFiles = fileMetadataList.length
 			console.error(`[INFO] Found ${fileMetadataList.length} files`)
 
-			// Phase 2: Process files in batches (Memory optimization)
+			// Phase 2: Process files in batches with chunk-level indexing
 			// Only batch content is in memory at any time
 			console.error(`[INFO] Processing files in batches of ${this.indexingBatchSize}...`)
 
-			// Initialize incremental engine for batch building
-			this.incrementalEngine = new IncrementalTFIDF()
-
 			const batchSize = this.indexingBatchSize
 			let processedCount = 0
+			let totalChunks = 0
+
+			// Check if we're using persistent storage for chunk-based indexing
+			const isPersistent = this.storage instanceof PersistentStorage
+			const persistentStorage = isPersistent ? (this.storage as PersistentStorage) : null
+
+			// For non-persistent storage, still use incremental engine
+			if (!isPersistent) {
+				this.incrementalEngine = new IncrementalTFIDF()
+			}
 
 			for (let i = 0; i < fileMetadataList.length; i += batchSize) {
 				const batchMetadata = fileMetadataList.slice(i, i + batchSize)
 				const batchFiles: CodebaseFile[] = []
+				const fileChunks: Array<{ filePath: string; chunks: ChunkData[]; content: string }> = []
 				const batchUpdates: import('./incremental-tfidf.js').IncrementalUpdate[] = []
 
 				// Read content for this batch only
@@ -406,17 +466,31 @@ export class CodebaseIndexer {
 					}
 					batchFiles.push(codebaseFile)
 
-					// Prepare incremental update
-					batchUpdates.push({
-						type: 'add',
-						uri: `file://${metadata.path}`,
-						newContent: content,
-					})
+					// Chunk the file using AST
+					const chunks = await chunkCodeByAST(content, metadata.path)
+					const chunkData: ChunkData[] = chunks.map((chunk) => ({
+						content: chunk.content,
+						type: chunk.type,
+						startLine: chunk.startLine,
+						endLine: chunk.endLine,
+						metadata: chunk.metadata,
+					}))
+					fileChunks.push({ filePath: metadata.path, chunks: chunkData, content })
+					totalChunks += chunkData.length
+
+					// For non-persistent storage, use incremental engine
+					if (!isPersistent) {
+						batchUpdates.push({
+							type: 'add',
+							uri: `file://${metadata.path}`,
+							newContent: content,
+						})
+					}
 
 					processedCount++
 					this.status.currentFile = metadata.path
 					this.status.indexedFiles = processedCount
-					this.status.progress = Math.round((processedCount / fileMetadataList.length) * 50)
+					this.status.progress = Math.round((processedCount / fileMetadataList.length) * 40)
 					options.onProgress?.(processedCount, fileMetadataList.length, metadata.path)
 				}
 
@@ -430,45 +504,113 @@ export class CodebaseIndexer {
 						}
 					}
 
-					// Add batch to incremental engine (builds index incrementally)
-					await this.incrementalEngine.applyUpdates(batchUpdates)
+					// For persistent storage: store chunks and build TF-IDF vectors per chunk
+					if (persistentStorage && fileChunks.length > 0) {
+						const chunkIdMap = await persistentStorage.storeManyChunks(
+							fileChunks.map((fc) => ({ filePath: fc.filePath, chunks: fc.chunks }))
+						)
+
+						// Build TF-IDF vectors for chunks
+						const chunkVectors: Array<{
+							chunkId: number
+							terms: Map<string, { tf: number; tfidf: number; rawFreq: number }>
+							tokenCount: number
+						}> = []
+
+						for (const fc of fileChunks) {
+							const chunkIds = chunkIdMap.get(fc.filePath)
+							if (!chunkIds) continue
+
+							for (let j = 0; j < fc.chunks.length; j++) {
+								const chunk = fc.chunks[j]
+								const chunkId = chunkIds[j]
+								if (!chunkId) continue
+
+								// Tokenize chunk content
+								const tokens = await tokenize(chunk.content)
+								const termFreq = new Map<string, number>()
+								for (const token of tokens) {
+									termFreq.set(token, (termFreq.get(token) || 0) + 1)
+								}
+
+								// Calculate TF
+								const totalTerms = tokens.length
+								if (totalTerms === 0) continue
+
+								const terms = new Map<string, { tf: number; tfidf: number; rawFreq: number }>()
+								for (const [term, freq] of termFreq) {
+									terms.set(term, {
+										tf: freq / totalTerms,
+										tfidf: 0, // Will be calculated after IDF rebuild
+										rawFreq: freq,
+									})
+								}
+
+								chunkVectors.push({ chunkId, terms, tokenCount: totalTerms })
+							}
+						}
+
+						// Store chunk vectors
+						if (chunkVectors.length > 0) {
+							await persistentStorage.storeManyChunkVectors(chunkVectors)
+						}
+					}
+
+					// For non-persistent storage: use incremental engine
+					if (this.incrementalEngine && batchUpdates.length > 0) {
+						await this.incrementalEngine.applyUpdates(batchUpdates)
+					}
 				}
 
 				// Clear batch references for GC
 				batchFiles.length = 0
+				fileChunks.length = 0
 				batchUpdates.length = 0
 			}
 
-			// Build final search index from incremental engine
-			console.error('[INFO] Finalizing search index...')
-			const indexData = this.incrementalEngine.getIndex()
-			this.searchIndex = {
-				documents: indexData.documents,
-				idf: indexData.idf,
-				totalDocuments: indexData.totalDocuments,
-				metadata: {
-					generatedAt: new Date().toISOString(),
-					version: '1.0.0',
-				},
-			}
-			this.status.progress = 75
+			console.error(`[INFO] Total chunks created: ${totalChunks}`)
+			this.status.progress = 50
 
-			// Persist TF-IDF vectors if using persistent storage
-			if (this.storage instanceof PersistentStorage) {
-				console.error('[INFO] Persisting TF-IDF vectors...')
-				await this.persistSearchIndex()
-				console.error('[SUCCESS] TF-IDF vectors persisted')
+			// Finalize index based on storage type
+			if (persistentStorage) {
+				// Persistent storage: rebuild IDF and TF-IDF scores
+				console.error('[INFO] Rebuilding IDF scores...')
+				await persistentStorage.rebuildIdfScoresFromVectors()
+				this.status.progress = 60
 
-				// In low memory mode, release the in-memory index after persisting
-				// Search will use SQL-based queries instead
+				console.error('[INFO] Recalculating TF-IDF scores...')
+				await persistentStorage.recalculateTfidfScores()
+				this.status.progress = 70
+
+				console.error('[INFO] Computing chunk magnitudes...')
+				await persistentStorage.updateChunkMagnitudes()
+				this.status.progress = 80
+
+				console.error('[INFO] Computing average document length...')
+				await persistentStorage.updateAverageDocLength()
+				this.status.progress = 85
+
+				// Release in-memory structures in low memory mode
 				if (this.lowMemoryMode) {
 					this.searchIndex = null
 					this.incrementalEngine = null
 					console.error('[INFO] Low memory mode: released in-memory index')
 				}
-			}
 
-			if (!this.lowMemoryMode) {
+				console.error('[SUCCESS] Chunk-level TF-IDF index persisted')
+			} else if (this.incrementalEngine) {
+				// Non-persistent storage: build in-memory index
+				console.error('[INFO] Finalizing in-memory search index...')
+				const indexData = this.incrementalEngine.getIndex()
+				this.searchIndex = {
+					documents: indexData.documents,
+					idf: indexData.idf,
+					totalDocuments: indexData.totalDocuments,
+					metadata: {
+						generatedAt: new Date().toISOString(),
+						version: '1.0.0',
+					},
+				}
 				console.error('[INFO] Incremental index engine initialized')
 			}
 
@@ -777,85 +919,127 @@ export class CodebaseIndexer {
 
 	/**
 	 * Full rebuild of search index (fallback when incremental not possible)
+	 * For persistent storage, this rebuilds the chunk-level index
 	 */
 	private async fullRebuildSearchIndex(): Promise<void> {
-		const allFiles = await this.storage.getAllFiles()
-		const documents = allFiles.map((file) => ({
-			uri: `file://${file.path}`,
-			content: file.content,
-		}))
+		// For persistent storage, rebuild chunk index
+		if (this.storage instanceof PersistentStorage) {
+			const persistentStorage = this.storage
+			const allFiles = await this.storage.getAllFiles()
 
-		this.searchIndex = await buildSearchIndex(documents)
+			console.error(`[INFO] Full rebuild: re-chunking ${allFiles.length} files...`)
 
-		// Reinitialize incremental engine
-		this.incrementalEngine = new IncrementalTFIDF(this.searchIndex.documents, this.searchIndex.idf)
+			// Re-chunk all files
+			const fileChunks: Array<{ filePath: string; chunks: ChunkData[] }> = []
+			for (const file of allFiles) {
+				const chunks = await chunkCodeByAST(file.content, file.path)
+				const chunkData: ChunkData[] = chunks.map((chunk) => ({
+					content: chunk.content,
+					type: chunk.type,
+					startLine: chunk.startLine,
+					endLine: chunk.endLine,
+					metadata: chunk.metadata,
+				}))
+				fileChunks.push({ filePath: file.path, chunks: chunkData })
+			}
+
+			// Store all chunks (this also deletes old chunks)
+			const chunkIdMap = await persistentStorage.storeManyChunks(fileChunks)
+
+			// Build TF-IDF vectors for all chunks
+			const chunkVectors: Array<{
+				chunkId: number
+				terms: Map<string, { tf: number; tfidf: number; rawFreq: number }>
+				tokenCount: number
+			}> = []
+
+			for (const fc of fileChunks) {
+				const chunkIds = chunkIdMap.get(fc.filePath)
+				if (!chunkIds) continue
+
+				for (let j = 0; j < fc.chunks.length; j++) {
+					const chunk = fc.chunks[j]
+					const chunkId = chunkIds[j]
+					if (!chunkId) continue
+
+					const tokens = await tokenize(chunk.content)
+					const termFreq = new Map<string, number>()
+					for (const token of tokens) {
+						termFreq.set(token, (termFreq.get(token) || 0) + 1)
+					}
+
+					const totalTerms = tokens.length
+					if (totalTerms === 0) continue
+
+					const terms = new Map<string, { tf: number; tfidf: number; rawFreq: number }>()
+					for (const [term, freq] of termFreq) {
+						terms.set(term, {
+							tf: freq / totalTerms,
+							tfidf: 0,
+							rawFreq: freq,
+						})
+					}
+
+					chunkVectors.push({ chunkId, terms, tokenCount: totalTerms })
+				}
+			}
+
+			if (chunkVectors.length > 0) {
+				await persistentStorage.storeManyChunkVectors(chunkVectors)
+			}
+
+			// Rebuild IDF and TF-IDF scores
+			await persistentStorage.rebuildIdfScoresFromVectors()
+			await persistentStorage.recalculateTfidfScores()
+			await persistentStorage.updateChunkMagnitudes()
+			await persistentStorage.updateAverageDocLength()
+
+			console.error('[SUCCESS] Full chunk index rebuild complete')
+		} else {
+			// For non-persistent storage, use in-memory index
+			const allFiles = await this.storage.getAllFiles()
+			const documents = allFiles.map((file) => ({
+				uri: `file://${file.path}`,
+				content: file.content,
+			}))
+
+			this.searchIndex = await buildSearchIndex(documents)
+			this.incrementalEngine = new IncrementalTFIDF(
+				this.searchIndex.documents,
+				this.searchIndex.idf
+			)
+		}
 
 		// Invalidate search cache (index changed)
 		this.searchCache.invalidate()
 		console.error('[INFO] Search cache invalidated')
-
-		// Persist if using persistent storage
-		if (this.storage instanceof PersistentStorage) {
-			await this.persistSearchIndex()
-		}
 	}
 
 	/**
 	 * Persist search index to storage
+	 * NOTE: For PersistentStorage, chunk-based indexing happens inline during index()
+	 * This method is only used for in-memory storage fallback
 	 */
 	private async persistSearchIndex(): Promise<void> {
-		if (!this.searchIndex || !(this.storage instanceof PersistentStorage)) {
+		// For persistent storage, indexing is done inline with chunks
+		// This method is kept for compatibility with in-memory storage mode
+		if (this.storage instanceof PersistentStorage) {
+			// Chunk-based indexing already persisted during index()
+			console.error('[INFO] Chunk-based index already persisted')
 			return
 		}
 
-		// Store IDF scores
-		const docFreq = new Map<string, number>()
-		for (const doc of this.searchIndex.documents) {
-			const uniqueTerms = new Set(doc.rawTerms.keys())
-			for (const term of uniqueTerms) {
-				docFreq.set(term, (docFreq.get(term) || 0) + 1)
+		// For non-persistent storage, just store IDF scores if available
+		if (this.searchIndex) {
+			const docFreq = new Map<string, number>()
+			for (const doc of this.searchIndex.documents) {
+				const uniqueTerms = new Set(doc.rawTerms.keys())
+				for (const term of uniqueTerms) {
+					docFreq.set(term, (docFreq.get(term) || 0) + 1)
+				}
 			}
+			console.error('[INFO] In-memory index built (non-persistent storage)')
 		}
-		await this.storage.storeIdfScores(this.searchIndex.idf, docFreq)
-
-		// Prepare document vectors for batch storage
-		const documentsToStore = this.searchIndex.documents.map((doc) => {
-			const filePath = doc.uri.replace(/^file:\/\//, '')
-			const totalTerms = Array.from(doc.rawTerms.values()).reduce((sum, freq) => sum + freq, 0)
-
-			const terms = new Map<string, { tf: number; tfidf: number; rawFreq: number }>()
-			for (const [term, tfidfScore] of doc.terms.entries()) {
-				const rawFreq = doc.rawTerms.get(term) || 0
-				const tf = rawFreq / totalTerms
-				terms.set(term, {
-					tf,
-					tfidf: tfidfScore,
-					rawFreq,
-				})
-			}
-
-			return { filePath, terms, tokenCount: totalTerms }
-		})
-
-		// Use batch operation (PersistentStorage specific)
-		const persistentStorage = this.storage as PersistentStorage
-		if (persistentStorage.storeManyDocumentVectors) {
-			console.error('[INFO] Using batch vector storage operation')
-			await persistentStorage.storeManyDocumentVectors(documentsToStore)
-		} else {
-			// Fallback to one-by-one storage
-			for (const { filePath, terms } of documentsToStore) {
-				await persistentStorage.storeDocumentVectors(filePath, terms)
-			}
-		}
-
-		// Update pre-computed magnitudes for cosine similarity search
-		console.error('[INFO] Computing file magnitudes...')
-		await persistentStorage.updateFileMagnitudes()
-
-		// Update average document length for BM25
-		console.error('[INFO] Computing average document length...')
-		await persistentStorage.updateAverageDocLength()
 	}
 
 	/**
@@ -867,6 +1051,7 @@ export class CodebaseIndexer {
 
 	/**
 	 * Search the codebase
+	 * Returns chunk-level results when using persistent storage (SQL-based search)
 	 */
 	async search(
 		query: string,
@@ -876,7 +1061,7 @@ export class CodebaseIndexer {
 			fileExtensions?: string[]
 			pathFilter?: string
 			excludePaths?: string[]
-			// Snippet options
+			// Snippet options (only used for in-memory search)
 			contextLines?: number // Lines of context around each match (default: 3)
 			maxSnippetChars?: number // Max chars per file snippet (default: 2000)
 			maxSnippetBlocks?: number // Max code blocks per file (default: 4)
@@ -907,29 +1092,24 @@ export class CodebaseIndexer {
 
 		console.error(`[CACHE MISS] Query: "${query}"`)
 
-		// Use SQL-based search in low memory mode (Memory optimization)
-		let results: Array<{ uri: string; score: number; matchedTerms: string[] }>
-
+		// Use chunk-based SQL search in low memory mode (Memory optimization)
 		if (this.lowMemoryMode && this.storage instanceof PersistentStorage) {
-			// SQL-based search with BM25 scoring - doesn't require loading index to memory
-			const queryTokens = await getQueryTokens(query)
-			const candidates = await this.storage.searchByTerms(queryTokens, { limit: limit * 3 })
-			const idf = await this.storage.getIdfScoresForTerms(queryTokens)
-			const avgDocLength = await this.storage.getAverageDocLength()
-			results = await searchDocumentsFromStorage(query, candidates, idf, { limit, avgDocLength })
-			console.error(`[BM25 SEARCH] Found ${results.length} results`)
-		} else {
-			// In-memory search (faster but uses more memory)
-			if (!this.searchIndex) {
-				throw new Error('Codebase not indexed. Please run index() first.')
-			}
-			const searchIndex = this.searchIndex
-			results = await import('./tfidf.js').then((m) =>
-				m.searchDocuments(query, searchIndex, { limit })
-			)
+			const searchResults = await this.searchChunks(query, options)
+			this.searchCache.set(cacheKey, searchResults)
+			return searchResults
 		}
 
-		// Get file content and apply filters
+		// In-memory search (faster but uses more memory) - file-level
+		let results: Array<{ uri: string; score: number; matchedTerms: string[] }>
+		if (!this.searchIndex) {
+			throw new Error('Codebase not indexed. Please run index() first.')
+		}
+		const searchIndex = this.searchIndex
+		results = await import('./tfidf.js').then((m) =>
+			m.searchDocuments(query, searchIndex, { limit })
+		)
+
+		// Get file content and apply filters (in-memory mode)
 		const searchResults: SearchResult[] = []
 
 		for (const result of results) {
@@ -980,6 +1160,123 @@ export class CodebaseIndexer {
 		this.searchCache.set(cacheKey, finalResults)
 
 		return finalResults
+	}
+
+	/**
+	 * Chunk-based search with BM25 scoring
+	 * Returns chunk content directly (no separate snippet extraction needed)
+	 */
+	private async searchChunks(
+		query: string,
+		options: {
+			limit?: number
+			includeContent?: boolean
+			fileExtensions?: string[]
+			pathFilter?: string
+			excludePaths?: string[]
+		}
+	): Promise<SearchResult[]> {
+		const { limit = 10, includeContent = true } = options
+		const persistentStorage = this.storage as PersistentStorage
+
+		// Tokenize query
+		const queryTokens = await getQueryTokens(query)
+		if (queryTokens.length === 0) {
+			return []
+		}
+
+		// Get matching chunks from storage (already includes content)
+		const candidates = await persistentStorage.searchByTerms(queryTokens, { limit: limit * 3 })
+
+		// Get IDF scores for query terms
+		const idf = await persistentStorage.getIdfScoresForTerms(queryTokens)
+
+		// Get average document length for BM25
+		const avgDocLength = await persistentStorage.getAverageDocLength()
+
+		// BM25 parameters
+		const k1 = 1.2
+		const b = 0.75
+
+		// Calculate BM25 scores for each chunk
+		const scoredResults: Array<{
+			chunk: (typeof candidates)[0]
+			score: number
+			matchedTerms: string[]
+		}> = []
+
+		for (const chunk of candidates) {
+			// Apply filters
+			if (options.fileExtensions && options.fileExtensions.length > 0) {
+				if (!options.fileExtensions.some((ext) => chunk.filePath.endsWith(ext))) {
+					continue
+				}
+			}
+
+			if (options.pathFilter && !chunk.filePath.includes(options.pathFilter)) {
+				continue
+			}
+
+			if (options.excludePaths && options.excludePaths.length > 0) {
+				if (options.excludePaths.some((exclude) => chunk.filePath.includes(exclude))) {
+					continue
+				}
+			}
+
+			// Calculate BM25 score
+			let score = 0
+			const matchedTerms: string[] = []
+
+			for (const term of queryTokens) {
+				const termData = chunk.matchedTerms.get(term)
+				if (!termData) continue
+
+				matchedTerms.push(term)
+				const termIdf = idf.get(term) || 1
+
+				// BM25 formula
+				const tf = termData.rawFreq
+				const docLen = chunk.tokenCount || 1
+				const numerator = tf * (k1 + 1)
+				const denominator = tf + k1 * (1 - b + b * (docLen / (avgDocLength || 1)))
+				score += termIdf * (numerator / denominator)
+			}
+
+			if (matchedTerms.length > 0) {
+				scoredResults.push({ chunk, score, matchedTerms })
+			}
+		}
+
+		// Sort by score descending
+		scoredResults.sort((a, b) => b.score - a.score)
+
+		// Convert to SearchResult format
+		const results: SearchResult[] = []
+
+		for (const { chunk, score, matchedTerms } of scoredResults.slice(0, limit)) {
+			const result: SearchResult = {
+				path: chunk.filePath,
+				score,
+				matchedTerms,
+				language: detectLanguage(chunk.filePath),
+				size: chunk.content.length,
+				// Include chunk metadata
+				chunkType: chunk.type,
+				startLine: chunk.startLine,
+				endLine: chunk.endLine,
+			}
+
+			if (includeContent) {
+				// Chunk content is the snippet - add line numbers
+				const lines = chunk.content.split('\n')
+				result.snippet = lines.map((line, i) => `${chunk.startLine + i}: ${line}`).join('\n')
+			}
+
+			results.push(result)
+		}
+
+		console.error(`[BM25 CHUNK SEARCH] Found ${results.length} chunks`)
+		return results
 	}
 
 	/**
@@ -1248,4 +1545,8 @@ export interface SearchResult {
 	language?: string
 	size: number
 	snippet?: string
+	// Chunk metadata (when using chunk-level search)
+	chunkType?: string
+	startLine?: number
+	endLine?: number
 }

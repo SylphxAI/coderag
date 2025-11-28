@@ -272,8 +272,8 @@ describe('PersistentStorage', () => {
 		})
 	})
 
-	describe('document vectors', () => {
-		it('should store and retrieve document vectors', async () => {
+	describe('chunk vectors', () => {
+		it('should store and retrieve chunk vectors', async () => {
 			// First store a file
 			await storage.storeFile({
 				path: 'doc.ts',
@@ -283,23 +283,30 @@ describe('PersistentStorage', () => {
 				mtime: Date.now(),
 			})
 
-			// Store vectors
+			// Store chunks
+			const chunkIds = await storage.storeChunks('doc.ts', [
+				{ content: 'function test() {}', type: 'FunctionDeclaration', startLine: 1, endLine: 1 },
+			])
+			expect(chunkIds.length).toBe(1)
+			const chunkId = chunkIds[0]
+
+			// Store vectors for chunk
 			const terms = new Map([
 				['function', { tf: 0.5, tfidf: 1.2, rawFreq: 1 }],
 				['test', { tf: 0.5, tfidf: 0.8, rawFreq: 1 }],
 			])
 
-			await storage.storeDocumentVectors('doc.ts', terms)
+			await storage.storeChunkVectors(chunkId, terms)
 
 			// Retrieve vectors
-			const retrieved = await storage.getDocumentVectors('doc.ts')
+			const retrieved = await storage.getChunkVectors(chunkId)
 			expect(retrieved).not.toBeNull()
 			expect(retrieved?.size).toBe(2)
 			expect(retrieved?.get('function')).toEqual({ tf: 0.5, tfidf: 1.2, rawFreq: 1 })
 			expect(retrieved?.get('test')).toEqual({ tf: 0.5, tfidf: 0.8, rawFreq: 1 })
 		})
 
-		it('should update document vectors on re-index', async () => {
+		it('should update chunk vectors on re-index', async () => {
 			await storage.storeFile({
 				path: 'doc.ts',
 				content: 'test',
@@ -308,22 +315,28 @@ describe('PersistentStorage', () => {
 				mtime: Date.now(),
 			})
 
+			// Store chunks
+			const chunkIds = await storage.storeChunks('doc.ts', [
+				{ content: 'test', type: 'text', startLine: 1, endLine: 1 },
+			])
+			const chunkId = chunkIds[0]
+
 			// First vectors
 			const terms1 = new Map([['old', { tf: 1.0, tfidf: 1.0, rawFreq: 1 }]])
-			await storage.storeDocumentVectors('doc.ts', terms1)
+			await storage.storeChunkVectors(chunkId, terms1)
 
 			// Update vectors
 			const terms2 = new Map([['new', { tf: 1.0, tfidf: 2.0, rawFreq: 1 }]])
-			await storage.storeDocumentVectors('doc.ts', terms2)
+			await storage.storeChunkVectors(chunkId, terms2)
 
-			const retrieved = await storage.getDocumentVectors('doc.ts')
+			const retrieved = await storage.getChunkVectors(chunkId)
 			expect(retrieved?.size).toBe(1)
 			expect(retrieved?.get('new')).toEqual({ tf: 1.0, tfidf: 2.0, rawFreq: 1 })
 			expect(retrieved?.has('old')).toBe(false)
 		})
 
-		it('should return null for non-existent file vectors', async () => {
-			const vectors = await storage.getDocumentVectors('nonexistent.ts')
+		it('should return null for non-existent chunk vectors', async () => {
+			const vectors = await storage.getChunkVectors(99999)
 			expect(vectors).toBeNull()
 		})
 	})

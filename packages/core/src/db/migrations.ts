@@ -146,4 +146,61 @@ export function runMigrations(sqlite: Database.Database): void {
 
 		console.error('[DB] Migration complete: add_token_count_column_v1')
 	}
+
+	// Migration 5: Add chunks table and migrate to chunk-level indexing
+	const migration5Hash = 'add_chunks_table_v1'
+	const existingMigration5 = sqlite
+		.prepare('SELECT id FROM __drizzle_migrations WHERE hash = ?')
+		.get(migration5Hash)
+
+	if (!existingMigration5) {
+		console.error('[DB] Running migration: add_chunks_table_v1')
+
+		sqlite.exec(`
+      -- Create chunks table
+      CREATE TABLE IF NOT EXISTS chunks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        file_id INTEGER NOT NULL,
+        content TEXT NOT NULL,
+        type TEXT NOT NULL,
+        start_line INTEGER NOT NULL,
+        end_line INTEGER NOT NULL,
+        metadata TEXT,
+        token_count INTEGER DEFAULT 0,
+        magnitude REAL DEFAULT 0,
+        FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE CASCADE
+      );
+
+      CREATE INDEX IF NOT EXISTS chunks_file_id_idx ON chunks(file_id);
+      CREATE INDEX IF NOT EXISTS chunks_type_idx ON chunks(type);
+
+      -- Drop old document_vectors table and recreate with chunk_id
+      DROP TABLE IF EXISTS document_vectors;
+
+      CREATE TABLE document_vectors (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        chunk_id INTEGER NOT NULL,
+        term TEXT NOT NULL,
+        tf REAL NOT NULL,
+        tfidf REAL NOT NULL,
+        raw_freq INTEGER NOT NULL,
+        FOREIGN KEY (chunk_id) REFERENCES chunks(id) ON DELETE CASCADE
+      );
+
+      CREATE INDEX IF NOT EXISTS vectors_chunk_id_idx ON document_vectors(chunk_id);
+      CREATE INDEX IF NOT EXISTS vectors_term_idx ON document_vectors(term);
+      CREATE INDEX IF NOT EXISTS vectors_tfidf_idx ON document_vectors(tfidf);
+      CREATE INDEX IF NOT EXISTS vectors_term_chunk_idx ON document_vectors(term, chunk_id);
+
+      -- Clear IDF scores (will be recalculated)
+      DELETE FROM idf_scores;
+    `)
+
+		sqlite
+			.prepare('INSERT INTO __drizzle_migrations (hash, created_at) VALUES (?, ?)')
+			.run(migration5Hash, Date.now())
+
+		console.error('[DB] Migration complete: add_chunks_table_v1')
+		console.error('[DB] Note: Index needs to be rebuilt after this migration')
+	}
 }

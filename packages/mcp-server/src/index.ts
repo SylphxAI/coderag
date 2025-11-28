@@ -259,25 +259,44 @@ When to use:
 
 				// Format results
 				const searchMode = isSemanticSearch ? 'Semantic' : 'Keyword'
-				let formattedResults = `# 🔍 ${searchMode} Search Results\n\n**Query:** "${query}"\n**Results:** ${results.length} / ${indexedCount} files\n\n`
+				let formattedResults = `# 🔍 ${searchMode} Search Results\n\n**Query:** "${query}"\n**Results:** ${results.length} matching chunks\n\n`
 
 				for (let i = 0; i < results.length; i++) {
-					const result = results[i]
-					formattedResults += `## ${i + 1}. \`${result.path}\`\n\n`
+					const result = results[i] as {
+						path: string
+						score: number
+						language?: string
+						size?: number
+						matchedTerms?: string[]
+						snippet?: string
+						content?: string
+						chunkType?: string
+						startLine?: number
+						endLine?: number
+					}
+
+					// Show file path with line range if available
+					if (result.startLine && result.endLine) {
+						formattedResults += `## ${i + 1}. \`${result.path}:${result.startLine}-${result.endLine}\`\n\n`
+					} else {
+						formattedResults += `## ${i + 1}. \`${result.path}\`\n\n`
+					}
+
 					formattedResults += `- **Score:** ${result.score.toFixed(4)}\n`
 					if (result.language) {
 						formattedResults += `- **Language:** ${result.language}\n`
 					}
-					if ('size' in result && result.size) {
-						formattedResults += `- **Size:** ${(result.size / 1024).toFixed(2)} KB\n`
+					if (result.chunkType) {
+						formattedResults += `- **Type:** ${result.chunkType}\n`
 					}
 					if (result.matchedTerms && result.matchedTerms.length > 0) {
 						formattedResults += `- **Matched Terms:** ${result.matchedTerms.join(', ')}\n`
 					}
 
-					// Show content snippet
+					// Show content snippet (with line numbers for chunks)
 					if ('snippet' in result && result.snippet) {
-						formattedResults += `\n**Snippet:**\n\`\`\`\n${result.snippet}\n\`\`\`\n`
+						const lang = result.language || ''
+						formattedResults += `\n**Snippet:**\n\`\`\`${lang}\n${result.snippet}\n\`\`\`\n`
 					} else if ('content' in result && result.content) {
 						formattedResults += `\n**Preview:**\n\`\`\`\n${result.content.substring(0, 500)}${result.content.length > 500 ? '...' : ''}\n\`\`\`\n`
 					}

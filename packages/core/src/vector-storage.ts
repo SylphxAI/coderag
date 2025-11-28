@@ -116,7 +116,7 @@ export class VectorStorage {
 			metadata_json: '{}',
 		}
 
-		this.table = await this.db!.createTable(this.tableName, [initialRecord])
+		this.table = await this.db?.createTable(this.tableName, [initialRecord])
 
 		// Delete the schema record
 		await this.table.delete('id = "__schema__"')
@@ -176,7 +176,7 @@ export class VectorStorage {
 		}
 
 		const record = this.docToRecord(doc)
-		await this.table!.add([record])
+		await this.table?.add([record])
 	}
 
 	/**
@@ -195,7 +195,7 @@ export class VectorStorage {
 		await this.ensureTable(firstDoc.embedding as number[])
 
 		const records = docs.map((doc) => this.docToRecord(doc))
-		await this.table!.add(records)
+		await this.table?.add(records)
 	}
 
 	/**

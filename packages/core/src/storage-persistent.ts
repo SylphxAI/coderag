@@ -1,5 +1,6 @@
 /**
  * Persistent storage implementation using SQLite + Drizzle ORM
+ * Now supports chunk-level indexing for better search granularity
  */
 
 import { eq, sql } from 'drizzle-orm'
@@ -7,6 +8,26 @@ import { createDb, type DbConfig, type DbInstance } from './db/client.js'
 import { runMigrations } from './db/migrations.js'
 import * as schema from './db/schema.js'
 import type { CodebaseFile, Storage } from './storage.js'
+
+/**
+ * Chunk data for storage
+ */
+export interface ChunkData {
+	content: string
+	type: string
+	startLine: number
+	endLine: number
+	metadata?: Record<string, unknown>
+}
+
+/**
+ * Stored chunk with ID
+ */
+export interface StoredChunk extends ChunkData {
+	id: number
+	fileId: number
+	filePath: string
+}
 
 export class PersistentStorage implements Storage {
 	private dbInstance: DbInstance
@@ -155,10 +176,188 @@ export class PersistentStorage implements Storage {
 	async clear(): Promise<void> {
 		const { db } = this.dbInstance
 
+		await db.delete(schema.chunks)
 		await db.delete(schema.files)
 		await db.delete(schema.documentVectors)
 		await db.delete(schema.idfScores)
 		await db.delete(schema.indexMetadata)
+	}
+
+	// ============ CHUNK METHODS ============
+
+	/**
+	 * Store chunks for a file (replaces existing chunks)
+	 */
+	async storeChunks(filePath: string, chunks: ChunkData[]): Promise<number[]> {
+		const { db, sqlite } = this.dbInstance
+
+		// Get file ID
+		const file = await db.select().from(schema.files).where(eq(schema.files.path, filePath)).get()
+		if (!file) {
+			throw new Error(`File not found: ${filePath}`)
+		}
+
+		sqlite.exec('BEGIN TRANSACTION')
+
+		try {
+			// Delete existing chunks for this file
+			await db.delete(schema.chunks).where(eq(schema.chunks.fileId, file.id))
+
+			// Insert new chunks
+			const chunkIds: number[] = []
+			for (const chunk of chunks) {
+				const insertValues: Record<string, unknown> = {
+					fileId: file.id,
+					content: chunk.content,
+					type: chunk.type,
+					startLine: chunk.startLine,
+					endLine: chunk.endLine,
+				}
+				if (chunk.metadata) {
+					insertValues.metadata = JSON.stringify(chunk.metadata)
+				}
+				const result = await db
+					.insert(schema.chunks)
+					.values(insertValues as typeof schema.chunks.$inferInsert)
+					.returning({ id: schema.chunks.id })
+
+				if (result[0]) {
+					chunkIds.push(result[0].id)
+				}
+			}
+
+			sqlite.exec('COMMIT')
+			return chunkIds
+		} catch (error) {
+			sqlite.exec('ROLLBACK')
+			throw error
+		}
+	}
+
+	/**
+	 * Store chunks for multiple files in batch
+	 */
+	async storeManyChunks(
+		fileChunks: Array<{ filePath: string; chunks: ChunkData[] }>
+	): Promise<Map<string, number[]>> {
+		const { db, sqlite } = this.dbInstance
+		const result = new Map<string, number[]>()
+
+		if (fileChunks.length === 0) {
+			return result
+		}
+
+		// Get file IDs
+		const filePaths = fileChunks.map((fc) => fc.filePath)
+		const files = await db
+			.select({ id: schema.files.id, path: schema.files.path })
+			.from(schema.files)
+			.where(
+				sql`${schema.files.path} IN (${sql.join(
+					filePaths.map((p) => sql`${p}`),
+					sql`, `
+				)})`
+			)
+			.all()
+
+		const fileIdMap = new Map<string, number>()
+		for (const file of files) {
+			fileIdMap.set(file.path, file.id)
+		}
+
+		sqlite.exec('BEGIN TRANSACTION')
+
+		try {
+			// Delete existing chunks for these files
+			const fileIds = Array.from(fileIdMap.values())
+			if (fileIds.length > 0) {
+				await db.delete(schema.chunks).where(
+					sql`${schema.chunks.fileId} IN (${sql.join(
+						fileIds.map((id) => sql`${id}`),
+						sql`, `
+					)})`
+				)
+			}
+
+			// Insert new chunks
+			for (const fc of fileChunks) {
+				const fileId = fileIdMap.get(fc.filePath)
+				if (!fileId) continue
+
+				const chunkIds: number[] = []
+				for (const chunk of fc.chunks) {
+					const insertValues: Record<string, unknown> = {
+						fileId,
+						content: chunk.content,
+						type: chunk.type,
+						startLine: chunk.startLine,
+						endLine: chunk.endLine,
+					}
+					if (chunk.metadata) {
+						insertValues.metadata = JSON.stringify(chunk.metadata)
+					}
+					const insertResult = await db
+						.insert(schema.chunks)
+						.values(insertValues as typeof schema.chunks.$inferInsert)
+						.returning({ id: schema.chunks.id })
+
+					if (insertResult[0]) {
+						chunkIds.push(insertResult[0].id)
+					}
+				}
+				result.set(fc.filePath, chunkIds)
+			}
+
+			sqlite.exec('COMMIT')
+		} catch (error) {
+			sqlite.exec('ROLLBACK')
+			throw error
+		}
+
+		return result
+	}
+
+	/**
+	 * Get chunks for a file
+	 */
+	async getChunksForFile(filePath: string): Promise<StoredChunk[]> {
+		const { db } = this.dbInstance
+
+		const results = await db
+			.select({
+				id: schema.chunks.id,
+				fileId: schema.chunks.fileId,
+				content: schema.chunks.content,
+				type: schema.chunks.type,
+				startLine: schema.chunks.startLine,
+				endLine: schema.chunks.endLine,
+				metadata: schema.chunks.metadata,
+				filePath: schema.files.path,
+			})
+			.from(schema.chunks)
+			.innerJoin(schema.files, eq(schema.chunks.fileId, schema.files.id))
+			.where(eq(schema.files.path, filePath))
+			.all()
+
+		return results.map((r) => ({
+			id: r.id,
+			fileId: r.fileId,
+			filePath: r.filePath,
+			content: r.content,
+			type: r.type,
+			startLine: r.startLine,
+			endLine: r.endLine,
+			metadata: r.metadata ? JSON.parse(r.metadata) : undefined,
+		}))
+	}
+
+	/**
+	 * Get total chunk count
+	 */
+	async getChunkCount(): Promise<number> {
+		const { db } = this.dbInstance
+		const result = await db.select({ count: sql<number>`count(*)` }).from(schema.chunks).get()
+		return result?.count || 0
 	}
 
 	/**
@@ -184,28 +383,27 @@ export class PersistentStorage implements Storage {
 	}
 
 	/**
-	 * Store document vectors (TF-IDF)
+	 * Store document vectors (TF-IDF) for a CHUNK
 	 */
-	async storeDocumentVectors(
-		filePath: string,
-		terms: Map<string, { tf: number; tfidf: number; rawFreq: number }>
+	async storeChunkVectors(
+		chunkId: number,
+		terms: Map<string, { tf: number; tfidf: number; rawFreq: number }>,
+		tokenCount?: number
 	): Promise<void> {
-		const { db } = this.dbInstance
+		const { db, sqlite } = this.dbInstance
 
-		// Get file ID
-		const file = await db.select().from(schema.files).where(eq(schema.files.path, filePath)).get()
+		// Delete existing vectors for this chunk
+		await db.delete(schema.documentVectors).where(eq(schema.documentVectors.chunkId, chunkId))
 
-		if (!file) {
-			throw new Error(`File not found: ${filePath}`)
+		// Update token count if provided
+		if (tokenCount !== undefined) {
+			sqlite.exec(`UPDATE chunks SET token_count = ${tokenCount} WHERE id = ${chunkId}`)
 		}
-
-		// Delete existing vectors for this file
-		await db.delete(schema.documentVectors).where(eq(schema.documentVectors.fileId, file.id))
 
 		// Insert new vectors in batches (SQLite has ~999 bind variable limit, 5 fields per row = 199 rows)
 		const BATCH_SIZE = 199
 		const vectors = Array.from(terms.entries()).map(([term, scores]) => ({
-			fileId: file.id,
+			chunkId,
 			term,
 			tf: scores.tf,
 			tfidf: scores.tfidf,
@@ -219,17 +417,17 @@ export class PersistentStorage implements Storage {
 	}
 
 	/**
-	 * Store document vectors for multiple files in a single transaction (batch operation)
+	 * Store document vectors for multiple CHUNKS in a single transaction (batch operation)
 	 * Much faster than storing one by one for large datasets
 	 */
-	async storeManyDocumentVectors(
-		documents: Array<{
-			filePath: string
+	async storeManyChunkVectors(
+		chunkVectors: Array<{
+			chunkId: number
 			terms: Map<string, { tf: number; tfidf: number; rawFreq: number }>
 			tokenCount?: number // For BM25 document length normalization
 		}>
 	): Promise<void> {
-		if (documents.length === 0) {
+		if (chunkVectors.length === 0) {
 			return
 		}
 
@@ -239,38 +437,17 @@ export class PersistentStorage implements Storage {
 		sqlite.exec('BEGIN TRANSACTION')
 
 		try {
-			// Get file IDs only for paths we need (Memory optimization)
-			// Previously loaded ALL files, now only loads needed paths
-			const filePaths = documents.map((doc) => doc.filePath)
-			const files = await db
-				.select({ id: schema.files.id, path: schema.files.path })
-				.from(schema.files)
-				.where(
-					sql`${schema.files.path} IN (${sql.join(
-						filePaths.map((p) => sql`${p}`),
-						sql`, `
-					)})`
-				)
-				.all()
+			// Delete all existing vectors for these chunks
+			const chunkIds = chunkVectors.map((cv) => cv.chunkId)
 
-			const fileIdMap = new Map<string, number>()
-			for (const file of files) {
-				fileIdMap.set(file.path, file.id)
-			}
-
-			// Delete all existing vectors for these files
-			const fileIds = documents
-				.map((doc) => fileIdMap.get(doc.filePath))
-				.filter((id): id is number => id !== undefined)
-
-			if (fileIds.length > 0) {
-				// Delete in chunks to avoid SQLite variable limits
-				const deleteChunkSize = 500
-				for (let i = 0; i < fileIds.length; i += deleteChunkSize) {
-					const chunk = fileIds.slice(i, i + deleteChunkSize)
+			if (chunkIds.length > 0) {
+				// Delete in batches to avoid SQLite variable limits
+				const deleteBatchSize = 500
+				for (let i = 0; i < chunkIds.length; i += deleteBatchSize) {
+					const batch = chunkIds.slice(i, i + deleteBatchSize)
 					await db.delete(schema.documentVectors).where(
-						sql`${schema.documentVectors.fileId} IN (${sql.join(
-							chunk.map((id) => sql`${id}`),
+						sql`${schema.documentVectors.chunkId} IN (${sql.join(
+							batch.map((id) => sql`${id}`),
 							sql`, `
 						)})`
 					)
@@ -279,7 +456,7 @@ export class PersistentStorage implements Storage {
 
 			// Prepare all vectors for batch insert
 			const allVectors: Array<{
-				fileId: number
+				chunkId: number
 				term: string
 				tf: number
 				tfidf: number
@@ -287,23 +464,17 @@ export class PersistentStorage implements Storage {
 			}> = []
 
 			// Track token counts for BM25
-			const tokenCountUpdates: Array<{ fileId: number; tokenCount: number }> = []
+			const tokenCountUpdates: Array<{ chunkId: number; tokenCount: number }> = []
 
-			for (const doc of documents) {
-				const fileId = fileIdMap.get(doc.filePath)
-				if (!fileId) {
-					console.error(`[WARN] File not found in database: ${doc.filePath}`)
-					continue
-				}
-
+			for (const cv of chunkVectors) {
 				// Track token count for BM25 document length normalization
-				if (doc.tokenCount !== undefined) {
-					tokenCountUpdates.push({ fileId, tokenCount: doc.tokenCount })
+				if (cv.tokenCount !== undefined) {
+					tokenCountUpdates.push({ chunkId: cv.chunkId, tokenCount: cv.tokenCount })
 				}
 
-				for (const [term, scores] of doc.terms.entries()) {
+				for (const [term, scores] of cv.terms.entries()) {
 					allVectors.push({
-						fileId,
+						chunkId: cv.chunkId,
 						term,
 						tf: scores.tf,
 						tfidf: scores.tfidf,
@@ -312,17 +483,17 @@ export class PersistentStorage implements Storage {
 				}
 			}
 
-			// Update token counts for BM25 (using raw SQL to work around drizzle type inference)
-			for (const { fileId, tokenCount } of tokenCountUpdates) {
-				sqlite.exec(`UPDATE files SET token_count = ${tokenCount} WHERE id = ${fileId}`)
+			// Update token counts for BM25 (using raw SQL)
+			for (const { chunkId, tokenCount } of tokenCountUpdates) {
+				sqlite.exec(`UPDATE chunks SET token_count = ${tokenCount} WHERE id = ${chunkId}`)
 			}
 
-			// Insert in chunks to avoid SQLite variable limits (5 fields per row = 199 rows max)
-			const chunkSize = 199
-			for (let i = 0; i < allVectors.length; i += chunkSize) {
-				const chunk = allVectors.slice(i, i + chunkSize)
-				if (chunk.length > 0) {
-					await db.insert(schema.documentVectors).values(chunk)
+			// Insert in batches to avoid SQLite variable limits (5 fields per row = 199 rows max)
+			const batchSize = 199
+			for (let i = 0; i < allVectors.length; i += batchSize) {
+				const batch = allVectors.slice(i, i + batchSize)
+				if (batch.length > 0) {
+					await db.insert(schema.documentVectors).values(batch)
 				}
 			}
 
@@ -373,25 +544,22 @@ export class PersistentStorage implements Storage {
 	}
 
 	/**
-	 * Get document vectors for a file
+	 * Get document vectors for a chunk
 	 */
-	async getDocumentVectors(
-		filePath: string
+	async getChunkVectors(
+		chunkId: number
 	): Promise<Map<string, { tf: number; tfidf: number; rawFreq: number }> | null> {
 		const { db } = this.dbInstance
-
-		// Get file ID
-		const file = await db.select().from(schema.files).where(eq(schema.files.path, filePath)).get()
-
-		if (!file) {
-			return null
-		}
 
 		const vectors = await db
 			.select()
 			.from(schema.documentVectors)
-			.where(eq(schema.documentVectors.fileId, file.id))
+			.where(eq(schema.documentVectors.chunkId, chunkId))
 			.all()
+
+		if (vectors.length === 0) {
+			return null
+		}
 
 		const terms = new Map<string, { tf: number; tfidf: number; rawFreq: number }>()
 		for (const vector of vectors) {
@@ -406,40 +574,40 @@ export class PersistentStorage implements Storage {
 	}
 
 	/**
-	 * Get all document vectors in a single batch query (CPU + Memory optimization)
+	 * Get all chunk vectors in a single batch query (CPU + Memory optimization)
 	 * Avoids N+1 query pattern when loading index from storage
+	 * Returns Map<chunkId, Map<term, {tf, tfidf, rawFreq}>>
 	 */
-	async getAllDocumentVectors(): Promise<
-		Map<string, Map<string, { tf: number; tfidf: number; rawFreq: number }>>
+	async getAllChunkVectors(): Promise<
+		Map<number, Map<string, { tf: number; tfidf: number; rawFreq: number }>>
 	> {
 		const { db } = this.dbInstance
 
-		// Single JOIN query to get all vectors with file paths
+		// Single query to get all vectors
 		const results = await db
 			.select({
-				path: schema.files.path,
+				chunkId: schema.documentVectors.chunkId,
 				term: schema.documentVectors.term,
 				tf: schema.documentVectors.tf,
 				tfidf: schema.documentVectors.tfidf,
 				rawFreq: schema.documentVectors.rawFreq,
 			})
 			.from(schema.documentVectors)
-			.innerJoin(schema.files, eq(schema.documentVectors.fileId, schema.files.id))
 			.all()
 
-		// Group by file path
+		// Group by chunk ID
 		const allVectors = new Map<
-			string,
+			number,
 			Map<string, { tf: number; tfidf: number; rawFreq: number }>
 		>()
 
 		for (const row of results) {
-			let fileVectors = allVectors.get(row.path)
-			if (!fileVectors) {
-				fileVectors = new Map()
-				allVectors.set(row.path, fileVectors)
+			let chunkVectors = allVectors.get(row.chunkId)
+			if (!chunkVectors) {
+				chunkVectors = new Map()
+				allVectors.set(row.chunkId, chunkVectors)
 			}
-			fileVectors.set(row.term, {
+			chunkVectors.set(row.term, {
 				tf: row.tf,
 				tfidf: row.tfidf,
 				rawFreq: row.rawFreq,
@@ -450,16 +618,21 @@ export class PersistentStorage implements Storage {
 	}
 
 	/**
-	 * Search documents by terms using SQL (Memory optimization)
-	 * Only loads matching documents instead of entire index
-	 * Uses pre-computed magnitude from files table - no need to load all vectors
+	 * Search chunks by terms using SQL (Memory optimization)
+	 * Returns matching chunks with their content for direct display
+	 * Uses pre-computed magnitude from chunks table
 	 */
 	async searchByTerms(
 		queryTerms: string[],
 		options: { limit?: number } = {}
 	): Promise<
 		Array<{
-			path: string
+			chunkId: number
+			filePath: string
+			content: string
+			type: string
+			startLine: number
+			endLine: number
 			matchedTerms: Map<string, { tfidf: number; rawFreq: number }>
 			magnitude: number
 			tokenCount: number // For BM25 document length normalization
@@ -472,46 +645,50 @@ export class PersistentStorage implements Storage {
 		const { db } = this.dbInstance
 		const { limit = 100 } = options
 
-		// Step 1: Find file IDs that contain any query term, with pre-computed magnitude and token count
-		// This is the key optimization - we get magnitude from files table, not from loading all vectors
-		const matchingFiles = await db
+		// Step 1: Find chunk IDs that contain any query term, with pre-computed magnitude and token count
+		const matchingChunks = await db
 			.select({
-				fileId: schema.documentVectors.fileId,
-				path: schema.files.path,
-				magnitude: schema.files.magnitude,
-				tokenCount: schema.files.tokenCount,
+				chunkId: schema.documentVectors.chunkId,
+				filePath: schema.files.path,
+				content: schema.chunks.content,
+				type: schema.chunks.type,
+				startLine: schema.chunks.startLine,
+				endLine: schema.chunks.endLine,
+				magnitude: schema.chunks.magnitude,
+				tokenCount: schema.chunks.tokenCount,
 				matchCount: sql<number>`COUNT(DISTINCT ${schema.documentVectors.term})`,
 			})
 			.from(schema.documentVectors)
-			.innerJoin(schema.files, eq(schema.documentVectors.fileId, schema.files.id))
+			.innerJoin(schema.chunks, eq(schema.documentVectors.chunkId, schema.chunks.id))
+			.innerJoin(schema.files, eq(schema.chunks.fileId, schema.files.id))
 			.where(
 				sql`${schema.documentVectors.term} IN (${sql.join(
 					queryTerms.map((t) => sql`${t}`),
 					sql`, `
 				)})`
 			)
-			.groupBy(schema.documentVectors.fileId)
+			.groupBy(schema.documentVectors.chunkId)
 			.orderBy(sql`COUNT(DISTINCT ${schema.documentVectors.term}) DESC`)
 			.limit(limit * 2) // Get more candidates for scoring
 			.all()
 
-		if (matchingFiles.length === 0) {
+		if (matchingChunks.length === 0) {
 			return []
 		}
 
-		// Step 2: Get matched term vectors for these files (only query terms)
-		const fileIds = matchingFiles.map((f) => f.fileId)
+		// Step 2: Get matched term vectors for these chunks (only query terms)
+		const chunkIds = matchingChunks.map((c) => c.chunkId)
 		const matchedVectors = await db
 			.select({
-				fileId: schema.documentVectors.fileId,
+				chunkId: schema.documentVectors.chunkId,
 				term: schema.documentVectors.term,
 				tfidf: schema.documentVectors.tfidf,
 				rawFreq: schema.documentVectors.rawFreq,
 			})
 			.from(schema.documentVectors)
 			.where(
-				sql`${schema.documentVectors.fileId} IN (${sql.join(
-					fileIds.map((id) => sql`${id}`),
+				sql`${schema.documentVectors.chunkId} IN (${sql.join(
+					chunkIds.map((id) => sql`${id}`),
 					sql`, `
 				)}) AND ${schema.documentVectors.term} IN (${sql.join(
 					queryTerms.map((t) => sql`${t}`),
@@ -524,26 +701,36 @@ export class PersistentStorage implements Storage {
 		const resultMap = new Map<
 			number,
 			{
-				path: string
+				chunkId: number
+				filePath: string
+				content: string
+				type: string
+				startLine: number
+				endLine: number
 				matchedTerms: Map<string, { tfidf: number; rawFreq: number }>
 				magnitude: number
 				tokenCount: number
 			}
 		>()
 
-		// Initialize result entries with magnitude and token count from files table
-		for (const f of matchingFiles) {
-			resultMap.set(f.fileId, {
-				path: f.path,
+		// Initialize result entries with chunk data
+		for (const c of matchingChunks) {
+			resultMap.set(c.chunkId, {
+				chunkId: c.chunkId,
+				filePath: c.filePath,
+				content: c.content,
+				type: c.type,
+				startLine: c.startLine,
+				endLine: c.endLine,
 				matchedTerms: new Map(),
-				magnitude: f.magnitude ?? 0,
-				tokenCount: f.tokenCount ?? 0,
+				magnitude: c.magnitude ?? 0,
+				tokenCount: c.tokenCount ?? 0,
 			})
 		}
 
 		// Populate matched terms
 		for (const v of matchedVectors) {
-			const entry = resultMap.get(v.fileId)
+			const entry = resultMap.get(v.chunkId)
 			if (entry) {
 				entry.matchedTerms.set(v.term, { tfidf: v.tfidf, rawFreq: v.rawFreq })
 			}
@@ -582,10 +769,11 @@ export class PersistentStorage implements Storage {
 	}
 
 	/**
-	 * Get total document count (for IDF calculation)
+	 * Get total chunk count (for IDF calculation)
+	 * BM25/TF-IDF now operates at chunk level, not file level
 	 */
 	async getTotalDocuments(): Promise<number> {
-		return this.count()
+		return this.getChunkCount()
 	}
 
 	/**
@@ -682,8 +870,8 @@ export class PersistentStorage implements Storage {
 	}
 
 	/**
-	 * Get average document length (token count) for BM25 scoring
-	 * Returns cached value from metadata if available, otherwise calculates from files table
+	 * Get average chunk length (token count) for BM25 scoring
+	 * Returns cached value from metadata if available, otherwise calculates from chunks table
 	 */
 	async getAverageDocLength(): Promise<number> {
 		// Try to get cached value first
@@ -692,13 +880,13 @@ export class PersistentStorage implements Storage {
 			return parseFloat(cached)
 		}
 
-		// Calculate from files table
+		// Calculate from chunks table
 		const { db } = this.dbInstance
 		const result = await db
 			.select({
-				avgLen: sql<number>`AVG(COALESCE(${schema.files.tokenCount}, 0))`,
+				avgLen: sql<number>`AVG(COALESCE(${schema.chunks.tokenCount}, 0))`,
 			})
-			.from(schema.files)
+			.from(schema.chunks)
 			.get()
 
 		const avgLen = result?.avgLen || 0
@@ -710,15 +898,15 @@ export class PersistentStorage implements Storage {
 	}
 
 	/**
-	 * Update average document length in metadata (call after indexing)
+	 * Update average chunk length in metadata (call after indexing)
 	 */
 	async updateAverageDocLength(): Promise<number> {
 		const { db } = this.dbInstance
 		const result = await db
 			.select({
-				avgLen: sql<number>`AVG(COALESCE(${schema.files.tokenCount}, 0))`,
+				avgLen: sql<number>`AVG(COALESCE(${schema.chunks.tokenCount}, 0))`,
 			})
-			.from(schema.files)
+			.from(schema.chunks)
 			.get()
 
 		const avgLen = result?.avgLen || 0
@@ -729,23 +917,23 @@ export class PersistentStorage implements Storage {
 
 	/**
 	 * Rebuild IDF scores from document vectors using SQL (Memory optimization)
-	 * Calculates document frequency for each term and computes IDF
+	 * Calculates document frequency for each term across CHUNKS and computes IDF
 	 */
 	async rebuildIdfScoresFromVectors(): Promise<void> {
 		const { db, sqlite } = this.dbInstance
 
-		// Get total document count
-		const totalDocs = await this.count()
-		if (totalDocs === 0) {
+		// Get total chunk count (IDF is calculated per chunk, not per file)
+		const totalChunks = await this.getChunkCount()
+		if (totalChunks === 0) {
 			await db.delete(schema.idfScores)
 			return
 		}
 
-		// Calculate document frequency for each term using SQL
+		// Calculate document frequency for each term using SQL (counting chunks, not files)
 		const dfResults = await db
 			.select({
 				term: schema.documentVectors.term,
-				df: sql<number>`COUNT(DISTINCT ${schema.documentVectors.fileId})`,
+				df: sql<number>`COUNT(DISTINCT ${schema.documentVectors.chunkId})`,
 			})
 			.from(schema.documentVectors)
 			.groupBy(schema.documentVectors.term)
@@ -762,7 +950,7 @@ export class PersistentStorage implements Storage {
 			const BATCH_SIZE = 300
 			const scores = dfResults.map((row) => ({
 				term: row.term,
-				idf: Math.log((totalDocs + 1) / (row.df + 1)) + 1,
+				idf: Math.log((totalChunks + 1) / (row.df + 1)) + 1,
 				documentFrequency: row.df,
 			}))
 
@@ -798,118 +986,26 @@ export class PersistentStorage implements Storage {
 	}
 
 	/**
-	 * Update pre-computed magnitude for all files (Memory optimization for search)
-	 * magnitude = sqrt(sum(tfidf^2)) for each document
+	 * Update pre-computed magnitude for all chunks (Memory optimization for search)
+	 * magnitude = sqrt(sum(tfidf^2)) for each chunk
 	 * Called after TF-IDF recalculation to keep magnitude in sync
 	 */
-	async updateFileMagnitudes(): Promise<void> {
+	async updateChunkMagnitudes(): Promise<void> {
 		const { sqlite } = this.dbInstance
 
 		// Use raw SQL for efficient batch update with aggregate
 		sqlite.exec(`
-			UPDATE files
+			UPDATE chunks
 			SET magnitude = COALESCE(
-				(SELECT SQRT(SUM(tfidf * tfidf)) FROM document_vectors WHERE document_vectors.file_id = files.id),
+				(SELECT SQRT(SUM(tfidf * tfidf)) FROM document_vectors WHERE document_vectors.chunk_id = chunks.id),
 				0
 			)
 		`)
 	}
 
 	/**
-	 * Store document vectors for specific files only (Incremental update)
-	 * More efficient than storeManyDocumentVectors when only few files changed
-	 */
-	async storeDocumentVectorsForFiles(
-		documents: Array<{
-			filePath: string
-			content: string
-		}>,
-		tokenize: (content: string) => Promise<string[]>
-	): Promise<Set<string>> {
-		if (documents.length === 0) {
-			return new Set()
-		}
-
-		const { db, sqlite } = this.dbInstance
-		const affectedTerms = new Set<string>()
-
-		sqlite.exec('BEGIN TRANSACTION')
-
-		try {
-			// Get file IDs only for paths we need (Memory optimization)
-			const filePaths = documents.map((d) => d.filePath)
-			const files = await db
-				.select({ id: schema.files.id, path: schema.files.path })
-				.from(schema.files)
-				.where(
-					sql`${schema.files.path} IN (${sql.join(
-						filePaths.map((p) => sql`${p}`),
-						sql`, `
-					)})`
-				)
-				.all()
-
-			const fileIdMap = new Map<string, number>()
-			for (const file of files) {
-				fileIdMap.set(file.path, file.id)
-			}
-
-			for (const doc of documents) {
-				const fileId = fileIdMap.get(doc.filePath)
-				if (!fileId) continue
-
-				// Tokenize and calculate term frequencies (async - StarCoder2)
-				const tokens = await tokenize(doc.content)
-				const termFreq = new Map<string, number>()
-				for (const token of tokens) {
-					termFreq.set(token, (termFreq.get(token) || 0) + 1)
-				}
-
-				// Calculate TF
-				const totalTerms = tokens.length
-				if (totalTerms === 0) continue
-
-				// Track affected terms
-				for (const term of termFreq.keys()) {
-					affectedTerms.add(term)
-				}
-
-				// Update token count for BM25 (using raw SQL to work around drizzle type inference)
-				sqlite.exec(`UPDATE files SET token_count = ${totalTerms} WHERE id = ${fileId}`)
-
-				// Delete existing vectors for this file
-				await db.delete(schema.documentVectors).where(eq(schema.documentVectors.fileId, fileId))
-
-				// Insert new vectors
-				const vectors = Array.from(termFreq.entries()).map(([term, freq]) => ({
-					fileId,
-					term,
-					tf: freq / totalTerms,
-					tfidf: 0, // Will be calculated later
-					rawFreq: freq,
-				}))
-
-				// Insert in batches
-				const BATCH_SIZE = 199
-				for (let i = 0; i < vectors.length; i += BATCH_SIZE) {
-					const batch = vectors.slice(i, i + BATCH_SIZE)
-					if (batch.length > 0) {
-						await db.insert(schema.documentVectors).values(batch)
-					}
-				}
-			}
-
-			sqlite.exec('COMMIT')
-		} catch (error) {
-			sqlite.exec('ROLLBACK')
-			throw error
-		}
-
-		return affectedTerms
-	}
-
-	/**
-	 * Get terms for deleted files (for tracking affected terms)
+	 * Get terms for chunks of files (for tracking affected terms during incremental updates)
+	 * When files are deleted, we need to know which terms were affected
 	 */
 	async getTermsForFiles(paths: string[]): Promise<Set<string>> {
 		if (paths.length === 0) {
@@ -937,13 +1033,31 @@ export class PersistentStorage implements Storage {
 
 		const fileIds = files.map((f) => f.id)
 
-		// Get terms for these files
+		// Get chunk IDs for these files
+		const chunks = await db
+			.select({ id: schema.chunks.id })
+			.from(schema.chunks)
+			.where(
+				sql`${schema.chunks.fileId} IN (${sql.join(
+					fileIds.map((id) => sql`${id}`),
+					sql`, `
+				)})`
+			)
+			.all()
+
+		if (chunks.length === 0) {
+			return terms
+		}
+
+		const chunkIds = chunks.map((c) => c.id)
+
+		// Get terms for these chunks
 		const results = await db
 			.select({ term: schema.documentVectors.term })
 			.from(schema.documentVectors)
 			.where(
-				sql`${schema.documentVectors.fileId} IN (${sql.join(
-					fileIds.map((id) => sql`${id}`),
+				sql`${schema.documentVectors.chunkId} IN (${sql.join(
+					chunkIds.map((id) => sql`${id}`),
 					sql`, `
 				)})`
 			)
@@ -954,6 +1068,39 @@ export class PersistentStorage implements Storage {
 		}
 
 		return terms
+	}
+
+	/**
+	 * Get all chunks with their file paths (for bulk operations)
+	 */
+	async getAllChunks(): Promise<StoredChunk[]> {
+		const { db } = this.dbInstance
+
+		const results = await db
+			.select({
+				id: schema.chunks.id,
+				fileId: schema.chunks.fileId,
+				content: schema.chunks.content,
+				type: schema.chunks.type,
+				startLine: schema.chunks.startLine,
+				endLine: schema.chunks.endLine,
+				metadata: schema.chunks.metadata,
+				filePath: schema.files.path,
+			})
+			.from(schema.chunks)
+			.innerJoin(schema.files, eq(schema.chunks.fileId, schema.files.id))
+			.all()
+
+		return results.map((r) => ({
+			id: r.id,
+			fileId: r.fileId,
+			filePath: r.filePath,
+			content: r.content,
+			type: r.type,
+			startLine: r.startLine,
+			endLine: r.endLine,
+			metadata: r.metadata ? JSON.parse(r.metadata) : undefined,
+		}))
 	}
 
 	/**

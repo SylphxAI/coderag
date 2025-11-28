@@ -29,26 +29,51 @@ export const files = sqliteTable(
 )
 
 /**
- * TF-IDF vectors table
- * Stores term frequencies and TF-IDF scores per document
+ * Chunks table
+ * Stores semantic chunks extracted from files (functions, classes, sections, etc.)
  */
-export const documentVectors = sqliteTable(
-	'document_vectors',
+export const chunks = sqliteTable(
+	'chunks',
 	{
 		id: integer('id').primaryKey({ autoIncrement: true }),
 		fileId: integer('file_id')
 			.notNull()
 			.references(() => files.id, { onDelete: 'cascade' }),
+		content: text('content').notNull(), // Chunk content
+		type: text('type').notNull(), // Chunk type (FunctionDeclaration, heading, etc.)
+		startLine: integer('start_line').notNull(),
+		endLine: integer('end_line').notNull(),
+		metadata: text('metadata'), // JSON string for additional metadata
+		tokenCount: integer('token_count').default(0), // Tokens in chunk (for BM25)
+		magnitude: real('magnitude').default(0), // TF-IDF magnitude for chunk
+	},
+	(table) => ({
+		fileIdIdx: index('chunks_file_id_idx').on(table.fileId),
+		typeIdx: index('chunks_type_idx').on(table.type),
+	})
+)
+
+/**
+ * TF-IDF vectors table
+ * Stores term frequencies and TF-IDF scores per CHUNK (not file)
+ */
+export const documentVectors = sqliteTable(
+	'document_vectors',
+	{
+		id: integer('id').primaryKey({ autoIncrement: true }),
+		chunkId: integer('chunk_id')
+			.notNull()
+			.references(() => chunks.id, { onDelete: 'cascade' }),
 		term: text('term').notNull(),
 		tf: real('tf').notNull(), // Term frequency
 		tfidf: real('tfidf').notNull(), // TF-IDF score
 		rawFreq: integer('raw_freq').notNull(), // Raw term count
 	},
 	(table) => ({
-		fileIdIdx: index('vectors_file_id_idx').on(table.fileId),
+		chunkIdIdx: index('vectors_chunk_id_idx').on(table.chunkId),
 		termIdx: index('vectors_term_idx').on(table.term),
 		tfidfIdx: index('vectors_tfidf_idx').on(table.tfidf),
-		termFileIdx: index('vectors_term_file_idx').on(table.term, table.fileId), // Composite index for search
+		termChunkIdx: index('vectors_term_chunk_idx').on(table.term, table.chunkId), // Composite index for search
 	})
 )
 
@@ -82,6 +107,9 @@ export const indexMetadata = sqliteTable('index_metadata', {
 
 export type File = typeof files.$inferSelect
 export type InsertFile = typeof files.$inferInsert
+
+export type Chunk = typeof chunks.$inferSelect
+export type InsertChunk = typeof chunks.$inferInsert
 
 export type DocumentVector = typeof documentVectors.$inferSelect
 export type InsertDocumentVector = typeof documentVectors.$inferInsert

@@ -85,6 +85,9 @@ async function main() {
 		embeddingProvider,
 	})
 
+	// Track indexing state for search handler
+	let indexingPending = autoIndex // Will be set to false once indexing completes or fails
+
 	// Tool descriptions based on search mode
 	const toolDescription = isSemanticSearch
 		? `Semantic search across the codebase using AI embeddings. Use natural language to describe what you're looking for.
@@ -173,7 +176,15 @@ When to use:
 				}
 
 				// Perform search (semantic if available, otherwise keyword)
-				let results
+				let results: Array<{
+					path: string
+					score: number
+					language?: string
+					size?: number
+					matchedTerms?: string[]
+					snippet?: string
+					content?: string
+				}>
 				try {
 					results = isSemanticSearch
 						? await semanticSearch(query, indexer, {
@@ -202,8 +213,14 @@ When to use:
 								`⏳ **Indexing In Progress**\n\n**Progress:** ${pct}%\n\`${progressBar}\`\n\n**Files:** ${status.indexedFiles}/${status.totalFiles}\n${status.currentFile ? `**Current:** \`${status.currentFile}\`` : ''}\n\n💡 Try again in a few seconds.`
 							)
 						}
+						if (indexingPending) {
+							return text(
+								`⏳ **Indexing Starting...**\n\nThe codebase index is being built in the background.\n\n💡 **Tip:** Try your search again in a few seconds.`
+							)
+						}
+						// Indexing failed or was disabled
 						return text(
-							`⏳ **Indexing Starting...**\n\nThe codebase index is being built in the background.\n\n💡 **Tip:** Try your search again in a few seconds.`
+							`❌ **Index Not Available**\n\nThe codebase has not been indexed.\n\n**Possible causes:**\n- Indexing failed (check server logs)\n- Auto-indexing is disabled\n\n💡 Restart the MCP server to retry.`
 						)
 					}
 					throw searchError
@@ -300,10 +317,12 @@ When to use:
 					},
 				})
 				.then(async () => {
+					indexingPending = false
 					Logger.success(`✓ Indexed ${await indexer.getIndexedCount()} files`)
 					Logger.info('👁️  Watching for file changes...')
 				})
 				.catch((error) => {
+					indexingPending = false
 					Logger.error('❌ Failed to index codebase:', (error as Error).message)
 					if ((error as Error).stack) {
 						Logger.error((error as Error).stack as string)

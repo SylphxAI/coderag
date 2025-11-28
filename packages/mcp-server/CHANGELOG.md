@@ -1,5 +1,11 @@
 # @sylphx/codebase-search-mcp
 
+## 0.3.12 (2025-11-28)
+
+### 🐛 Bug Fixes
+
+- **mcp:** improve indexing progress display and logging ([2fc8d5c](https://github.com/SylphxAI/coderag/commit/2fc8d5c5faccc02a5a5c7d1bfc0f27c0d24d2748))
+
 ## 0.3.11 (2025-11-28)
 
 ### 🐛 Bug Fixes

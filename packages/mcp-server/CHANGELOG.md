@@ -1,5 +1,11 @@
 # @sylphx/codebase-search-mcp
 
+## 0.3.13 (2025-11-28)
+
+### 🐛 Bug Fixes
+
+- **mcp:** track indexing state to show appropriate status messages ([ac9756d](https://github.com/SylphxAI/coderag/commit/ac9756dd6842f9c8b937d35961d7deacf9a94baf))
+
 ## 0.3.12 (2025-11-28)
 
 ### 🐛 Bug Fixes

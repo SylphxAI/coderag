@@ -1061,8 +1061,20 @@ export class CodebaseIndexer {
 			}
 		}
 
-		// Step 3: Sort blocks by score (highest first) and take top N
-		blocks.sort((a, b) => b.score - a.score)
+		// Step 3: Sort blocks by unique terms (primary) and density (secondary)
+		// Unique terms = how many different query terms appear in block
+		// Density = unique terms / block size (prefer compact blocks)
+		blocks.sort((a, b) => {
+			const uniqueA = a.matchedTerms.size
+			const uniqueB = b.matchedTerms.size
+			if (uniqueA !== uniqueB) {
+				return uniqueB - uniqueA // More unique terms = better
+			}
+			// Tie-break: prefer denser blocks (more terms per line)
+			const densityA = uniqueA / (a.end - a.start + 1)
+			const densityB = uniqueB / (b.end - b.start + 1)
+			return densityB - densityA
+		})
 		const topBlocks = blocks.slice(0, maxBlocks)
 
 		// Sort by position for output (top to bottom in file)

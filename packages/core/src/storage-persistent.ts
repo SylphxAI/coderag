@@ -426,6 +426,169 @@ export class PersistentStorage implements Storage {
 	}
 
 	/**
+	 * Search documents by terms using SQL (Memory optimization)
+	 * Only loads matching documents instead of entire index
+	 * Returns documents containing any of the query terms with their vectors
+	 */
+	async searchByTerms(
+		queryTerms: string[],
+		options: { limit?: number } = {}
+	): Promise<
+		Array<{
+			path: string
+			matchedTerms: Map<string, { tfidf: number; rawFreq: number }>
+			allTerms: Map<string, { tfidf: number }>
+		}>
+	> {
+		if (queryTerms.length === 0) {
+			return []
+		}
+
+		const { db } = this.dbInstance
+		const { limit = 100 } = options
+
+		// Step 1: Find file IDs that contain any query term, ordered by match count
+		// This is the key optimization - we only load documents with matches
+		const matchingFiles = await db
+			.select({
+				fileId: schema.documentVectors.fileId,
+				path: schema.files.path,
+				matchCount: sql<number>`COUNT(DISTINCT ${schema.documentVectors.term})`,
+			})
+			.from(schema.documentVectors)
+			.innerJoin(schema.files, eq(schema.documentVectors.fileId, schema.files.id))
+			.where(
+				sql`${schema.documentVectors.term} IN (${sql.join(
+					queryTerms.map((t) => sql`${t}`),
+					sql`, `
+				)})`
+			)
+			.groupBy(schema.documentVectors.fileId)
+			.orderBy(sql`COUNT(DISTINCT ${schema.documentVectors.term}) DESC`)
+			.limit(limit * 2) // Get more candidates for scoring
+			.all()
+
+		if (matchingFiles.length === 0) {
+			return []
+		}
+
+		// Step 2: Get matched term vectors for these files (only query terms)
+		const fileIds = matchingFiles.map((f) => f.fileId)
+		const matchedVectors = await db
+			.select({
+				fileId: schema.documentVectors.fileId,
+				term: schema.documentVectors.term,
+				tfidf: schema.documentVectors.tfidf,
+				rawFreq: schema.documentVectors.rawFreq,
+			})
+			.from(schema.documentVectors)
+			.where(
+				sql`${schema.documentVectors.fileId} IN (${sql.join(
+					fileIds.map((id) => sql`${id}`),
+					sql`, `
+				)}) AND ${schema.documentVectors.term} IN (${sql.join(
+					queryTerms.map((t) => sql`${t}`),
+					sql`, `
+				)})`
+			)
+			.all()
+
+		// Step 3: Get all term vectors for magnitude calculation (top terms only for efficiency)
+		const allVectors = await db
+			.select({
+				fileId: schema.documentVectors.fileId,
+				term: schema.documentVectors.term,
+				tfidf: schema.documentVectors.tfidf,
+			})
+			.from(schema.documentVectors)
+			.where(
+				sql`${schema.documentVectors.fileId} IN (${sql.join(
+					fileIds.map((id) => sql`${id}`),
+					sql`, `
+				)})`
+			)
+			.all()
+
+		// Build result map
+		const filePathMap = new Map<number, string>()
+		for (const f of matchingFiles) {
+			filePathMap.set(f.fileId, f.path)
+		}
+
+		const resultMap = new Map<
+			number,
+			{
+				path: string
+				matchedTerms: Map<string, { tfidf: number; rawFreq: number }>
+				allTerms: Map<string, { tfidf: number }>
+			}
+		>()
+
+		// Initialize result entries
+		for (const f of matchingFiles) {
+			resultMap.set(f.fileId, {
+				path: f.path,
+				matchedTerms: new Map(),
+				allTerms: new Map(),
+			})
+		}
+
+		// Populate matched terms
+		for (const v of matchedVectors) {
+			const entry = resultMap.get(v.fileId)
+			if (entry) {
+				entry.matchedTerms.set(v.term, { tfidf: v.tfidf, rawFreq: v.rawFreq })
+			}
+		}
+
+		// Populate all terms for magnitude calculation
+		for (const v of allVectors) {
+			const entry = resultMap.get(v.fileId)
+			if (entry) {
+				entry.allTerms.set(v.term, { tfidf: v.tfidf })
+			}
+		}
+
+		return Array.from(resultMap.values())
+	}
+
+	/**
+	 * Get IDF scores for specific terms only (Memory optimization)
+	 */
+	async getIdfScoresForTerms(terms: string[]): Promise<Map<string, number>> {
+		if (terms.length === 0) {
+			return new Map()
+		}
+
+		const { db } = this.dbInstance
+
+		const scores = await db
+			.select()
+			.from(schema.idfScores)
+			.where(
+				sql`${schema.idfScores.term} IN (${sql.join(
+					terms.map((t) => sql`${t}`),
+					sql`, `
+				)})`
+			)
+			.all()
+
+		const idf = new Map<string, number>()
+		for (const score of scores) {
+			idf.set(score.term, score.idf)
+		}
+
+		return idf
+	}
+
+	/**
+	 * Get total document count (for IDF calculation)
+	 */
+	async getTotalDocuments(): Promise<number> {
+		return this.count()
+	}
+
+	/**
 	 * Store metadata
 	 */
 	async setMetadata(key: string, value: string): Promise<void> {

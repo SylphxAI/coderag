@@ -221,6 +221,119 @@ function processQueryWithTokens(tokens: string[], idf: Map<string, number>): Map
 }
 
 /**
+ * SQL-based search result from storage
+ */
+export interface StorageSearchResult {
+	path: string
+	matchedTerms: Map<string, { tfidf: number; rawFreq: number }>
+	allTerms: Map<string, { tfidf: number }>
+}
+
+/**
+ * Search documents using SQL-based storage (Memory optimization)
+ * Does not require loading entire index into memory
+ */
+export function searchDocumentsFromStorage(
+	query: string,
+	candidates: StorageSearchResult[],
+	idf: Map<string, number>,
+	options: {
+		limit?: number
+		minScore?: number
+	} = {}
+): Array<{ uri: string; score: number; matchedTerms: string[] }> {
+	const { limit = 10, minScore = 0 } = options
+
+	// Get query tokens (cached)
+	const queryTokens = getCachedQueryTokens(query)
+
+	// Build query vector
+	const queryVector = new Map<string, number>()
+	for (const term of queryTokens) {
+		const idfValue = idf.get(term) || 0
+		if (idfValue > 0) {
+			queryVector.set(term, idfValue)
+		}
+	}
+
+	// Calculate query magnitude
+	let queryMagnitudeSquared = 0
+	for (const value of queryVector.values()) {
+		queryMagnitudeSquared += value * value
+	}
+	const queryMagnitude = Math.sqrt(queryMagnitudeSquared)
+
+	if (queryMagnitude === 0) {
+		return []
+	}
+
+	// Score each candidate
+	const results: Array<{ uri: string; score: number; matchedTerms: string[] }> = []
+	let minThreshold = minScore
+
+	for (const candidate of candidates) {
+		// Get matched terms
+		const matchedTerms: string[] = []
+		for (const term of queryTokens) {
+			if (candidate.matchedTerms.has(term)) {
+				matchedTerms.push(term)
+			}
+		}
+
+		if (matchedTerms.length === 0) continue
+
+		// Calculate dot product using matched terms
+		let dotProduct = 0
+		for (const [term, queryScore] of queryVector.entries()) {
+			const docData = candidate.matchedTerms.get(term)
+			if (docData) {
+				dotProduct += queryScore * docData.tfidf
+			}
+		}
+
+		// Calculate document magnitude from all terms
+		let docMagnitudeSquared = 0
+		for (const data of candidate.allTerms.values()) {
+			docMagnitudeSquared += data.tfidf * data.tfidf
+		}
+		const docMagnitude = Math.sqrt(docMagnitudeSquared)
+
+		if (docMagnitude === 0) continue
+
+		// Cosine similarity
+		let score = dotProduct / (queryMagnitude * docMagnitude)
+
+		// Boost for exact term matches
+		score *= 1.5 ** matchedTerms.length
+
+		// Boost for phrase matches
+		if (matchedTerms.length === queryTokens.length && queryTokens.length > 1) {
+			score *= 2.0
+		}
+
+		if (score < minThreshold) continue
+
+		results.push({ uri: `file://${candidate.path}`, score, matchedTerms })
+
+		// Bounded results
+		if (results.length >= limit * 2) {
+			results.sort((a, b) => b.score - a.score)
+			results.length = limit
+			minThreshold = results[results.length - 1].score
+		}
+	}
+
+	return results.sort((a, b) => b.score - a.score).slice(0, limit)
+}
+
+/**
+ * Get query tokens (exported for SQL-based search)
+ */
+export function getQueryTokens(query: string): string[] {
+	return getCachedQueryTokens(query)
+}
+
+/**
  * Search documents using TF-IDF and cosine similarity
  */
 export function searchDocuments(

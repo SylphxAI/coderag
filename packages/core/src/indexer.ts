@@ -9,7 +9,12 @@ import { IncrementalTFIDF, type IncrementalUpdate } from './incremental-tfidf.js
 import { createCacheKey, LRUCache } from './search-cache.js'
 import { type CodebaseFile, MemoryStorage, type Storage } from './storage.js'
 import { PersistentStorage } from './storage-persistent.js'
-import { buildSearchIndex, type SearchIndex } from './tfidf.js'
+import {
+	buildSearchIndex,
+	getQueryTokens,
+	type SearchIndex,
+	searchDocumentsFromStorage,
+} from './tfidf.js'
 import {
 	detectLanguage,
 	type FileMetadata,
@@ -31,6 +36,7 @@ export interface IndexerOptions {
 	embeddingProvider?: EmbeddingProvider
 	vectorBatchSize?: number // Default: 10
 	indexingBatchSize?: number // Default: 50 - files processed per batch (Memory optimization)
+	lowMemoryMode?: boolean // Default: true - use SQL-based search instead of in-memory index
 }
 
 export interface FileChangeEvent {
@@ -70,6 +76,7 @@ export class CodebaseIndexer {
 	private embeddingProvider?: EmbeddingProvider
 	private vectorBatchSize: number
 	private indexingBatchSize: number
+	private lowMemoryMode: boolean
 
 	constructor(options: IndexerOptions = {}) {
 		this.codebaseRoot = options.codebaseRoot || process.cwd()
@@ -80,6 +87,8 @@ export class CodebaseIndexer {
 		this.embeddingProvider = options.embeddingProvider
 		this.vectorBatchSize = options.vectorBatchSize || 10
 		this.indexingBatchSize = options.indexingBatchSize || 50 // Memory optimization
+		// Default to low memory mode when using persistent storage
+		this.lowMemoryMode = options.lowMemoryMode ?? options.storage instanceof PersistentStorage
 
 		// Initialize vector storage if embedding provider is available
 		if (this.embeddingProvider) {
@@ -123,23 +132,43 @@ export class CodebaseIndexer {
 				const existingCount = await this.storage.count()
 				if (existingCount > 0) {
 					console.error(`[INFO] Found existing index with ${existingCount} files`)
-					console.error('[INFO] Loading index from database...')
 
-					const loaded = await this.loadSearchIndexFromStorage()
-					if (loaded) {
-						console.error('[SUCCESS] Index loaded from database')
-						this.status.progress = 100
-						this.status.indexedFiles = existingCount
-						this.status.totalFiles = existingCount
+					// In low memory mode, just verify index exists - don't load to memory
+					if (this.lowMemoryMode) {
+						// Verify IDF scores exist (index is valid)
+						const idf = await this.storage.getIdfScores()
+						if (idf.size > 0) {
+							console.error('[SUCCESS] Index verified (low memory mode - not loaded to RAM)')
+							this.status.progress = 100
+							this.status.indexedFiles = existingCount
+							this.status.totalFiles = existingCount
 
-						// Start watching if requested
-						if (options.watch) {
-							await this.startWatch()
+							// Start watching if requested
+							if (options.watch) {
+								await this.startWatch()
+							}
+
+							this.status.isIndexing = false
+							return
 						}
-
-						this.status.isIndexing = false
-						return
+						console.error('[WARN] Index verification failed, rebuilding...')
 					} else {
+						console.error('[INFO] Loading index from database...')
+						const loaded = await this.loadSearchIndexFromStorage()
+						if (loaded) {
+							console.error('[SUCCESS] Index loaded from database')
+							this.status.progress = 100
+							this.status.indexedFiles = existingCount
+							this.status.totalFiles = existingCount
+
+							// Start watching if requested
+							if (options.watch) {
+								await this.startWatch()
+							}
+
+							this.status.isIndexing = false
+							return
+						}
 						console.error('[WARN] Failed to load index, rebuilding...')
 					}
 				}
@@ -239,13 +268,24 @@ export class CodebaseIndexer {
 				},
 			}
 			this.status.progress = 75
-			console.error('[INFO] Incremental index engine initialized')
 
 			// Persist TF-IDF vectors if using persistent storage
 			if (this.storage instanceof PersistentStorage) {
 				console.error('[INFO] Persisting TF-IDF vectors...')
 				await this.persistSearchIndex()
 				console.error('[SUCCESS] TF-IDF vectors persisted')
+
+				// In low memory mode, release the in-memory index after persisting
+				// Search will use SQL-based queries instead
+				if (this.lowMemoryMode) {
+					this.searchIndex = null
+					this.incrementalEngine = null
+					console.error('[INFO] Low memory mode: released in-memory index')
+				}
+			}
+
+			if (!this.lowMemoryMode) {
+				console.error('[INFO] Incremental index engine initialized')
 			}
 
 			// Build vector index if embedding provider available
@@ -727,10 +767,6 @@ export class CodebaseIndexer {
 			excludePaths?: string[]
 		} = {}
 	): Promise<SearchResult[]> {
-		if (!this.searchIndex) {
-			throw new Error('Codebase not indexed. Please run index() first.')
-		}
-
 		const { limit = 10, includeContent = true } = options
 
 		// Create cache key from query and options
@@ -750,10 +786,25 @@ export class CodebaseIndexer {
 
 		console.error(`[CACHE MISS] Query: "${query}"`)
 
-		// Search using TF-IDF
-		const results = await import('./tfidf.js').then((m) =>
-			m.searchDocuments(query, this.searchIndex!, { limit })
-		)
+		// Use SQL-based search in low memory mode (Memory optimization)
+		let results: Array<{ uri: string; score: number; matchedTerms: string[] }>
+
+		if (this.lowMemoryMode && this.storage instanceof PersistentStorage) {
+			// SQL-based search - doesn't require loading index to memory
+			const queryTokens = getQueryTokens(query)
+			const candidates = await this.storage.searchByTerms(queryTokens, { limit: limit * 3 })
+			const idf = await this.storage.getIdfScoresForTerms(queryTokens)
+			results = searchDocumentsFromStorage(query, candidates, idf, { limit })
+			console.error(`[SQL SEARCH] Found ${results.length} results`)
+		} else {
+			// In-memory search (faster but uses more memory)
+			if (!this.searchIndex) {
+				throw new Error('Codebase not indexed. Please run index() first.')
+			}
+			results = await import('./tfidf.js').then((m) =>
+				m.searchDocuments(query, this.searchIndex!, { limit })
+			)
+		}
 
 		// Get file content and apply filters
 		const searchResults: SearchResult[] = []

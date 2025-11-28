@@ -222,16 +222,17 @@ function processQueryWithTokens(tokens: string[], idf: Map<string, number>): Map
 
 /**
  * SQL-based search result from storage
+ * Uses pre-computed magnitude for memory efficiency
  */
 export interface StorageSearchResult {
 	path: string
 	matchedTerms: Map<string, { tfidf: number; rawFreq: number }>
-	allTerms: Map<string, { tfidf: number }>
+	magnitude: number // Pre-computed from files table
 }
 
 /**
  * Search documents using SQL-based storage (Memory optimization)
- * Does not require loading entire index into memory
+ * Uses pre-computed magnitude - does not need to load all document vectors
  */
 export function searchDocumentsFromStorage(
 	query: string,
@@ -291,12 +292,9 @@ export function searchDocumentsFromStorage(
 			}
 		}
 
-		// Calculate document magnitude from all terms
-		let docMagnitudeSquared = 0
-		for (const data of candidate.allTerms.values()) {
-			docMagnitudeSquared += data.tfidf * data.tfidf
-		}
-		const docMagnitude = Math.sqrt(docMagnitudeSquared)
+		// Use pre-computed magnitude from files table (Memory optimization)
+		// No need to load all document vectors just for magnitude calculation
+		const docMagnitude = candidate.magnitude
 
 		if (docMagnitude === 0) continue
 

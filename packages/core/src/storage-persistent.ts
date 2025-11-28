@@ -428,7 +428,7 @@ export class PersistentStorage implements Storage {
 	/**
 	 * Search documents by terms using SQL (Memory optimization)
 	 * Only loads matching documents instead of entire index
-	 * Returns documents containing any of the query terms with their vectors
+	 * Uses pre-computed magnitude from files table - no need to load all vectors
 	 */
 	async searchByTerms(
 		queryTerms: string[],
@@ -437,7 +437,7 @@ export class PersistentStorage implements Storage {
 		Array<{
 			path: string
 			matchedTerms: Map<string, { tfidf: number; rawFreq: number }>
-			allTerms: Map<string, { tfidf: number }>
+			magnitude: number
 		}>
 	> {
 		if (queryTerms.length === 0) {
@@ -447,12 +447,13 @@ export class PersistentStorage implements Storage {
 		const { db } = this.dbInstance
 		const { limit = 100 } = options
 
-		// Step 1: Find file IDs that contain any query term, ordered by match count
-		// This is the key optimization - we only load documents with matches
+		// Step 1: Find file IDs that contain any query term, with pre-computed magnitude
+		// This is the key optimization - we get magnitude from files table, not from loading all vectors
 		const matchingFiles = await db
 			.select({
 				fileId: schema.documentVectors.fileId,
 				path: schema.files.path,
+				magnitude: schema.files.magnitude,
 				matchCount: sql<number>`COUNT(DISTINCT ${schema.documentVectors.term})`,
 			})
 			.from(schema.documentVectors)
@@ -493,43 +494,22 @@ export class PersistentStorage implements Storage {
 			)
 			.all()
 
-		// Step 3: Get all term vectors for magnitude calculation (top terms only for efficiency)
-		const allVectors = await db
-			.select({
-				fileId: schema.documentVectors.fileId,
-				term: schema.documentVectors.term,
-				tfidf: schema.documentVectors.tfidf,
-			})
-			.from(schema.documentVectors)
-			.where(
-				sql`${schema.documentVectors.fileId} IN (${sql.join(
-					fileIds.map((id) => sql`${id}`),
-					sql`, `
-				)})`
-			)
-			.all()
-
-		// Build result map
-		const filePathMap = new Map<number, string>()
-		for (const f of matchingFiles) {
-			filePathMap.set(f.fileId, f.path)
-		}
-
+		// Build result map with pre-computed magnitude
 		const resultMap = new Map<
 			number,
 			{
 				path: string
 				matchedTerms: Map<string, { tfidf: number; rawFreq: number }>
-				allTerms: Map<string, { tfidf: number }>
+				magnitude: number
 			}
 		>()
 
-		// Initialize result entries
+		// Initialize result entries with magnitude from files table
 		for (const f of matchingFiles) {
 			resultMap.set(f.fileId, {
 				path: f.path,
 				matchedTerms: new Map(),
-				allTerms: new Map(),
+				magnitude: f.magnitude ?? 0,
 			})
 		}
 
@@ -538,14 +518,6 @@ export class PersistentStorage implements Storage {
 			const entry = resultMap.get(v.fileId)
 			if (entry) {
 				entry.matchedTerms.set(v.term, { tfidf: v.tfidf, rawFreq: v.rawFreq })
-			}
-		}
-
-		// Populate all terms for magnitude calculation
-		for (const v of allVectors) {
-			const entry = resultMap.get(v.fileId)
-			if (entry) {
-				entry.allTerms.set(v.term, { tfidf: v.tfidf })
 			}
 		}
 
@@ -745,6 +717,24 @@ export class PersistentStorage implements Storage {
 			UPDATE document_vectors
 			SET tfidf = tf * COALESCE(
 				(SELECT idf FROM idf_scores WHERE idf_scores.term = document_vectors.term),
+				0
+			)
+		`)
+	}
+
+	/**
+	 * Update pre-computed magnitude for all files (Memory optimization for search)
+	 * magnitude = sqrt(sum(tfidf^2)) for each document
+	 * Called after TF-IDF recalculation to keep magnitude in sync
+	 */
+	async updateFileMagnitudes(): Promise<void> {
+		const { sqlite } = this.dbInstance
+
+		// Use raw SQL for efficient batch update with aggregate
+		sqlite.exec(`
+			UPDATE files
+			SET magnitude = COALESCE(
+				(SELECT SQRT(SUM(tfidf * tfidf)) FROM document_vectors WHERE document_vectors.file_id = files.id),
 				0
 			)
 		`)

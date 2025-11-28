@@ -265,9 +265,14 @@ export class CodebaseIndexer {
 		// Step 5: Recalculate TF-IDF scores (SQL-based batch update)
 		console.error('[INFO] Updating TF-IDF scores...')
 		await persistentStorage.recalculateTfidfScores()
+		this.status.progress = 90
+
+		// Step 6: Update pre-computed magnitudes (for cosine similarity search)
+		console.error('[INFO] Updating file magnitudes...')
+		await persistentStorage.updateFileMagnitudes()
 		this.status.progress = 95
 
-		// Step 6: Invalidate search cache
+		// Step 7: Invalidate search cache
 		this.searchCache.invalidate()
 		console.error('[INFO] Search cache invalidated')
 
@@ -840,6 +845,10 @@ export class CodebaseIndexer {
 				await persistentStorage.storeDocumentVectors(filePath, terms)
 			}
 		}
+
+		// Update pre-computed magnitudes for cosine similarity search
+		console.error('[INFO] Computing file magnitudes...')
+		await persistentStorage.updateFileMagnitudes()
 	}
 
 	/**

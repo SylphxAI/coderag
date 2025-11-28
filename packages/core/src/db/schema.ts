@@ -19,6 +19,7 @@ export const files = sqliteTable(
 		mtime: integer('mtime').notNull(), // Unix timestamp in milliseconds
 		language: text('language'),
 		indexedAt: integer('indexed_at').notNull(), // Unix timestamp
+		magnitude: real('magnitude').default(0), // Pre-computed TF-IDF vector magnitude for cosine similarity
 	},
 	(table) => ({
 		pathIdx: index('files_path_idx').on(table.path),

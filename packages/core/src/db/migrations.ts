@@ -82,4 +82,25 @@ export function runMigrations(sqlite: Database.Database): void {
 
 		console.error('[DB] Migration complete: initial_schema_v1')
 	}
+
+	// Migration 2: Add magnitude column to files table (for pre-computed TF-IDF vector magnitude)
+	const migration2Hash = 'add_magnitude_column_v1'
+	const existingMigration2 = sqlite
+		.prepare('SELECT id FROM __drizzle_migrations WHERE hash = ?')
+		.get(migration2Hash)
+
+	if (!existingMigration2) {
+		console.error('[DB] Running migration: add_magnitude_column_v1')
+
+		// Add magnitude column with default 0
+		sqlite.exec(`
+      ALTER TABLE files ADD COLUMN magnitude REAL DEFAULT 0;
+    `)
+
+		sqlite
+			.prepare('INSERT INTO __drizzle_migrations (hash, created_at) VALUES (?, ?)')
+			.run(migration2Hash, Date.now())
+
+		console.error('[DB] Migration complete: add_magnitude_column_v1')
+	}
 }

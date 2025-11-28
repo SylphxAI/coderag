@@ -288,47 +288,46 @@ When to use:
 		`✓ Registered codebase_search tool (${isSemanticSearch ? 'semantic' : 'keyword'} mode)`
 	)
 
-	// Start server immediately (don't wait for indexing)
+	// Start indexing BEFORE server.start() since server.start() blocks waiting for client
+	// This way indexing runs concurrently while waiting for MCP client to connect
+	if (autoIndex) {
+		Logger.info('📚 Starting automatic indexing...')
+		// Don't await - let it run in background
+		indexer
+			.index({
+				watch: true, // Enable file watching
+				onProgress: (current, total, file) => {
+					// Log every 10 files or at completion
+					if (current % 10 === 0 || current === total) {
+						const pct = Math.round((current / total) * 100)
+						Logger.info(`Indexing: ${current}/${total} (${pct}%) - ${file}`)
+					}
+				},
+				onFileChange: (event) => {
+					Logger.info(`File ${event.type}: ${event.path}`)
+				},
+			})
+			.then(async () => {
+				indexingPending = false
+				Logger.success(`✓ Indexed ${await indexer.getIndexedCount()} files`)
+				Logger.info('👁️  Watching for file changes...')
+			})
+			.catch((error) => {
+				indexingPending = false
+				Logger.error('❌ Failed to index codebase:', (error as Error).message)
+				if ((error as Error).stack) {
+					Logger.error((error as Error).stack as string)
+				}
+			})
+	}
+
+	// Start server (blocks waiting for MCP client to connect)
 	try {
 		await server.start()
 		Logger.success('✓ MCP Server connected and ready')
 	} catch (error: unknown) {
 		Logger.error('Failed to start MCP server', error)
 		process.exit(1)
-	}
-
-	// Auto-index in background (non-blocking)
-	if (autoIndex) {
-		Logger.info('📚 Starting automatic indexing (background)...')
-		// Use setImmediate to ensure server is fully ready before indexing starts
-		setImmediate(() => {
-			indexer
-				.index({
-					watch: true, // Enable file watching
-					onProgress: (current, total, file) => {
-						// Log every 10 files or at completion
-						if (current % 10 === 0 || current === total) {
-							const pct = Math.round((current / total) * 100)
-							Logger.info(`Indexing: ${current}/${total} (${pct}%) - ${file}`)
-						}
-					},
-					onFileChange: (event) => {
-						Logger.info(`File ${event.type}: ${event.path}`)
-					},
-				})
-				.then(async () => {
-					indexingPending = false
-					Logger.success(`✓ Indexed ${await indexer.getIndexedCount()} files`)
-					Logger.info('👁️  Watching for file changes...')
-				})
-				.catch((error) => {
-					indexingPending = false
-					Logger.error('❌ Failed to index codebase:', (error as Error).message)
-					if ((error as Error).stack) {
-						Logger.error((error as Error).stack as string)
-					}
-				})
-		})
 	}
 
 	Logger.info('💡 Press Ctrl+C to stop the server')

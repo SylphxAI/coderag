@@ -8,6 +8,7 @@ export {
 	type ChunkResult,
 	chunkCodeByAST,
 	chunkCodeByASTSimple,
+	getSupportedLanguages,
 } from './ast-chunking.js'
 export { getCoderagDataDir, type ProjectMetadata } from './db/client.js'
 export {
@@ -45,6 +46,17 @@ export {
 	type IndexingStatus,
 	type SearchResult,
 } from './indexer.js'
+export {
+	type EmbeddedLanguageConfig,
+	EXTENSION_TO_LANGUAGE,
+	getLanguageConfig,
+	getLanguageConfigByExtension,
+	getLanguageFromPath,
+	getSupportedExtensions,
+	isLanguageSupported,
+	LANGUAGE_REGISTRY,
+	type LanguageConfig,
+} from './language-config.js'
 export { type CacheEntry, type CacheStats, createCacheKey, LRUCache } from './search-cache.js'
 export { type CodebaseFile, MemoryStorage } from './storage.js'
 export { PersistentStorage } from './storage-persistent.js'

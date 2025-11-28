@@ -1,5 +1,11 @@
 # @sylphx/codebase-search-mcp
 
+## 0.3.10 (2025-11-28)
+
+### ✨ Features
+
+- **mcp:** start server before indexing (non-blocking) ([07e436f](https://github.com/SylphxAI/coderag/commit/07e436f76df903599e1ba2b6ad92239cb8b09603))
+
 ## 0.3.9 (2025-11-28)
 
 ### 📦 Dependencies

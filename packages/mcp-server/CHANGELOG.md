@@ -1,5 +1,11 @@
 # @sylphx/codebase-search-mcp
 
+## 0.3.23 (2025-11-28)
+
+### ♻️ Refactoring
+
+- **mcp:** optimize search output format for LLM consumption ([0d31ae5](https://github.com/SylphxAI/coderag/commit/0d31ae53e668d477a4b575be568e3467cb5c4c1b))
+
 ## 0.3.22 (2025-11-28)
 
 ### ✨ Features

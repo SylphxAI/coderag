@@ -245,15 +245,35 @@ export class CodebaseIndexer {
 		console.error(`[INFO] Starting file watcher${usePolling ? ' (polling mode)' : ''}...`)
 
 		const chokidarModule = await import('chokidar')
+
+		// Use gitignore patterns for watcher
+		const ignoredPatterns = [
+			'**/node_modules/**',
+			'**/.git/**',
+			'**/dist/**',
+			'**/build/**',
+			'**/.next/**',
+			'**/.turbo/**',
+			'**/.cache/**',
+			'**/coverage/**',
+			'**/*.log',
+		]
+
 		this.watcher = chokidarModule.default.watch(this.codebaseRoot, {
-			ignored: [
-				'**/node_modules/**',
-				'**/.git/**',
-				'**/dist/**',
-				'**/build/**',
-				'**/.next/**',
-				'**/.turbo/**',
-			],
+			ignored: (filePath: string) => {
+				// Check hardcoded patterns
+				for (const pattern of ignoredPatterns) {
+					if (filePath.includes(pattern.replace(/\*\*/g, '').replace(/\*/g, ''))) {
+						return true
+					}
+				}
+				// Check gitignore
+				if (this.ignoreFilter) {
+					const relativePath = path.relative(this.codebaseRoot, filePath)
+					return this.ignoreFilter.ignores(relativePath)
+				}
+				return false
+			},
 			ignoreInitial: true,
 			persistent: true,
 			usePolling,

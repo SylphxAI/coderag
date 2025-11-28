@@ -1,5 +1,11 @@
 # @sylphx/codebase-search
 
+## 0.1.11 (2025-11-28)
+
+### 🐛 Bug Fixes
+
+- **core:** deduplicate query tokens to avoid repeated matchedTerms ([5a2ed8d](https://github.com/SylphxAI/coderag/commit/5a2ed8dcf2e7b00c8f6011f97de4c19e1e069bc9))
+
 ## 0.1.10 (2025-11-28)
 
 ### 🐛 Bug Fixes

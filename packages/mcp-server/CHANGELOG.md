@@ -1,5 +1,11 @@
 # @sylphx/codebase-search-mcp
 
+## 0.3.11 (2025-11-28)
+
+### 🐛 Bug Fixes
+
+- **mcp:** show "indexing starting" instead of error when index not ready ([70bc32c](https://github.com/SylphxAI/coderag/commit/70bc32ccf2a70e2e514897e0e8341320cea6470a))
+
 ## 0.3.10 (2025-11-28)
 
 ### ✨ Features

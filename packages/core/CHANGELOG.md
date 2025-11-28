@@ -1,5 +1,11 @@
 # @sylphx/codebase-search
 
+## 0.1.9 (2025-11-28)
+
+### 🐛 Bug Fixes
+
+- **core:** use gitignore patterns in file watcher ([19553d9](https://github.com/SylphxAI/coderag/commit/19553d94774c93be54cae9703a89eafda22f4359))
+
 ## 0.1.8 (2025-11-27)
 
 ### 🐛 Bug Fixes

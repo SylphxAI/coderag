@@ -1,5 +1,15 @@
 # @sylphx/codebase-search
 
+## 0.1.19 (2025-11-29)
+
+### ✨ Features
+
+- **core:** use chunk-based progress tracking ([a6d7570](https://github.com/SylphxAI/coderag/commit/a6d7570df3488668ac520e454bebbe75c47739a1))
+
+### 📚 Documentation
+
+- update READMEs with LLM-optimized output format and add Rust support ([d0e4023](https://github.com/SylphxAI/coderag/commit/d0e40232284881e5d2cb091afde2a1a2d315d738))
+
 ## 0.1.18 (2025-11-29)
 
 ### 🐛 Bug Fixes

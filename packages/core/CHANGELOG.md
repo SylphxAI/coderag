@@ -1,5 +1,15 @@
 # @sylphx/codebase-search
 
+## 0.1.18 (2025-11-29)
+
+### 🐛 Bug Fixes
+
+- **core:** correct markdown listItem boundary type ([0024435](https://github.com/SylphxAI/coderag/commit/002443591c571f0ab0baeacee12f00bce47cc9c5))
+
+### 🔧 Chores
+
+- **core:** add synth-md-gfm dependency (table support pending fix) ([cf345fc](https://github.com/SylphxAI/coderag/commit/cf345fc116984167b6a92fb980d80e815eb99765))
+
 ## 0.1.17 (2025-11-28)
 
 ### ✨ Features

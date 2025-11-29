@@ -1,5 +1,15 @@
 # @sylphx/codebase-search-mcp
 
+## 0.3.25 (2025-11-29)
+
+### 🐛 Bug Fixes
+
+- **mcp:** improve output format with truncation handling ([40f6698](https://github.com/SylphxAI/coderag/commit/40f669838e324b7bcd6a7c53d9eef60f35fa92bd))
+
+### 📚 Documentation
+
+- update READMEs with LLM-optimized output format and add Rust support ([d0e4023](https://github.com/SylphxAI/coderag/commit/d0e40232284881e5d2cb091afde2a1a2d315d738))
+
 ## 0.3.24 (2025-11-29)
 
 ### 📦 Dependencies

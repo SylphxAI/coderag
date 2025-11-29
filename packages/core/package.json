@@ -57,6 +57,7 @@
 		"@sylphx/synth-js": "^0.2.0",
 		"@sylphx/synth-json": "latest",
 		"@sylphx/synth-md": "latest",
+		"@sylphx/synth-md-gfm": "^0.2.3",
 		"@sylphx/synth-protobuf": "^0.2.1",
 		"@sylphx/synth-python": "^0.2.1",
 		"@sylphx/synth-toml": "^0.2.1",
@@ -68,6 +69,7 @@
 		"ignore": "^7.0.5"
 	},
 	"devDependencies": {
+		"@sylphx/doctor": "^1.25.0",
 		"@types/better-sqlite3": "^7.6.12",
 		"@types/node": "^24.9.2",
 		"drizzle-kit": "^0.28.1",

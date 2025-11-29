@@ -189,9 +189,9 @@ export const LANGUAGE_REGISTRY: Record<string, LanguageConfig> = {
 			'paragraph',
 			'code', // Code blocks
 			'blockquote',
-			'listItem', // synth-md uses listItem, not list
+			'listItem',
 			'thematicBreak',
-			// Note: table not yet supported by synth-md
+			// TODO: Add 'table' when synth-md-gfm table parsing is fixed
 		],
 		embedded: [
 			{

@@ -1,5 +1,11 @@
 # @sylphx/codebase-search-mcp
 
+## 0.3.26 (2025-11-29)
+
+### ✨ Features
+
+- **core:** use chunk-based progress tracking ([a6d7570](https://github.com/SylphxAI/coderag/commit/a6d7570df3488668ac520e454bebbe75c47739a1))
+
 ## 0.3.25 (2025-11-29)
 
 ### 🐛 Bug Fixes

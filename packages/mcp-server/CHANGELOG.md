@@ -1,5 +1,15 @@
 # @sylphx/codebase-search-mcp
 
+## 0.3.27 (2025-12-05)
+
+### ♻️ Refactoring
+
+- **mcp-server:** migrate from Zod to Vex ([fe908cb](https://github.com/SylphxAI/coderag/commit/fe908cba0ce2a425d1f01ad8a67d287ac6ad39fb))
+
+### 🔧 Chores
+
+- **deps:** upgrade @sylphx/mcp-server-sdk to ^2.1.0 ([0370bc3](https://github.com/SylphxAI/coderag/commit/0370bc3a703796b47c50daca312c9733db1e35a1))
+
 ## 0.3.26 (2025-11-29)
 
 ### ✨ Features

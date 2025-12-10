@@ -1,5 +1,11 @@
 # @sylphx/codebase-search
 
+## 0.1.21 (2025-12-10)
+
+### 🐛 Bug Fixes
+
+- **core:** move native deps to optionalDependencies for npx compatibility (#42) ([2580a7a](https://github.com/SylphxAI/coderag/commit/2580a7aac2cdde0a9ccfb4eb9ca9d5ea5898177c))
+
 ## 0.1.20 (2025-12-10)
 
 ### ✨ Features

@@ -410,9 +410,7 @@ process.on('SIGTERM', () => {
 })
 
 // Start the server
-if (import.meta.main) {
-	main().catch((error) => {
-		Logger.error('Fatal error', error)
-		process.exit(1)
-	})
-}
+main().catch((error) => {
+	Logger.error('Fatal error', error)
+	process.exit(1)
+})

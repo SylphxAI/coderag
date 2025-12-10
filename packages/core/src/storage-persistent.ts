@@ -1,8 +1,9 @@
 /**
- * Persistent storage implementation using SQLite + Drizzle ORM
+ * Persistent storage implementation using SQLite + Drizzle ORM (LibSQL WASM-compatible)
  * Now supports chunk-level indexing for better search granularity
  */
 
+import type { Client } from '@libsql/client'
 import { eq, sql } from 'drizzle-orm'
 import { createDb, type DbConfig, type DbInstance } from './db/client.js'
 import { runMigrations } from './db/migrations.js'
@@ -30,17 +31,37 @@ export interface StoredChunk extends ChunkData {
 }
 
 export class PersistentStorage implements Storage {
-	private dbInstance: DbInstance
+	private dbInstance!: DbInstance
+	private initPromise: Promise<void>
 
 	constructor(config: DbConfig = {}) {
-		this.dbInstance = createDb(config)
-		runMigrations(this.dbInstance.sqlite)
+		this.initPromise = this.initialize(config)
+	}
+
+	private async initialize(config: DbConfig): Promise<void> {
+		this.dbInstance = await createDb(config)
+		await runMigrations(this.dbInstance.client)
+	}
+
+	/**
+	 * Ensure database is initialized before operations
+	 */
+	private async ensureInit(): Promise<void> {
+		await this.initPromise
+	}
+
+	/**
+	 * Get the LibSQL client for raw SQL operations
+	 */
+	private get client(): Client {
+		return this.dbInstance.client
 	}
 
 	/**
 	 * Store a file
 	 */
 	async storeFile(file: CodebaseFile): Promise<void> {
+		await this.ensureInit()
 		const { db } = this.dbInstance
 		const mtime = typeof file.mtime === 'number' ? file.mtime : file.mtime.getTime()
 
@@ -79,52 +100,42 @@ export class PersistentStorage implements Storage {
 			return
 		}
 
-		const { db, sqlite } = this.dbInstance
+		await this.ensureInit()
 
-		// Use SQLite transaction for atomic batch insert
-		sqlite.exec('BEGIN TRANSACTION')
-
-		try {
-			// Process files one by one within transaction (still much faster than separate transactions)
-			for (const file of files) {
+		// LibSQL supports batch transactions
+		await this.client.batch(
+			files.map((file) => {
 				const mtime = typeof file.mtime === 'number' ? file.mtime : file.mtime.getTime()
-				const values = {
-					path: file.path,
-					content: file.content,
-					hash: file.hash,
-					size: file.size,
-					mtime,
-					...(file.language ? { language: file.language } : {}),
-					indexedAt: Date.now(),
+				return {
+					sql: `INSERT INTO files (path, content, hash, size, mtime, language, indexed_at)
+					      VALUES (?, ?, ?, ?, ?, ?, ?)
+					      ON CONFLICT(path) DO UPDATE SET
+					        content = excluded.content,
+					        hash = excluded.hash,
+					        size = excluded.size,
+					        mtime = excluded.mtime,
+					        language = excluded.language,
+					        indexed_at = excluded.indexed_at`,
+					args: [
+						file.path,
+						file.content,
+						file.hash,
+						file.size,
+						mtime,
+						file.language || null,
+						Date.now(),
+					],
 				}
-
-				await db
-					.insert(schema.files)
-					.values(values)
-					.onConflictDoUpdate({
-						target: schema.files.path,
-						set: {
-							content: values.content,
-							hash: values.hash,
-							size: values.size,
-							mtime: values.mtime,
-							...(values.language ? { language: values.language } : {}),
-							indexedAt: values.indexedAt,
-						},
-					})
-			}
-
-			sqlite.exec('COMMIT')
-		} catch (error) {
-			sqlite.exec('ROLLBACK')
-			throw error
-		}
+			}),
+			'write'
+		)
 	}
 
 	/**
 	 * Get a file by path
 	 */
 	async getFile(path: string): Promise<CodebaseFile | null> {
+		await this.ensureInit()
 		const { db } = this.dbInstance
 
 		const result = await db.select().from(schema.files).where(eq(schema.files.path, path)).get()
@@ -147,6 +158,7 @@ export class PersistentStorage implements Storage {
 	 * Get all files
 	 */
 	async getAllFiles(): Promise<CodebaseFile[]> {
+		await this.ensureInit()
 		const { db } = this.dbInstance
 
 		const results = await db.select().from(schema.files).all()
@@ -165,6 +177,7 @@ export class PersistentStorage implements Storage {
 	 * Delete a file
 	 */
 	async deleteFile(path: string): Promise<void> {
+		await this.ensureInit()
 		const { db } = this.dbInstance
 
 		await db.delete(schema.files).where(eq(schema.files.path, path))
@@ -174,6 +187,7 @@ export class PersistentStorage implements Storage {
 	 * Clear all files
 	 */
 	async clear(): Promise<void> {
+		await this.ensureInit()
 		const { db } = this.dbInstance
 
 		await db.delete(schema.chunks)
@@ -189,7 +203,8 @@ export class PersistentStorage implements Storage {
 	 * Store chunks for a file (replaces existing chunks)
 	 */
 	async storeChunks(filePath: string, chunks: ChunkData[]): Promise<number[]> {
-		const { db, sqlite } = this.dbInstance
+		await this.ensureInit()
+		const { db } = this.dbInstance
 
 		// Get file ID
 		const file = await db.select().from(schema.files).where(eq(schema.files.path, filePath)).get()
@@ -197,41 +212,33 @@ export class PersistentStorage implements Storage {
 			throw new Error(`File not found: ${filePath}`)
 		}
 
-		sqlite.exec('BEGIN TRANSACTION')
+		// Delete existing chunks for this file
+		await db.delete(schema.chunks).where(eq(schema.chunks.fileId, file.id))
 
-		try {
-			// Delete existing chunks for this file
-			await db.delete(schema.chunks).where(eq(schema.chunks.fileId, file.id))
-
-			// Insert new chunks
-			const chunkIds: number[] = []
-			for (const chunk of chunks) {
-				const insertValues: Record<string, unknown> = {
-					fileId: file.id,
-					content: chunk.content,
-					type: chunk.type,
-					startLine: chunk.startLine,
-					endLine: chunk.endLine,
-				}
-				if (chunk.metadata) {
-					insertValues.metadata = JSON.stringify(chunk.metadata)
-				}
-				const result = await db
-					.insert(schema.chunks)
-					.values(insertValues as typeof schema.chunks.$inferInsert)
-					.returning({ id: schema.chunks.id })
-
-				if (result[0]) {
-					chunkIds.push(result[0].id)
-				}
+		// Insert new chunks
+		const chunkIds: number[] = []
+		for (const chunk of chunks) {
+			const insertValues: Record<string, unknown> = {
+				fileId: file.id,
+				content: chunk.content,
+				type: chunk.type,
+				startLine: chunk.startLine,
+				endLine: chunk.endLine,
 			}
+			if (chunk.metadata) {
+				insertValues.metadata = JSON.stringify(chunk.metadata)
+			}
+			const result = await db
+				.insert(schema.chunks)
+				.values(insertValues as typeof schema.chunks.$inferInsert)
+				.returning({ id: schema.chunks.id })
 
-			sqlite.exec('COMMIT')
-			return chunkIds
-		} catch (error) {
-			sqlite.exec('ROLLBACK')
-			throw error
+			if (result[0]) {
+				chunkIds.push(result[0].id)
+			}
 		}
+
+		return chunkIds
 	}
 
 	/**
@@ -240,7 +247,8 @@ export class PersistentStorage implements Storage {
 	async storeManyChunks(
 		fileChunks: Array<{ filePath: string; chunks: ChunkData[] }>
 	): Promise<Map<string, number[]>> {
-		const { db, sqlite } = this.dbInstance
+		await this.ensureInit()
+		const { db } = this.dbInstance
 		const result = new Map<string, number[]>()
 
 		if (fileChunks.length === 0) {
@@ -265,53 +273,44 @@ export class PersistentStorage implements Storage {
 			fileIdMap.set(file.path, file.id)
 		}
 
-		sqlite.exec('BEGIN TRANSACTION')
+		// Delete existing chunks for these files
+		const fileIds = Array.from(fileIdMap.values())
+		if (fileIds.length > 0) {
+			await db.delete(schema.chunks).where(
+				sql`${schema.chunks.fileId} IN (${sql.join(
+					fileIds.map((id) => sql`${id}`),
+					sql`, `
+				)})`
+			)
+		}
 
-		try {
-			// Delete existing chunks for these files
-			const fileIds = Array.from(fileIdMap.values())
-			if (fileIds.length > 0) {
-				await db.delete(schema.chunks).where(
-					sql`${schema.chunks.fileId} IN (${sql.join(
-						fileIds.map((id) => sql`${id}`),
-						sql`, `
-					)})`
-				)
-			}
+		// Insert new chunks
+		for (const fc of fileChunks) {
+			const fileId = fileIdMap.get(fc.filePath)
+			if (!fileId) continue
 
-			// Insert new chunks
-			for (const fc of fileChunks) {
-				const fileId = fileIdMap.get(fc.filePath)
-				if (!fileId) continue
-
-				const chunkIds: number[] = []
-				for (const chunk of fc.chunks) {
-					const insertValues: Record<string, unknown> = {
-						fileId,
-						content: chunk.content,
-						type: chunk.type,
-						startLine: chunk.startLine,
-						endLine: chunk.endLine,
-					}
-					if (chunk.metadata) {
-						insertValues.metadata = JSON.stringify(chunk.metadata)
-					}
-					const insertResult = await db
-						.insert(schema.chunks)
-						.values(insertValues as typeof schema.chunks.$inferInsert)
-						.returning({ id: schema.chunks.id })
-
-					if (insertResult[0]) {
-						chunkIds.push(insertResult[0].id)
-					}
+			const chunkIds: number[] = []
+			for (const chunk of fc.chunks) {
+				const insertValues: Record<string, unknown> = {
+					fileId,
+					content: chunk.content,
+					type: chunk.type,
+					startLine: chunk.startLine,
+					endLine: chunk.endLine,
 				}
-				result.set(fc.filePath, chunkIds)
-			}
+				if (chunk.metadata) {
+					insertValues.metadata = JSON.stringify(chunk.metadata)
+				}
+				const insertResult = await db
+					.insert(schema.chunks)
+					.values(insertValues as typeof schema.chunks.$inferInsert)
+					.returning({ id: schema.chunks.id })
 
-			sqlite.exec('COMMIT')
-		} catch (error) {
-			sqlite.exec('ROLLBACK')
-			throw error
+				if (insertResult[0]) {
+					chunkIds.push(insertResult[0].id)
+				}
+			}
+			result.set(fc.filePath, chunkIds)
 		}
 
 		return result
@@ -321,6 +320,7 @@ export class PersistentStorage implements Storage {
 	 * Get chunks for a file
 	 */
 	async getChunksForFile(filePath: string): Promise<StoredChunk[]> {
+		await this.ensureInit()
 		const { db } = this.dbInstance
 
 		const results = await db
@@ -355,6 +355,7 @@ export class PersistentStorage implements Storage {
 	 * Get total chunk count
 	 */
 	async getChunkCount(): Promise<number> {
+		await this.ensureInit()
 		const { db } = this.dbInstance
 		const result = await db.select({ count: sql<number>`count(*)` }).from(schema.chunks).get()
 		return result?.count || 0
@@ -364,6 +365,7 @@ export class PersistentStorage implements Storage {
 	 * Get file count
 	 */
 	async count(): Promise<number> {
+		await this.ensureInit()
 		const { db } = this.dbInstance
 
 		const result = await db.select({ count: sql<number>`count(*)` }).from(schema.files).get()
@@ -375,6 +377,7 @@ export class PersistentStorage implements Storage {
 	 * Check if file exists
 	 */
 	async exists(path: string): Promise<boolean> {
+		await this.ensureInit()
 		const { db } = this.dbInstance
 
 		const result = await db.select().from(schema.files).where(eq(schema.files.path, path)).get()
@@ -390,14 +393,18 @@ export class PersistentStorage implements Storage {
 		terms: Map<string, { tf: number; tfidf: number; rawFreq: number }>,
 		tokenCount?: number
 	): Promise<void> {
-		const { db, sqlite } = this.dbInstance
+		await this.ensureInit()
+		const { db } = this.dbInstance
 
 		// Delete existing vectors for this chunk
 		await db.delete(schema.documentVectors).where(eq(schema.documentVectors.chunkId, chunkId))
 
 		// Update token count if provided
 		if (tokenCount !== undefined) {
-			sqlite.exec(`UPDATE chunks SET token_count = ${tokenCount} WHERE id = ${chunkId}`)
+			await this.client.execute({
+				sql: 'UPDATE chunks SET token_count = ? WHERE id = ?',
+				args: [tokenCount, chunkId],
+			})
 		}
 
 		// Insert new vectors in batches (SQLite has ~999 bind variable limit, 5 fields per row = 199 rows)
@@ -431,76 +438,73 @@ export class PersistentStorage implements Storage {
 			return
 		}
 
-		const { db, sqlite } = this.dbInstance
+		await this.ensureInit()
+		const { db } = this.dbInstance
 
-		// Use SQLite transaction for atomic batch insert
-		sqlite.exec('BEGIN TRANSACTION')
+		// Delete all existing vectors for these chunks
+		const chunkIds = chunkVectors.map((cv) => cv.chunkId)
 
-		try {
-			// Delete all existing vectors for these chunks
-			const chunkIds = chunkVectors.map((cv) => cv.chunkId)
+		if (chunkIds.length > 0) {
+			// Delete in batches to avoid SQLite variable limits
+			const deleteBatchSize = 500
+			for (let i = 0; i < chunkIds.length; i += deleteBatchSize) {
+				const batch = chunkIds.slice(i, i + deleteBatchSize)
+				await db.delete(schema.documentVectors).where(
+					sql`${schema.documentVectors.chunkId} IN (${sql.join(
+						batch.map((id) => sql`${id}`),
+						sql`, `
+					)})`
+				)
+			}
+		}
 
-			if (chunkIds.length > 0) {
-				// Delete in batches to avoid SQLite variable limits
-				const deleteBatchSize = 500
-				for (let i = 0; i < chunkIds.length; i += deleteBatchSize) {
-					const batch = chunkIds.slice(i, i + deleteBatchSize)
-					await db.delete(schema.documentVectors).where(
-						sql`${schema.documentVectors.chunkId} IN (${sql.join(
-							batch.map((id) => sql`${id}`),
-							sql`, `
-						)})`
-					)
-				}
+		// Prepare all vectors for batch insert
+		const allVectors: Array<{
+			chunkId: number
+			term: string
+			tf: number
+			tfidf: number
+			rawFreq: number
+		}> = []
+
+		// Track token counts for BM25
+		const tokenCountUpdates: Array<{ chunkId: number; tokenCount: number }> = []
+
+		for (const cv of chunkVectors) {
+			// Track token count for BM25 document length normalization
+			if (cv.tokenCount !== undefined) {
+				tokenCountUpdates.push({ chunkId: cv.chunkId, tokenCount: cv.tokenCount })
 			}
 
-			// Prepare all vectors for batch insert
-			const allVectors: Array<{
-				chunkId: number
-				term: string
-				tf: number
-				tfidf: number
-				rawFreq: number
-			}> = []
-
-			// Track token counts for BM25
-			const tokenCountUpdates: Array<{ chunkId: number; tokenCount: number }> = []
-
-			for (const cv of chunkVectors) {
-				// Track token count for BM25 document length normalization
-				if (cv.tokenCount !== undefined) {
-					tokenCountUpdates.push({ chunkId: cv.chunkId, tokenCount: cv.tokenCount })
-				}
-
-				for (const [term, scores] of cv.terms.entries()) {
-					allVectors.push({
-						chunkId: cv.chunkId,
-						term,
-						tf: scores.tf,
-						tfidf: scores.tfidf,
-						rawFreq: scores.rawFreq,
-					})
-				}
+			for (const [term, scores] of cv.terms.entries()) {
+				allVectors.push({
+					chunkId: cv.chunkId,
+					term,
+					tf: scores.tf,
+					tfidf: scores.tfidf,
+					rawFreq: scores.rawFreq,
+				})
 			}
+		}
 
-			// Update token counts for BM25 (using raw SQL)
-			for (const { chunkId, tokenCount } of tokenCountUpdates) {
-				sqlite.exec(`UPDATE chunks SET token_count = ${tokenCount} WHERE id = ${chunkId}`)
+		// Update token counts for BM25 using batch
+		if (tokenCountUpdates.length > 0) {
+			await this.client.batch(
+				tokenCountUpdates.map(({ chunkId, tokenCount }) => ({
+					sql: 'UPDATE chunks SET token_count = ? WHERE id = ?',
+					args: [tokenCount, chunkId],
+				})),
+				'write'
+			)
+		}
+
+		// Insert in batches to avoid SQLite variable limits (5 fields per row = 199 rows max)
+		const batchSize = 199
+		for (let i = 0; i < allVectors.length; i += batchSize) {
+			const batch = allVectors.slice(i, i + batchSize)
+			if (batch.length > 0) {
+				await db.insert(schema.documentVectors).values(batch)
 			}
-
-			// Insert in batches to avoid SQLite variable limits (5 fields per row = 199 rows max)
-			const batchSize = 199
-			for (let i = 0; i < allVectors.length; i += batchSize) {
-				const batch = allVectors.slice(i, i + batchSize)
-				if (batch.length > 0) {
-					await db.insert(schema.documentVectors).values(batch)
-				}
-			}
-
-			sqlite.exec('COMMIT')
-		} catch (error) {
-			sqlite.exec('ROLLBACK')
-			throw error
 		}
 	}
 
@@ -508,6 +512,7 @@ export class PersistentStorage implements Storage {
 	 * Store IDF scores
 	 */
 	async storeIdfScores(idf: Map<string, number>, docFreq: Map<string, number>): Promise<void> {
+		await this.ensureInit()
 		const { db } = this.dbInstance
 
 		// Clear existing IDF scores
@@ -531,6 +536,7 @@ export class PersistentStorage implements Storage {
 	 * Get IDF scores
 	 */
 	async getIdfScores(): Promise<Map<string, number>> {
+		await this.ensureInit()
 		const { db } = this.dbInstance
 
 		const scores = await db.select().from(schema.idfScores).all()
@@ -549,6 +555,7 @@ export class PersistentStorage implements Storage {
 	async getChunkVectors(
 		chunkId: number
 	): Promise<Map<string, { tf: number; tfidf: number; rawFreq: number }> | null> {
+		await this.ensureInit()
 		const { db } = this.dbInstance
 
 		const vectors = await db
@@ -581,6 +588,7 @@ export class PersistentStorage implements Storage {
 	async getAllChunkVectors(): Promise<
 		Map<number, Map<string, { tf: number; tfidf: number; rawFreq: number }>>
 	> {
+		await this.ensureInit()
 		const { db } = this.dbInstance
 
 		// Single query to get all vectors
@@ -642,6 +650,7 @@ export class PersistentStorage implements Storage {
 			return []
 		}
 
+		await this.ensureInit()
 		const { db } = this.dbInstance
 		const { limit = 100 } = options
 
@@ -747,6 +756,7 @@ export class PersistentStorage implements Storage {
 			return new Map()
 		}
 
+		await this.ensureInit()
 		const { db } = this.dbInstance
 
 		const scores = await db
@@ -781,6 +791,7 @@ export class PersistentStorage implements Storage {
 	 * Used for incremental diff detection
 	 */
 	async getAllFileMetadata(): Promise<Map<string, { mtime: number; hash: string }>> {
+		await this.ensureInit()
 		const { db } = this.dbInstance
 
 		const results = await db
@@ -808,27 +819,19 @@ export class PersistentStorage implements Storage {
 			return
 		}
 
-		const { db, sqlite } = this.dbInstance
+		await this.ensureInit()
+		const { db } = this.dbInstance
 
-		sqlite.exec('BEGIN TRANSACTION')
-
-		try {
-			// Delete in chunks to avoid SQLite variable limits
-			const chunkSize = 500
-			for (let i = 0; i < paths.length; i += chunkSize) {
-				const chunk = paths.slice(i, i + chunkSize)
-				await db.delete(schema.files).where(
-					sql`${schema.files.path} IN (${sql.join(
-						chunk.map((p) => sql`${p}`),
-						sql`, `
-					)})`
-				)
-			}
-
-			sqlite.exec('COMMIT')
-		} catch (error) {
-			sqlite.exec('ROLLBACK')
-			throw error
+		// Delete in chunks to avoid SQLite variable limits
+		const chunkSize = 500
+		for (let i = 0; i < paths.length; i += chunkSize) {
+			const chunk = paths.slice(i, i + chunkSize)
+			await db.delete(schema.files).where(
+				sql`${schema.files.path} IN (${sql.join(
+					chunk.map((p) => sql`${p}`),
+					sql`, `
+				)})`
+			)
 		}
 	}
 
@@ -836,6 +839,7 @@ export class PersistentStorage implements Storage {
 	 * Store metadata
 	 */
 	async setMetadata(key: string, value: string): Promise<void> {
+		await this.ensureInit()
 		const { db } = this.dbInstance
 
 		await db
@@ -858,6 +862,7 @@ export class PersistentStorage implements Storage {
 	 * Get metadata
 	 */
 	async getMetadata(key: string): Promise<string | null> {
+		await this.ensureInit()
 		const { db } = this.dbInstance
 
 		const result = await db
@@ -874,6 +879,8 @@ export class PersistentStorage implements Storage {
 	 * Returns cached value from metadata if available, otherwise calculates from chunks table
 	 */
 	async getAverageDocLength(): Promise<number> {
+		await this.ensureInit()
+
 		// Try to get cached value first
 		const cached = await this.getMetadata('avgDocLength')
 		if (cached) {
@@ -901,6 +908,7 @@ export class PersistentStorage implements Storage {
 	 * Update average chunk length in metadata (call after indexing)
 	 */
 	async updateAverageDocLength(): Promise<number> {
+		await this.ensureInit()
 		const { db } = this.dbInstance
 		const result = await db
 			.select({
@@ -920,7 +928,8 @@ export class PersistentStorage implements Storage {
 	 * Calculates document frequency for each term across CHUNKS and computes IDF
 	 */
 	async rebuildIdfScoresFromVectors(): Promise<void> {
-		const { db, sqlite } = this.dbInstance
+		await this.ensureInit()
+		const { db } = this.dbInstance
 
 		// Get total chunk count (IDF is calculated per chunk, not per file)
 		const totalChunks = await this.getChunkCount()
@@ -939,32 +948,23 @@ export class PersistentStorage implements Storage {
 			.groupBy(schema.documentVectors.term)
 			.all()
 
-		// Clear existing IDF scores and insert new ones
-		sqlite.exec('BEGIN TRANSACTION')
+		// Clear existing IDF scores
+		await db.delete(schema.idfScores)
 
-		try {
-			await db.delete(schema.idfScores)
+		// Insert in batches using smoothed IDF formula
+		// Smoothed IDF: log((N+1)/(df+1)) + 1 ensures no term gets IDF=0
+		const BATCH_SIZE = 300
+		const scores = dfResults.map((row) => ({
+			term: row.term,
+			idf: Math.log((totalChunks + 1) / (row.df + 1)) + 1,
+			documentFrequency: row.df,
+		}))
 
-			// Insert in batches using smoothed IDF formula
-			// Smoothed IDF: log((N+1)/(df+1)) + 1 ensures no term gets IDF=0
-			const BATCH_SIZE = 300
-			const scores = dfResults.map((row) => ({
-				term: row.term,
-				idf: Math.log((totalChunks + 1) / (row.df + 1)) + 1,
-				documentFrequency: row.df,
-			}))
-
-			for (let i = 0; i < scores.length; i += BATCH_SIZE) {
-				const batch = scores.slice(i, i + BATCH_SIZE)
-				if (batch.length > 0) {
-					await db.insert(schema.idfScores).values(batch)
-				}
+		for (let i = 0; i < scores.length; i += BATCH_SIZE) {
+			const batch = scores.slice(i, i + BATCH_SIZE)
+			if (batch.length > 0) {
+				await db.insert(schema.idfScores).values(batch)
 			}
-
-			sqlite.exec('COMMIT')
-		} catch (error) {
-			sqlite.exec('ROLLBACK')
-			throw error
 		}
 	}
 
@@ -973,10 +973,10 @@ export class PersistentStorage implements Storage {
 	 * Updates document_vectors.tfidf = document_vectors.tf * idf_scores.idf
 	 */
 	async recalculateTfidfScores(): Promise<void> {
-		const { sqlite } = this.dbInstance
+		await this.ensureInit()
 
 		// Use raw SQL for efficient batch update with JOIN
-		sqlite.exec(`
+		await this.client.execute(`
 			UPDATE document_vectors
 			SET tfidf = tf * COALESCE(
 				(SELECT idf FROM idf_scores WHERE idf_scores.term = document_vectors.term),
@@ -991,10 +991,10 @@ export class PersistentStorage implements Storage {
 	 * Called after TF-IDF recalculation to keep magnitude in sync
 	 */
 	async updateChunkMagnitudes(): Promise<void> {
-		const { sqlite } = this.dbInstance
+		await this.ensureInit()
 
 		// Use raw SQL for efficient batch update with aggregate
-		sqlite.exec(`
+		await this.client.execute(`
 			UPDATE chunks
 			SET magnitude = COALESCE(
 				(SELECT SQRT(SUM(tfidf * tfidf)) FROM document_vectors WHERE document_vectors.chunk_id = chunks.id),
@@ -1012,6 +1012,7 @@ export class PersistentStorage implements Storage {
 			return new Set()
 		}
 
+		await this.ensureInit()
 		const { db } = this.dbInstance
 		const terms = new Set<string>()
 
@@ -1074,6 +1075,7 @@ export class PersistentStorage implements Storage {
 	 * Get all chunks with their file paths (for bulk operations)
 	 */
 	async getAllChunks(): Promise<StoredChunk[]> {
+		await this.ensureInit()
 		const { db } = this.dbInstance
 
 		const results = await db
@@ -1107,6 +1109,6 @@ export class PersistentStorage implements Storage {
 	 * Close database connection
 	 */
 	close(): void {
-		this.dbInstance.sqlite.close()
+		this.dbInstance.client.close()
 	}
 }

@@ -2,6 +2,16 @@
 
 ## 0.1.21 (2025-12-10)
 
+### ✨ Features
+
+- **core:** upgrade synth parsers to WASM for cross-platform support (#44) ([e589110](https://github.com/SylphxAI/coderag/commit/e589110b985f730f127edede3e37158d4868e8c3))
+
+### 🐛 Bug Fixes
+
+- **core:** move native deps to optionalDependencies for npx compatibility (#42) ([2580a7a](https://github.com/SylphxAI/coderag/commit/2580a7aac2cdde0a9ccfb4eb9ca9d5ea5898177c))
+
+## 0.1.21 (2025-12-10)
+
 ### 🐛 Bug Fixes
 
 - **core:** move native deps to optionalDependencies for npx compatibility (#42) ([2580a7a](https://github.com/SylphxAI/coderag/commit/2580a7aac2cdde0a9ccfb4eb9ca9d5ea5898177c))

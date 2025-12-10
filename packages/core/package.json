@@ -46,9 +46,15 @@
 	"dependencies": {
 		"@ai-sdk/openai": "^1.0.11",
 		"@huggingface/transformers": "^3.7.6",
-		"@lancedb/lancedb": "^0.22.3",
+		"@libsql/client": "^0.14.0",
 		"@parcel/watcher": "^2.5.1",
 		"@sylphx/synth": "^0.1.3",
+		"ai": "^4.0.35",
+		"drizzle-orm": "^0.36.4",
+		"ignore": "^7.0.5"
+	},
+	"optionalDependencies": {
+		"@lancedb/lancedb": "^0.22.3",
 		"@sylphx/synth-c": "^0.2.1",
 		"@sylphx/synth-go": "^0.2.1",
 		"@sylphx/synth-html": "latest",
@@ -63,11 +69,7 @@
 		"@sylphx/synth-rust": "^0.2.3",
 		"@sylphx/synth-toml": "^0.2.1",
 		"@sylphx/synth-xml": "^0.2.1",
-		"@sylphx/synth-yaml": "latest",
-		"ai": "^4.0.35",
-		"@libsql/client": "^0.14.0",
-		"drizzle-orm": "^0.36.4",
-		"ignore": "^7.0.5"
+		"@sylphx/synth-yaml": "latest"
 	},
 	"devDependencies": {
 		"@sylphx/doctor": "^1.25.0",

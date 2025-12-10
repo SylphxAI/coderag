@@ -1,5 +1,11 @@
 # @sylphx/codebase-search
 
+## 0.1.23 (2025-12-10)
+
+### 🐛 Bug Fixes
+
+- **core:** use explicit version constraints for synth packages (#48) ([814a356](https://github.com/SylphxAI/coderag/commit/814a3567539e0c51389e7c866a4ababee2f64b4d))
+
 ## 0.1.22 (2025-12-10)
 
 ### ✨ Features

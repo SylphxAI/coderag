@@ -65,13 +65,12 @@
 		"@sylphx/synth-xml": "^0.2.1",
 		"@sylphx/synth-yaml": "latest",
 		"ai": "^4.0.35",
-		"better-sqlite3": "^11.8.1",
+		"@libsql/client": "^0.14.0",
 		"drizzle-orm": "^0.36.4",
 		"ignore": "^7.0.5"
 	},
 	"devDependencies": {
 		"@sylphx/doctor": "^1.25.0",
-		"@types/better-sqlite3": "^7.6.12",
 		"@types/node": "^24.9.2",
 		"drizzle-kit": "^0.28.1",
 		"typescript": "^5.9.3",

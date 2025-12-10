@@ -1,13 +1,13 @@
 /**
- * Database client setup
+ * Database client setup using LibSQL (WASM-compatible)
  */
 
 import crypto from 'node:crypto'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import Database from 'better-sqlite3'
-import { drizzle } from 'drizzle-orm/better-sqlite3'
+import { type Client, createClient } from '@libsql/client'
+import { drizzle } from 'drizzle-orm/libsql'
 import * as schema from './schema.js'
 
 export interface DbConfig {
@@ -17,7 +17,7 @@ export interface DbConfig {
 
 export interface DbInstance {
 	db: ReturnType<typeof drizzle<typeof schema>>
-	sqlite: Database.Database
+	client: Client
 	dbPath: string
 }
 
@@ -79,9 +79,9 @@ function cleanupOldStorage(codebaseRoot: string): void {
 }
 
 /**
- * Create database client
+ * Create database client (async for LibSQL compatibility)
  */
-export function createDb(config: DbConfig = {}): DbInstance {
+export async function createDb(config: DbConfig = {}): Promise<DbInstance> {
 	const codebaseRoot = config.codebaseRoot || process.cwd()
 
 	// Clean up old .codebase-search folder (no longer used)
@@ -99,14 +99,16 @@ export function createDb(config: DbConfig = {}): DbInstance {
 	// Write project metadata for identification
 	writeProjectMetadata(dbDir, codebaseRoot)
 
-	// Create SQLite connection
-	const sqlite = new Database(dbPath)
+	// Create LibSQL client with local file
+	const client = createClient({
+		url: `file:${dbPath}`,
+	})
 
 	// Enable WAL mode for better concurrency
-	sqlite.pragma('journal_mode = WAL')
+	await client.execute('PRAGMA journal_mode = WAL')
 
 	// Create Drizzle instance
-	const db = drizzle(sqlite, { schema })
+	const db = drizzle(client, { schema })
 
-	return { db, sqlite, dbPath }
+	return { db, client, dbPath }
 }

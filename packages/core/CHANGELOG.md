@@ -1,5 +1,15 @@
 # @sylphx/codebase-search
 
+## 0.1.22 (2025-12-10)
+
+### ✨ Features
+
+- **core:** upgrade synth parsers to WASM for cross-platform support (#44) ([e589110](https://github.com/SylphxAI/coderag/commit/e589110b985f730f127edede3e37158d4868e8c3))
+
+### 📚 Documentation
+
+- **core:** document WASM parser async requirement (#46) ([197f868](https://github.com/SylphxAI/coderag/commit/197f8688e1f4fc255d93e90006d63a5dcbb99364))
+
 ## 0.1.21 (2025-12-10)
 
 ### ✨ Features

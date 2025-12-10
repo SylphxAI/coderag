@@ -54,6 +54,7 @@ interface Tree {
 
 type SynthParser = {
 	parse: (source: string, options?: Record<string, unknown>) => Tree
+	parseAsync: (source: string, options?: Record<string, unknown>) => Promise<Tree>
 }
 
 // ============================================
@@ -105,8 +106,14 @@ async function loadSynthParser(language: string): Promise<SynthParser | null> {
 	const config = getLanguageConfig(langLower)
 	if (config) {
 		try {
-			const parserModule = (await import(config.parser)) as { parse: SynthParser['parse'] }
-			const parser: SynthParser = { parse: parserModule.parse }
+			const parserModule = (await import(config.parser)) as {
+				parse: SynthParser['parse']
+				parseAsync: SynthParser['parseAsync']
+			}
+			const parser: SynthParser = {
+				parse: parserModule.parse,
+				parseAsync: parserModule.parseAsync,
+			}
 			parserCache.set(langLower, parser)
 			return parser
 		} catch (error) {
@@ -118,8 +125,12 @@ async function loadSynthParser(language: string): Promise<SynthParser | null> {
 	try {
 		const parserModule = (await import(`@sylphx/synth-${langLower}`)) as {
 			parse: SynthParser['parse']
+			parseAsync: SynthParser['parseAsync']
 		}
-		const parser: SynthParser = { parse: parserModule.parse }
+		const parser: SynthParser = {
+			parse: parserModule.parse,
+			parseAsync: parserModule.parseAsync,
+		}
 		parserCache.set(langLower, parser)
 		console.error(`[INFO] Auto-discovered parser for ${language}`)
 		return parser
@@ -378,7 +389,8 @@ async function parseWithSynth(
 
 	try {
 		const options = config?.parserOptions ?? {}
-		return parser.parse(code, options)
+		// WASM parsers require async parsing
+		return await parser.parseAsync(code, options)
 	} catch (error) {
 		console.error(`[WARN] Synth parsing failed for ${language}:`, error)
 		return null

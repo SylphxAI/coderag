@@ -1,5 +1,11 @@
 # @sylphx/codebase-search
 
+## 0.1.20 (2025-12-10)
+
+### ✨ Features
+
+- **core:** replace better-sqlite3 with libsql for WASM compatibility (#40) ([e568f66](https://github.com/SylphxAI/coderag/commit/e568f666de7e69eac1f6f1e231e7a406d11e4f41))
+
 ## 0.1.19 (2025-11-29)
 
 ### ✨ Features

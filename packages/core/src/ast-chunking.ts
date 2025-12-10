@@ -52,6 +52,11 @@ interface Tree {
 	nodes: BaseNode[]
 }
 
+/**
+ * Synth parser interface.
+ * Note: WASM-based parsers (v0.3.x) require parseAsync().
+ * Sync parse() throws for tree-sitter based languages (c, go, java, php, python, ruby, rust).
+ */
 type SynthParser = {
 	parse: (source: string, options?: Record<string, unknown>) => Tree
 	parseAsync: (source: string, options?: Record<string, unknown>) => Promise<Tree>

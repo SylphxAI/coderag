@@ -1,218 +1,226 @@
 # Quick Start
 
-Get started with CodeRAG in 5 minutes.
+Get up and running with CodeRAG in 5 minutes.
 
-## 1. Install
+## Basic Usage
 
-```bash
-bun add @sylphx/coderag
-```
-
-## 2. Set Up Environment
-
-Create `.env`:
-
-```bash
-OPENAI_API_KEY=sk-...
-```
-
-## 3. Create Indexer
+### 1. Create an Indexer
 
 ```typescript
-// index.ts
-import { CodebaseIndexer } from '@sylphx/coderag';
+import { CodebaseIndexer, PersistentStorage } from '@sylphx/coderag'
 
+// Create persistent storage (SQLite database)
+const storage = new PersistentStorage({
+  codebaseRoot: './my-project',
+})
+
+// Create the indexer
 const indexer = new CodebaseIndexer({
-  codebaseRoot: '/path/to/your/project',
-  indexPath: '.coderag'
-});
-
-// Index your codebase
-await indexer.index();
-
-console.log('✅ Indexing complete!');
+  codebaseRoot: './my-project',
+  storage,
+})
 ```
 
-Run it:
-
-```bash
-bun run index.ts
-```
-
-## 4. Search Your Codebase
+### 2. Index Your Codebase
 
 ```typescript
-// search.ts
-import { CodebaseIndexer } from '@sylphx/coderag';
+// Index all files
+await indexer.index()
 
-const indexer = new CodebaseIndexer({
-  codebaseRoot: '/path/to/your/project',
-  indexPath: '.coderag'
-});
+// Or index with progress reporting
+await indexer.index({
+  onProgress: (current, total, file) => {
+    console.log(`[${current}/${total}] ${file}`)
+  },
+})
+```
 
-// Hybrid search (keyword + semantic)
-const results = await indexer.search('user authentication', {
+### 3. Search
+
+```typescript
+// Search for code
+const results = await indexer.search('authentication middleware', {
   limit: 10,
-  vectorWeight: 0.7,  // 70% semantic, 30% keyword
-  includeContent: true
-});
+  includeContent: true,
+})
 
-console.log(`Found ${results.length} results:`);
-results.forEach((result, i) => {
-  console.log(`\n${i + 1}. ${result.path} (score: ${result.score.toFixed(3)})`);
-  console.log(`   ${result.content?.slice(0, 100)}...`);
-});
+// Results include file path, score, and code snippet
+for (const result of results) {
+  console.log(`${result.path}:${result.startLine}-${result.endLine}`)
+  console.log(`Score: ${result.score}`)
+  console.log(`Type: ${result.chunkType}`)
+  console.log(result.snippet)
+  console.log('---')
+}
 ```
 
-Run it:
-
-```bash
-bun run search.ts
-```
-
-## Search Strategies
-
-### Hybrid Search (Recommended)
-
-Best of both worlds - combines keyword precision with semantic understanding:
+## Complete Example
 
 ```typescript
-const results = await indexer.search('authentication logic', {
-  vectorWeight: 0.7  // 70% semantic, 30% keyword
-});
+import { CodebaseIndexer, PersistentStorage } from '@sylphx/coderag'
+
+async function main() {
+  // Setup
+  const storage = new PersistentStorage({ codebaseRoot: '.' })
+  const indexer = new CodebaseIndexer({
+    codebaseRoot: '.',
+    storage,
+    maxFileSize: 1024 * 1024, // 1MB max file size
+  })
+
+  // Index with file watching
+  console.log('Indexing codebase...')
+  await indexer.index({ watch: true })
+  console.log(`Indexed ${await indexer.getIndexedCount()} files`)
+
+  // Search
+  const query = 'database connection'
+  console.log(`\nSearching for: "${query}"`)
+
+  const results = await indexer.search(query, {
+    limit: 5,
+    includeContent: true,
+    fileExtensions: ['.ts', '.js'],
+  })
+
+  // Display results
+  for (const result of results) {
+    console.log(`\n📄 ${result.path}:${result.startLine || 0}`)
+    console.log(`   Score: ${result.score.toFixed(3)}`)
+    console.log(`   Type: ${result.chunkType || 'unknown'}`)
+    if (result.snippet) {
+      console.log(`   Preview: ${result.snippet.slice(0, 100)}...`)
+    }
+  }
+
+  // Keep watching for changes
+  console.log('\n👁️  Watching for file changes...')
+}
+
+main().catch(console.error)
 ```
 
-### Keyword Search (Fast)
+## With Semantic Search
 
-Traditional TF-IDF for exact term matching:
-
-```typescript
-const results = await indexer.keywordSearch('getUserData', {
-  limit: 10
-});
-```
-
-### Semantic Search (Smart)
-
-Vector search for understanding meaning:
+Enable vector-based semantic search for meaning-based results:
 
 ```typescript
-const results = await indexer.semanticSearch('database connection pool', {
-  limit: 10
-});
-```
+import {
+  CodebaseIndexer,
+  PersistentStorage,
+  createEmbeddingProvider,
+  hybridSearch,
+} from '@sylphx/coderag'
 
-## Incremental Updates
+// Create embedding provider (requires OPENAI_API_KEY)
+const embeddingProvider = await createEmbeddingProvider({
+  provider: 'openai',
+  model: 'text-embedding-3-small',
+  dimensions: 1536,
+})
 
-Only reindex changed files:
+const storage = new PersistentStorage({ codebaseRoot: '.' })
+const indexer = new CodebaseIndexer({
+  codebaseRoot: '.',
+  storage,
+  embeddingProvider,
+})
 
-```typescript
-// Initial index
-await indexer.index();
+await indexer.index()
 
-// ... make changes to your codebase ...
-
-// Incremental update (166x faster!)
-await indexer.index();  // Automatically detects changes
+// Hybrid search: 70% semantic, 30% keyword
+const results = await hybridSearch('user authentication flow', indexer, {
+  vectorWeight: 0.7,
+  limit: 10,
+})
 ```
 
 ## Search Options
 
 ```typescript
 interface SearchOptions {
-  limit?: number;           // Max results (default: 10)
-  minScore?: number;        // Minimum relevance score (0-1)
-  includeContent?: boolean; // Include file content in results
-  vectorWeight?: number;    // Semantic vs keyword balance (0-1)
+  // Number of results to return
+  limit?: number // default: 10
+
+  // Include code snippets in results
+  includeContent?: boolean // default: true
+
+  // Filter by file extension
+  fileExtensions?: string[] // e.g., ['.ts', '.tsx']
+
+  // Filter by path pattern
+  pathFilter?: string // e.g., 'src/components'
+
+  // Exclude paths
+  excludePaths?: string[] // e.g., ['node_modules', 'dist']
+
+  // Context lines around matches
+  contextLines?: number // default: 3
+
+  // Max characters per snippet
+  maxSnippetChars?: number // default: 2000
+
+  // Max snippet blocks per file
+  maxSnippetBlocks?: number // default: 4
 }
 ```
 
-## Example: Full-Featured Search
+## File Watching
+
+Enable automatic re-indexing when files change:
 
 ```typescript
-import { CodebaseIndexer } from '@sylphx/coderag';
+// Start watching
+await indexer.index({ watch: true })
 
-const indexer = new CodebaseIndexer({
-  codebaseRoot: process.cwd(),
-  indexPath: '.coderag'
-});
+// Or start/stop manually
+await indexer.startWatch()
+await indexer.stopWatch()
 
-// Build index
-console.log('📦 Indexing codebase...');
-await indexer.index();
-
-// Search with all options
-const results = await indexer.search('error handling middleware', {
-  limit: 5,
-  minScore: 0.5,
-  includeContent: true,
-  vectorWeight: 0.8  // Favor semantic understanding
-});
-
-// Display results
-console.log(`\n🔍 Found ${results.length} results:\n`);
-
-results.forEach((result, i) => {
-  console.log(`${i + 1}. ${result.path}`);
-  console.log(`   Score: ${result.score.toFixed(3)}`);
-  console.log(`   Language: ${result.language}`);
-
-  if (result.content) {
-    const preview = result.content.slice(0, 150).replace(/\n/g, ' ');
-    console.log(`   Preview: ${preview}...`);
-  }
-
-  console.log('');
-});
+// Check status
+console.log(indexer.isWatchEnabled()) // true/false
 ```
 
-## Performance Tips
+## Keyword vs Semantic Search
 
-### 1. Use Query Caching
+### Keyword Search (Default)
 
-Caching is automatic and provides 100x speedup for repeated queries:
+Best for exact matches and code symbols:
 
 ```typescript
-// First query: ~130ms
-const results1 = await indexer.search('authentication');
-
-// Cached query: ~1.3ms (100x faster!)
-const results2 = await indexer.search('authentication');
+// Good for: function names, variable names, exact matches
+const results = await indexer.search('getUserById')
+const results = await indexer.search('handleSubmit')
 ```
 
-### 2. Incremental Updates
+### Semantic Search
 
-Only reindex changed files instead of full rebuild:
+Best for conceptual queries:
 
 ```typescript
-// Initial index: ~13s for 250 files
-await indexer.index();
+import { hybridSearch } from '@sylphx/coderag'
 
-// Change 5 files...
-
-// Incremental update: ~2.6s (166x faster!)
-await indexer.index();
+// Good for: concepts, descriptions, "how does X work"
+const results = await hybridSearch('authentication flow', indexer, {
+  vectorWeight: 0.9, // Almost pure semantic
+})
 ```
 
-### 3. Tune Vector Weight
+### Hybrid Search (Recommended)
 
-Adjust based on your search needs:
+Best for general queries:
 
 ```typescript
-// Favor keyword precision (code symbols)
-const results1 = await indexer.search('getUserData', { vectorWeight: 0.3 });
+import { hybridSearch } from '@sylphx/coderag'
 
-// Favor semantic understanding (concepts)
-const results2 = await indexer.search('user authentication', { vectorWeight: 0.8 });
-
-// Balanced (default)
-const results3 = await indexer.search('error handling', { vectorWeight: 0.5 });
+// Balanced keyword + semantic
+const results = await hybridSearch('user login validation', indexer, {
+  vectorWeight: 0.7, // 70% semantic, 30% keyword
+})
 ```
 
 ## Next Steps
 
-- [TF-IDF Search](./tfidf.md) - Deep dive into keyword search
-- [Vector Search](./vector-search.md) - Understand semantic search
-- [Hybrid Search](./hybrid-search.md) - Master combined strategies
-- [Embedding Providers](./providers.md) - Configure providers
-- [Performance Tuning](./performance.md) - Optimize for your use case
+- [How Search Works](/guide/how-search-works) - Understand the search algorithm
+- [AST Chunking](/guide/ast-chunking) - Learn about semantic chunking
+- [MCP Server](/mcp/overview) - Use with AI assistants

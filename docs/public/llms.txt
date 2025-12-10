@@ -1,0 +1,87 @@
+# CodeRAG
+
+> Lightning-fast semantic code search with AST chunking - RAG-ready for AI assistants
+
+## Overview
+
+CodeRAG is a high-performance code search library that combines TF-IDF keyword search with optional vector embeddings. It uses AST parsing to split code at semantic boundaries (functions, classes, etc.) for precise, chunk-level search results.
+
+## Documentation
+
+- Getting Started: /guide/getting-started
+- Installation: /guide/installation
+- Quick Start: /guide/quick-start
+- How Search Works: /guide/how-search-works
+- AST Chunking: /guide/ast-chunking
+- TF-IDF & BM25: /guide/tfidf
+- Vector Search: /guide/vector-search
+- Hybrid Search: /guide/hybrid-search
+- Persistent Storage: /guide/storage
+- File Watching: /guide/file-watching
+- Language Support: /guide/languages
+- Performance: /guide/performance
+
+## API Reference
+
+- Overview: /api/overview
+- CodebaseIndexer: /api/indexer
+- PersistentStorage: /api/storage
+- Search Functions: /api/search
+- Embedding Providers: /api/embeddings
+- AST Chunking: /api/chunking
+- Types: /api/types
+
+## MCP Server
+
+- Overview: /mcp/overview
+- Installation: /mcp/installation
+- Configuration: /mcp/configuration
+- Tools Reference: /mcp/tools
+- IDE Integration: /mcp/ide-integration
+
+## Key Concepts
+
+### Chunk-Level Search
+Unlike file-level search, CodeRAG returns semantic chunks (functions, classes, methods) with precise line numbers. This reduces token usage when feeding results to LLMs.
+
+### Hybrid Search
+Combines keyword search (BM25) with optional vector embeddings for best accuracy. Use vectorWeight parameter to balance precision vs semantic understanding.
+
+### Persistent Storage
+SQLite-based storage with instant startup (<100ms). Automatically handles incremental updates when files change.
+
+### MCP Server
+Model Context Protocol server for AI assistants (Claude, Cursor, VS Code). Provides codebase_search tool for semantic code search.
+
+## Packages
+
+- @sylphx/coderag - Core library (TF-IDF, storage, indexer)
+- @sylphx/coderag-mcp - MCP server for AI assistants
+
+## Quick Start
+
+```typescript
+import { CodebaseIndexer, PersistentStorage } from '@sylphx/coderag'
+
+const storage = new PersistentStorage({ codebaseRoot: '.' })
+const indexer = new CodebaseIndexer({ codebaseRoot: '.', storage })
+
+await indexer.index()
+const results = await indexer.search('authentication middleware')
+```
+
+## MCP Server Usage
+
+```bash
+npx @sylphx/coderag-mcp --root=/path/to/project
+```
+
+## Supported Languages
+
+JavaScript, TypeScript, Python, Go, Rust, Java, C, C++, Ruby, PHP, Markdown, HTML, JSON, YAML, TOML, and more.
+
+## Links
+
+- GitHub: https://github.com/SylphxAI/coderag
+- npm: https://www.npmjs.com/package/@sylphx/coderag
+- Documentation: https://coderag.sylphx.com

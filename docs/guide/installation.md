@@ -1,17 +1,8 @@
 # Installation
 
-## Prerequisites
-
-- Node.js 18+ or Bun 1.0+
-- TypeScript 5.0+ (for TypeScript projects)
-
-## Install Core Package
+## Package Installation
 
 ::: code-group
-
-```bash [bun]
-bun add @sylphx/coderag
-```
 
 ```bash [npm]
 npm install @sylphx/coderag
@@ -21,47 +12,69 @@ npm install @sylphx/coderag
 pnpm add @sylphx/coderag
 ```
 
+```bash [bun]
+bun add @sylphx/coderag
+```
+
 ```bash [yarn]
 yarn add @sylphx/coderag
 ```
 
 :::
 
-## Install MCP Server (Optional)
+## Requirements
 
-For AI assistant RAG integration:
+- **Node.js**: 18.0.0 or higher
+- **Runtime**: Node.js, Bun, or Deno
 
-::: code-group
+## Optional Dependencies
 
-```bash [bun]
-bun add @sylphx/coderag-mcp
-```
+CodeRAG uses optional dependencies for language-specific AST parsing. These are automatically installed when needed but can be pre-installed for faster startup:
 
-```bash [npm]
-npm install @sylphx/coderag-mcp
-```
-
-:::
-
-## Environment Setup
-
-Create a `.env` file in your project root:
+### Language Parsers
 
 ```bash
-# OpenAI API Key (required for vector search)
+# All languages (recommended)
+npm install @sylphx/synth-js @sylphx/synth-python @sylphx/synth-go \
+  @sylphx/synth-rust @sylphx/synth-java @sylphx/synth-c
+
+# Specific languages only
+npm install @sylphx/synth-js      # JavaScript/TypeScript
+npm install @sylphx/synth-python  # Python
+npm install @sylphx/synth-go      # Go
+npm install @sylphx/synth-rust    # Rust
+```
+
+### Vector Search (Optional)
+
+For semantic search with embeddings:
+
+```bash
+# LanceDB for vector storage
+npm install @lancedb/lancedb
+```
+
+## Environment Variables
+
+### For Semantic Search
+
+To enable vector-based semantic search, set your OpenAI API key:
+
+```bash
+# Required for semantic search
 OPENAI_API_KEY=sk-...
 
-# Optional: Custom base URL for OpenAI-compatible endpoints
-OPENAI_BASE_URL=https://api.openrouter.ai/api/v1
+# Optional: Custom endpoint (for OpenAI-compatible APIs)
+OPENAI_BASE_URL=https://api.openai.com/v1
 
-# Optional: Custom embedding model
+# Optional: Custom model
 EMBEDDING_MODEL=text-embedding-3-small
 
-# Optional: Custom embedding dimensions
+# Optional: Custom dimensions
 EMBEDDING_DIMENSIONS=1536
 ```
 
-### Supported Providers
+### Supported Embedding Providers
 
 #### OpenAI (Official)
 
@@ -95,32 +108,76 @@ EMBEDDING_MODEL=nomic-embed-text
 EMBEDDING_DIMENSIONS=768
 ```
 
-## Verify Installation
+## MCP Server Installation
 
-Create a test file:
-
-```typescript
-// test-search.ts
-import { CodebaseIndexer } from '@sylphx/coderag';
-
-const indexer = new CodebaseIndexer({
-  codebaseRoot: process.cwd(),
-  indexPath: '.coderag'
-});
-
-console.log('✅ CodeRAG installed successfully!');
-```
-
-Run it:
+For AI assistant integration (Claude, Cursor, etc.):
 
 ```bash
-bun run test-search.ts
+# Run directly with npx (no installation needed)
+npx @sylphx/coderag-mcp --root=/path/to/project
+
+# Or install globally
+npm install -g @sylphx/coderag-mcp
+coderag-mcp --root=/path/to/project
+```
+
+## Verifying Installation
+
+Create a test file to verify the installation:
+
+```typescript
+// test.ts
+import { CodebaseIndexer, PersistentStorage } from '@sylphx/coderag'
+
+const storage = new PersistentStorage({ codebaseRoot: '.' })
+const indexer = new CodebaseIndexer({
+  codebaseRoot: '.',
+  storage,
+})
+
+console.log('CodeRAG installed successfully!')
+```
+
+Run with:
+
+```bash
+npx tsx test.ts
 # or
-npx tsx test-search.ts
+bun test.ts
+```
+
+## Troubleshooting
+
+### Native Module Errors (Windows)
+
+If you encounter errors with native modules on Windows, ensure you're using the latest version which uses WASM-based parsers:
+
+```bash
+npm install @sylphx/coderag@latest
+```
+
+### Tokenizer Download
+
+On first run, CodeRAG downloads the StarCoder2 tokenizer (~4.7MB). This is cached locally after the first download.
+
+```
+[INFO] Loading StarCoder2 tokenizer (4.7MB, one-time download)...
+[SUCCESS] Tokenizer loaded in 406ms
+```
+
+### Memory Issues
+
+For large codebases, enable low memory mode:
+
+```typescript
+const indexer = new CodebaseIndexer({
+  codebaseRoot: './large-project',
+  storage: new PersistentStorage({ codebaseRoot: './large-project' }),
+  lowMemoryMode: true, // Uses SQL-based search
+})
 ```
 
 ## Next Steps
 
-- [Quick Start](./quick-start.md) - Build your first index
-- [Embedding Providers](./providers.md) - Configure providers
-- [MCP Server](../mcp/installation.md) - Set up AI integration
+- [Quick Start](/guide/quick-start) - Build your first search index
+- [Performance Tuning](/guide/performance) - Tune for your use case

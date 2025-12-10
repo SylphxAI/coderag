@@ -1,73 +1,107 @@
-# Getting Started
+# What is CodeRAG?
 
-## What is CodeRAG?
-
-CodeRAG is a lightning-fast hybrid code search library that combines TF-IDF keyword search with vector embeddings for semantic understanding. Built for RAG (Retrieval-Augmented Generation), it's perfect for AI assistants, documentation search, and IDE integration.
+CodeRAG is a lightning-fast semantic code search library designed for RAG (Retrieval-Augmented Generation) applications. It combines traditional keyword search (TF-IDF/BM25) with optional vector embeddings to provide accurate, context-aware code search results.
 
 ## Key Features
 
-### 🔍 Hybrid Search Engine
+### AST-Based Chunking
 
-Combines two complementary search strategies:
+Unlike traditional search that returns entire files, CodeRAG uses Abstract Syntax Tree (AST) parsing to split code at semantic boundaries:
 
-- **TF-IDF (Keyword)**: Fast, precise matching for exact terms
-- **Vector (Semantic)**: Understanding meaning and context
-- **Hybrid**: Weighted combination for best results
+- **Functions**: Find specific function implementations
+- **Classes**: Locate class definitions and methods
+- **Imports**: Track module dependencies
+- **Comments**: Search documentation blocks
 
-### ⚡ High Performance
+This means search results are more precise and consume fewer tokens when used with LLMs.
 
-- **2.7x faster** initial indexing
-- **166x faster** incremental updates
-- **100x faster** cached queries
+### Hybrid Search
 
-### 🎯 Code-Aware Tokenization
+CodeRAG supports three search modes:
 
-Uses StarCoder2 tokenization to properly handle:
-- camelCase identifiers
-- snake_case naming
-- Code-specific patterns
+1. **Keyword Search (TF-IDF/BM25)**: Fast, precise matching using StarCoder2 tokenization
+2. **Semantic Search (Vector)**: Meaning-based search using embeddings (requires OpenAI API)
+3. **Hybrid Search**: Weighted combination of both for best results
 
-### 🔌 Extensible Architecture
+### Performance
 
-- Registry pattern for custom embedding providers
-- Support for OpenAI, OpenRouter, Together AI, Fireworks AI, Ollama
-- Mock provider for testing
+| Metric | Value |
+|--------|-------|
+| Indexing Speed | 1000-2000 files/sec |
+| Startup Time | <100ms (cached) |
+| Search Latency | <50ms |
+| Memory per 1000 files | ~1-2 MB |
 
-### 📦 Batteries Included
+### Language Support
 
-- MCP server for AI assistant integration
-- Persistent storage with SQLite
-- Automatic incremental updates
-- Query caching
+CodeRAG supports 15+ programming languages out of the box:
 
-## Installation
+- **JavaScript/TypeScript**: JS, JSX, TS, TSX, MJS, CJS
+- **Systems**: Python, Go, Rust, Java, C, C++, Ruby, PHP
+- **Markup**: Markdown, HTML, XML
+- **Data**: JSON, YAML, TOML, Protobuf
 
-See the [Installation Guide](./installation.md) for detailed setup instructions.
+## Use Cases
 
-## Quick Start
+### AI Assistants
 
-See the [Quick Start Guide](./quick-start.md) to get up and running in 5 minutes.
+CodeRAG powers AI coding assistants by providing relevant code context:
 
-## Architecture Overview
+```typescript
+// User asks: "How does authentication work?"
+const results = await indexer.search('authentication logic')
+// Returns: auth.ts:15-45 (login function), middleware/auth.ts:10-30 (JWT validation)
+```
+
+### Code Navigation
+
+Build IDE-like "Go to Definition" features:
+
+```typescript
+const results = await indexer.search('function getUserById', {
+  limit: 1,
+  fileExtensions: ['.ts'],
+})
+```
+
+### Documentation Search
+
+Find relevant code examples for documentation:
+
+```typescript
+const results = await indexer.search('database connection pool', {
+  includeContent: true,
+  contextLines: 5,
+})
+```
+
+## Architecture
 
 ```
-┌─────────────────────────────────────────┐
-│         Hybrid Search Engine            │
-├─────────────────┬───────────────────────┤
-│   TF-IDF        │   Vector Search       │
-│   (Keyword)     │   (Semantic)          │
-├─────────────────┴───────────────────────┤
-│         Code Tokenization               │
-│         (StarCoder2)                    │
-├─────────────────────────────────────────┤
-│      Persistent Storage (SQLite)        │
-└─────────────────────────────────────────┘
+┌─────────────────────────────────────────────────┐
+│              CodebaseIndexer                     │
+├─────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐               │
+│  │  TF-IDF     │  │   Vector    │  (optional)   │
+│  │  (BM25)     │  │  (OpenAI)   │               │
+│  └──────┬──────┘  └──────┬──────┘               │
+│         │                │                       │
+│         └───────┬────────┘                       │
+│                 ▼                                │
+│  ┌─────────────────────────────────┐            │
+│  │       AST Chunking              │            │
+│  │     (tree-sitter + synth)       │            │
+│  └─────────────────────────────────┘            │
+├─────────────────────────────────────────────────┤
+│  ┌─────────────────────────────────┐            │
+│  │     PersistentStorage           │            │
+│  │        (SQLite)                 │            │
+│  └─────────────────────────────────┘            │
+└─────────────────────────────────────────────────┘
 ```
 
 ## Next Steps
 
-- [Installation](./installation.md) - Install and configure
-- [Quick Start](./quick-start.md) - Build your first search index
-- [TF-IDF Search](./tfidf.md) - Learn keyword search
-- [Vector Search](./vector-search.md) - Learn semantic search
-- [Hybrid Search](./hybrid-search.md) - Combine both strategies
+- [Installation](/guide/installation) - Install CodeRAG in your project
+- [Quick Start](/guide/quick-start) - Build your first search index
+- [MCP Server](/mcp/overview) - Use with AI assistants

@@ -1,0 +1,55 @@
+{
+	"$schema": "https://context7.com/schema.json",
+	"name": "CodeRAG",
+	"description": "Lightning-fast semantic code search with AST chunking - RAG-ready for AI assistants",
+	"repository": "https://github.com/SylphxAI/coderag",
+	"documentation": "https://coderag.sylphx.com",
+	"npm": "@sylphx/coderag",
+	"rules": [
+		"Always use PersistentStorage for production - it provides SQLite persistence and instant startup",
+		"Use async parseAsync() not sync parse() - WASM parsers require async initialization",
+		"Import from subpaths when possible: '@sylphx/coderag/storage', '@sylphx/coderag/tfidf'",
+		"Set lowMemoryMode: true for codebases over 10,000 files to use SQL-based search",
+		"Use hybridSearch() for best results when OPENAI_API_KEY is set, otherwise use indexer.search()",
+		"File watching requires await indexer.index({ watch: true }) - don't forget await",
+		"SearchResult.snippet contains formatted code with line numbers, chunkType indicates the AST node type",
+		"StarCoder2 tokenizer downloads on first use (~4.7MB) - pre-initialize with initializeTokenizer()",
+		"Synth parsers are optional dependencies - they install automatically when needed"
+	],
+	"folders": [
+		{
+			"path": "docs",
+			"description": "VitePress documentation site"
+		},
+		{
+			"path": "packages/core/src",
+			"description": "Core library source code"
+		},
+		{
+			"path": "packages/mcp-server/src",
+			"description": "MCP server implementation"
+		}
+	],
+	"excludeFolders": [
+		"node_modules",
+		"dist",
+		".vitepress/dist",
+		".vitepress/cache",
+		".turbo",
+		".git"
+	],
+	"examples": [
+		{
+			"title": "Basic Usage",
+			"code": "import { CodebaseIndexer, PersistentStorage } from '@sylphx/coderag'\n\nconst storage = new PersistentStorage({ codebaseRoot: '.' })\nconst indexer = new CodebaseIndexer({ codebaseRoot: '.', storage })\n\nawait indexer.index()\nconst results = await indexer.search('authentication')"
+		},
+		{
+			"title": "Hybrid Search",
+			"code": "import { CodebaseIndexer, PersistentStorage, createEmbeddingProvider, hybridSearch } from '@sylphx/coderag'\n\nconst embeddingProvider = await createEmbeddingProvider({ provider: 'openai' })\nconst storage = new PersistentStorage({ codebaseRoot: '.' })\nconst indexer = new CodebaseIndexer({ codebaseRoot: '.', storage, embeddingProvider })\n\nawait indexer.index()\nconst results = await hybridSearch('user login flow', indexer, { vectorWeight: 0.7 })"
+		},
+		{
+			"title": "MCP Server",
+			"code": "npx @sylphx/coderag-mcp --root=/path/to/project"
+		}
+	]
+}

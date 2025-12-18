@@ -1,5 +1,11 @@
 # @sylphx/codebase-search
 
+## 0.1.24 (2025-12-18)
+
+### 🐛 Bug Fixes
+
+- **core:** critical memory leak in pendingFileChanges (#51) ([3c83d15](https://github.com/SylphxAI/coderag/commit/3c83d15a9734413eb86724f45779d9661edfae84))
+
 ## 0.1.23 (2025-12-10)
 
 ### 🐛 Bug Fixes

@@ -1,5 +1,11 @@
 # @sylphx/codebase-search-mcp
 
+## 0.3.33 (2025-12-18)
+
+### 🐛 Bug Fixes
+
+- **core:** critical memory leak in pendingFileChanges (#51) ([3c83d15](https://github.com/SylphxAI/coderag/commit/3c83d15a9734413eb86724f45779d9661edfae84))
+
 ## 0.3.32 (2025-12-10)
 
 ### 📦 Dependencies

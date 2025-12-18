@@ -754,7 +754,39 @@ export class CodebaseIndexer {
 		}
 		this.pendingUpdates.clear()
 
+		// Clear pending file changes to prevent memory leak
+		this.pendingFileChanges = []
+
 		console.error('[SUCCESS] File watcher stopped')
+	}
+
+	/**
+	 * Close indexer and release all resources
+	 * Should be called when the indexer is no longer needed
+	 */
+	async close(): Promise<void> {
+		// Stop file watcher first
+		await this.stopWatch()
+
+		// Close vector storage (LanceDB connection)
+		if (this.vectorStorage) {
+			await this.vectorStorage.close()
+			this.vectorStorage = undefined
+		}
+
+		// Close persistent storage (SQLite connection)
+		if (this.storage instanceof PersistentStorage) {
+			this.storage.close()
+		}
+
+		// Clear all in-memory state
+		this.searchIndex = null
+		this.incrementalEngine = null
+		this.pendingFileChanges = []
+		this.searchCache.clear()
+		this.ignoreFilter = null
+
+		console.error('[SUCCESS] Indexer closed and resources released')
 	}
 
 	/**
@@ -898,43 +930,54 @@ export class CodebaseIndexer {
 	private async rebuildSearchIndex(): Promise<void> {
 		// If no incremental engine or no pending changes, do full rebuild
 		if (!this.incrementalEngine || this.pendingFileChanges.length === 0) {
-			return this.fullRebuildSearchIndex()
-		}
-
-		// Check if incremental update is recommended
-		if (await this.incrementalEngine.shouldFullRebuild(this.pendingFileChanges)) {
-			console.error('[INFO] Changes too extensive, performing full rebuild instead of incremental')
+			// CRITICAL: Clear pending changes to prevent memory leak
+			// In lowMemoryMode, incrementalEngine is null, so we must clear here
 			this.pendingFileChanges = []
 			return this.fullRebuildSearchIndex()
 		}
 
-		// Perform incremental update
-		const stats = await this.incrementalEngine.applyUpdates(this.pendingFileChanges)
-		this.pendingFileChanges = []
+		// Use try/finally to ensure pendingFileChanges is always cleared
+		// This prevents memory leak if an exception occurs during rebuild
+		try {
+			// Check if incremental update is recommended
+			if (await this.incrementalEngine.shouldFullRebuild(this.pendingFileChanges)) {
+				console.error(
+					'[INFO] Changes too extensive, performing full rebuild instead of incremental'
+				)
+				this.pendingFileChanges = []
+				return this.fullRebuildSearchIndex()
+			}
 
-		// Update search index from incremental engine
-		const indexData = this.incrementalEngine.getIndex()
-		this.searchIndex = {
-			documents: indexData.documents,
-			idf: indexData.idf,
-			totalDocuments: indexData.totalDocuments,
-			metadata: {
-				generatedAt: new Date().toISOString(),
-				version: '1.0.0',
-			},
-		}
+			// Perform incremental update
+			const stats = await this.incrementalEngine.applyUpdates(this.pendingFileChanges)
 
-		console.error(
-			`[SUCCESS] Incremental update: ${stats.affectedDocuments} docs, ${stats.affectedTerms} terms, ${stats.updateTime}ms`
-		)
+			// Update search index from incremental engine
+			const indexData = this.incrementalEngine.getIndex()
+			this.searchIndex = {
+				documents: indexData.documents,
+				idf: indexData.idf,
+				totalDocuments: indexData.totalDocuments,
+				metadata: {
+					generatedAt: new Date().toISOString(),
+					version: '1.0.0',
+				},
+			}
 
-		// Invalidate search cache (index changed)
-		this.searchCache.invalidate()
-		console.error('[INFO] Search cache invalidated')
+			console.error(
+				`[SUCCESS] Incremental update: ${stats.affectedDocuments} docs, ${stats.affectedTerms} terms, ${stats.updateTime}ms`
+			)
 
-		// Persist if using persistent storage
-		if (this.storage instanceof PersistentStorage) {
-			await this.persistSearchIndex()
+			// Invalidate search cache (index changed)
+			this.searchCache.invalidate()
+			console.error('[INFO] Search cache invalidated')
+
+			// Persist if using persistent storage
+			if (this.storage instanceof PersistentStorage) {
+				await this.persistSearchIndex()
+			}
+		} finally {
+			// Always clear pending changes to prevent memory leak
+			this.pendingFileChanges = []
 		}
 	}
 

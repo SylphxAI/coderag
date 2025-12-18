@@ -359,9 +359,17 @@ export class VectorStorage {
 	}
 
 	/**
-	 * Close database connection
+	 * Close database connection and release resources
 	 */
 	async close(): Promise<void> {
+		// Actually close LanceDB connection to release file handles and memory
+		if (this.db) {
+			try {
+				this.db.close()
+			} catch {
+				// Ignore close errors - connection may already be closed
+			}
+		}
 		this.db = null
 		this.table = null
 		this.initialized = false

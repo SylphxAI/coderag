@@ -78,12 +78,18 @@ async function main() {
 	Logger.info('💾 Using persistent storage (SQLite)')
 
 	// Create indexer
-	const indexer = new CodebaseIndexer({
+	const localIndexer = new CodebaseIndexer({
 		codebaseRoot,
 		maxFileSize,
 		storage,
 		embeddingProvider,
 	})
+
+	// Register for graceful shutdown
+	setupShutdownHandler(localIndexer)
+
+	// Use local reference for all operations
+	const indexer = localIndexer
 
 	// Track indexing state for search handler
 	let indexingPending = autoIndex // Will be set to false once indexing completes or fails
@@ -398,16 +404,28 @@ When to use:
 	Logger.info('💡 Press Ctrl+C to stop the server')
 }
 
-// Handle process signals
-process.on('SIGINT', () => {
-	Logger.info('\n🛑 Shutting down MCP server...')
-	process.exit(0)
-})
+// Handle process signals - ensure proper cleanup
+let indexer: CodebaseIndexer | null = null
 
-process.on('SIGTERM', () => {
-	Logger.info('\n🛑 Shutting down MCP server...')
+function setupShutdownHandler(idx: CodebaseIndexer) {
+	indexer = idx
+}
+
+async function gracefulShutdown(signal: string) {
+	Logger.info(`\n🛑 Received ${signal}, shutting down MCP server...`)
+	if (indexer) {
+		try {
+			await indexer.close()
+			Logger.success('✓ Resources released')
+		} catch (error) {
+			Logger.error('Failed to close indexer', error)
+		}
+	}
 	process.exit(0)
-})
+}
+
+process.on('SIGINT', () => gracefulShutdown('SIGINT'))
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'))
 
 // Start the server
 main().catch((error) => {

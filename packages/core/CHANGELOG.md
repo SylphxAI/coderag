@@ -1,5 +1,11 @@
 # @sylphx/codebase-search
 
+## 0.1.25 (2025-12-18)
+
+### 🐛 Bug Fixes
+
+- **core:** maxFileSize option not respected in index() and add comprehensive indexer tests ([61fc201](https://github.com/SylphxAI/coderag/commit/61fc20101efcac9e786190ff6b6da88c51f8b351))
+
 ## 0.1.24 (2025-12-18)
 
 ### 🐛 Bug Fixes

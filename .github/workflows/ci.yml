@@ -8,7 +8,7 @@ on:
 
 jobs:
   test:
-    runs-on: sylphx-linux-standard
+    runs-on: [self-hosted, sylphx, linux, standard]
 
     steps:
       - uses: actions/checkout@v4

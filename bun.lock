@@ -8,7 +8,6 @@
         "@biomejs/biome": "^2.3.8",
         "@sylphx/biome-config": "^0.4.0",
         "@sylphx/bump": "^1.1.1",
-        "@sylphx/doctor": "^1.23.3",
         "lefthook": "^2.0.4",
         "turbo": "^2.6.1",
         "typescript": "^5.9.3",
@@ -18,7 +17,7 @@
     },
     "packages/core": {
       "name": "@sylphx/coderag",
-      "version": "0.1.22",
+      "version": "0.1.24",
       "dependencies": {
         "@ai-sdk/openai": "^1.0.11",
         "@huggingface/transformers": "^3.7.6",
@@ -30,7 +29,6 @@
         "ignore": "^7.0.5",
       },
       "devDependencies": {
-        "@sylphx/doctor": "^1.25.0",
         "@types/node": "^24.9.2",
         "drizzle-kit": "^0.28.1",
         "typescript": "^5.9.3",
@@ -59,7 +57,7 @@
     },
     "packages/mcp-server": {
       "name": "@sylphx/coderag-mcp",
-      "version": "0.3.31",
+      "version": "0.3.33",
       "bin": {
         "coderag-mcp": "./dist/index.js",
       },
@@ -441,8 +439,6 @@
     "@sylphx/coderag": ["@sylphx/coderag@workspace:packages/core"],
 
     "@sylphx/coderag-mcp": ["@sylphx/coderag-mcp@workspace:packages/mcp-server"],
-
-    "@sylphx/doctor": ["@sylphx/doctor@1.23.3", "", { "dependencies": { "citty": "^0.1.6", "consola": "^3.4.2", "defu": "^6.1.4", "jiti": "^2.4.2", "picocolors": "^1.1.1" }, "bin": { "doctor": "dist/cli.js" } }, "sha512-bz9zzT9bS23nO82hCiQlQPxm9Fi5lqyTSFKci89/nyRSPUkG9JMwf85mJmhQsVbglj6RSeYSCFmTvKyiXSxdKw=="],
 
     "@sylphx/gust": ["@sylphx/gust@0.1.13", "", { "dependencies": { "@sylphx/gust-app": "^0.1.9", "@sylphx/gust-server": "^0.1.9" } }, "sha512-py9JdQ7kn6yrXoMGtM7aRigZFjuDXw+cG9kYu5HLGLoKtaAjXWZp3eZnJt9x35uqRKVHR/Z1YhRw+QbCf3Sccw=="],
 
@@ -1065,8 +1061,6 @@
     "zx": ["zx@8.8.5", "", { "bin": { "zx": "build/cli.js" } }, "sha512-SNgDF5L0gfN7FwVOdEFguY3orU5AkfFZm9B5YSHog/UDHv+lvmd82ZAsOenOkQixigwH2+yyH198AwNdKhj+RA=="],
 
     "@esbuild-kit/core-utils/esbuild": ["esbuild@0.18.20", "", { "optionalDependencies": { "@esbuild/android-arm": "0.18.20", "@esbuild/android-arm64": "0.18.20", "@esbuild/android-x64": "0.18.20", "@esbuild/darwin-arm64": "0.18.20", "@esbuild/darwin-x64": "0.18.20", "@esbuild/freebsd-arm64": "0.18.20", "@esbuild/freebsd-x64": "0.18.20", "@esbuild/linux-arm": "0.18.20", "@esbuild/linux-arm64": "0.18.20", "@esbuild/linux-ia32": "0.18.20", "@esbuild/linux-loong64": "0.18.20", "@esbuild/linux-mips64el": "0.18.20", "@esbuild/linux-ppc64": "0.18.20", "@esbuild/linux-riscv64": "0.18.20", "@esbuild/linux-s390x": "0.18.20", "@esbuild/linux-x64": "0.18.20", "@esbuild/netbsd-x64": "0.18.20", "@esbuild/openbsd-x64": "0.18.20", "@esbuild/sunos-x64": "0.18.20", "@esbuild/win32-arm64": "0.18.20", "@esbuild/win32-ia32": "0.18.20", "@esbuild/win32-x64": "0.18.20" }, "bin": { "esbuild": "bin/esbuild" } }, "sha512-ceqxoedUrcayh7Y7ZX6NdbbDzGROiyVBgC4PriJThBKSVPWnnFHZAkfI1lJT8QFkOwH4qOS2SJkS4wvpGl8BpA=="],
-
-    "@sylphx/coderag/@sylphx/doctor": ["@sylphx/doctor@1.25.0", "", { "dependencies": { "citty": "^0.1.6", "consola": "^3.4.2", "defu": "^6.1.4", "jiti": "^2.4.2", "picocolors": "^1.1.1" }, "bin": { "doctor": "dist/cli.js" } }, "sha512-AhAhoDxTsWIB8KYViJ4ZKOoNJprtuzaUYswn364fspbAQbyga8wpr0GehdW838J0jpZkZTZ9nGJg2lJT+nUKbQ=="],
 
     "@sylphx/synth-c/@sylphx/synth": ["@sylphx/synth@0.3.2", "", {}, "sha512-g+8RFCzuxkU2OwC4T+Gn5BWjV93Ehhzatm7ccwM7yzhD22VBIe/wZ58WavoDzwOQg0uLbFRcURYDKEdXYevboA=="],
 

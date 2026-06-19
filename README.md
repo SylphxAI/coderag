@@ -470,6 +470,6 @@ MIT © [Sylphx](https://sylphx.com)
 
 **Powered by [Sylphx](https://github.com/SylphxAI)**
 
-Built with [@sylphx/synth](https://github.com/SylphxAI/synth) • [@sylphx/mcp-server-sdk](https://github.com/SylphxAI/mcp-server-sdk) • [@sylphx/doctor](https://github.com/SylphxAI/doctor) • [@sylphx/bump](https://github.com/SylphxAI/bump)
+Built with [@sylphx/synth](https://github.com/SylphxAI/synth) • [@sylphx/mcp-server-sdk](https://github.com/SylphxAI/mcp-server-sdk) • [@sylphx/bump](https://github.com/SylphxAI/bump)
 
 </div>

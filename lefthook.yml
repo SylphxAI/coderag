@@ -1,4 +1,3 @@
-# Managed by @sylphx/doctor
 # https://github.com/evilmartians/lefthook
 
 pre-commit:
@@ -12,11 +11,3 @@ pre-commit:
     lint:
       glob: "*.{js,ts,jsx,tsx}"
       run: bunx biome check {staged_files}
-
-    doctor:
-      run: bunx @sylphx/doctor check --pre-commit
-
-pre-push:
-  commands:
-    doctor:
-      run: bunx @sylphx/doctor check --pre-push

@@ -5,6 +5,7 @@
     "name": "SylphxAI CodeRAG",
     "lifecycle": "active",
     "layer": "tooling",
+    "policyPool": "agent-tool",
     "summary": "TypeScript/Bun monorepo for hybrid code search and an MCP server for AI assistant code retrieval.",
     "goals": [
       "Provide the @sylphx/coderag core package for hybrid TF-IDF, vector, AST chunking, indexing, and persistent search.",
@@ -125,7 +126,8 @@
     "requiredContexts": [],
     "deployPath": "Pull requests and merge queue run Bun/Turborepo CI; main-branch Release delegates to SylphxAI/.github reusable release workflow for package publication.",
     "productionProof": "Passing typecheck, tests, package build, MCP smoke/config validation when MCP behavior changes, successful release workflow, and package-registry/docs readback for published versions.",
-    "recoveryClass": "forward-fix-only"
+    "recoveryClass": "forward-fix-only",
+    "deployable": false
   },
   "adoption": {
     "status": "baseline",

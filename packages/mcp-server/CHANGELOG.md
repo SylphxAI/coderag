@@ -194,7 +194,7 @@
 
 ### 🔧 Chores
 
-- upgrade @sylphx/bump to 1.0.0 and revert workarounds ([7c54ad9](https://github.com/SylphxAI/coderag/commit/7c54ad916910664bf52f69b363b6533fbb634425))
+- upgrade Changesets to 1.0.0 and revert workarounds ([7c54ad9](https://github.com/SylphxAI/coderag/commit/7c54ad916910664bf52f69b363b6533fbb634425))
 
 ## 0.3.3 (2025-11-27)
 

@@ -21,13 +21,12 @@
 		"docs:preview": "cd docs && bun run docs:preview",
 		"changeset": "changeset",
 		"version": "changeset version",
-		"release": "turbo run build && changeset publish",
+		"release": "echo \"Direct changeset publish is unsafe for workspace packages; use the Sylphx release workflow.\" && exit 1",
 		"typecheck": "turbo typecheck"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.3.8",
 		"@sylphx/biome-config": "^0.4.0",
-		"@sylphx/bump": "^1.1.1",
 		"lefthook": "^2.0.4",
 		"turbo": "^2.6.1",
 		"typescript": "^5.9.3",

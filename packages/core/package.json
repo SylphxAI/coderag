@@ -1,100 +1,103 @@
 {
-	"name": "@sylphx/coderag",
-	"version": "0.1.24",
-	"description": "Semantic code search with vector embeddings - RAG-ready for AI assistants",
-	"type": "module",
-	"main": "./dist/index.js",
-	"types": "./dist/index.d.ts",
-	"exports": {
-		".": {
-			"types": "./dist/index.d.ts",
-			"import": "./dist/index.js"
-		},
-		"./indexer": {
-			"types": "./dist/indexer.d.ts",
-			"import": "./dist/indexer.js"
-		},
-		"./tfidf": {
-			"types": "./dist/tfidf.d.ts",
-			"import": "./dist/tfidf.js"
-		},
-		"./storage": {
-			"types": "./dist/storage.d.ts",
-			"import": "./dist/storage.js"
-		},
-		"./utils": {
-			"types": "./dist/utils.d.ts",
-			"import": "./dist/utils.js"
-		}
-	},
-	"files": [
-		"dist",
-		"README.md"
-	],
-	"scripts": {
-		"build": "tsc",
-		"prepack": "bun run build",
-		"dev": "tsc --watch",
-		"test": "vitest run",
-		"test:watch": "vitest",
-		"type-check": "tsc --noEmit",
-		"clean": "rm -rf dist",
-		"db:generate": "drizzle-kit generate",
-		"db:migrate": "drizzle-kit migrate",
-		"db:studio": "drizzle-kit studio"
-	},
-	"dependencies": {
-		"@ai-sdk/openai": "^1.0.11",
-		"@huggingface/transformers": "^3.7.6",
-		"@libsql/client": "^0.14.0",
-		"@parcel/watcher": "^2.5.1",
-		"@sylphx/synth": "^0.1.3",
-		"ai": "^4.0.35",
-		"drizzle-orm": "^0.36.4",
-		"ignore": "^7.0.5"
-	},
-	"optionalDependencies": {
-		"@lancedb/lancedb": "^0.22.3",
-		"@sylphx/synth-c": "^0.3.1",
-		"@sylphx/synth-go": "^0.3.1",
-		"@sylphx/synth-html": "^0.2.3",
-		"@sylphx/synth-ini": "^0.2.1",
-		"@sylphx/synth-java": "^0.3.1",
-		"@sylphx/synth-js": "^0.2.0",
-		"@sylphx/synth-json": "^0.2.3",
-		"@sylphx/synth-md": "^0.2.3",
-		"@sylphx/synth-md-gfm": "^0.2.3",
-		"@sylphx/synth-php": "^0.3.1",
-		"@sylphx/synth-protobuf": "^0.2.1",
-		"@sylphx/synth-python": "^0.3.1",
-		"@sylphx/synth-ruby": "^0.3.1",
-		"@sylphx/synth-rust": "^0.3.1",
-		"@sylphx/synth-toml": "^0.2.1",
-		"@sylphx/synth-xml": "^0.2.1",
-		"@sylphx/synth-yaml": "^0.2.3"
-	},
-	"devDependencies": {
-		"@types/node": "^24.9.2",
-		"drizzle-kit": "^0.28.1",
-		"typescript": "^5.9.3",
-		"vitest": "^4.0.14"
-	},
-	"keywords": [
-		"rag",
-		"code-search",
-		"retrieval-augmented-generation",
-		"vector-search",
-		"embeddings",
-		"tfidf",
-		"semantic-search",
-		"code-indexing",
-		"mcp"
-	],
-	"author": "SylphxAI",
-	"license": "MIT",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/SylphxAI/coderag.git",
-		"directory": "packages/core"
-	}
+  "name": "@sylphx/coderag",
+  "version": "0.1.24",
+  "description": "Semantic code search with vector embeddings - RAG-ready for AI assistants",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./indexer": {
+      "types": "./dist/indexer.d.ts",
+      "import": "./dist/indexer.js"
+    },
+    "./tfidf": {
+      "types": "./dist/tfidf.d.ts",
+      "import": "./dist/tfidf.js"
+    },
+    "./storage": {
+      "types": "./dist/storage.d.ts",
+      "import": "./dist/storage.js"
+    },
+    "./utils": {
+      "types": "./dist/utils.d.ts",
+      "import": "./dist/utils.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepack": "bun run build",
+    "dev": "tsc --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf dist",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio",
+    "lint:fix": "biome check --write ."
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "^1.0.11",
+    "@huggingface/transformers": "^3.7.6",
+    "@libsql/client": "^0.14.0",
+    "@parcel/watcher": "^2.5.1",
+    "@sylphx/synth": "^0.1.3",
+    "ai": "^4.0.35",
+    "drizzle-orm": "^0.36.4",
+    "ignore": "^7.0.5"
+  },
+  "optionalDependencies": {
+    "@lancedb/lancedb": "^0.22.3",
+    "@sylphx/synth-c": "^0.3.1",
+    "@sylphx/synth-go": "^0.3.1",
+    "@sylphx/synth-html": "^0.2.3",
+    "@sylphx/synth-ini": "^0.2.1",
+    "@sylphx/synth-java": "^0.3.1",
+    "@sylphx/synth-js": "^0.2.0",
+    "@sylphx/synth-json": "^0.2.3",
+    "@sylphx/synth-md": "^0.2.3",
+    "@sylphx/synth-md-gfm": "^0.2.3",
+    "@sylphx/synth-php": "^0.3.1",
+    "@sylphx/synth-protobuf": "^0.2.1",
+    "@sylphx/synth-python": "^0.3.1",
+    "@sylphx/synth-ruby": "^0.3.1",
+    "@sylphx/synth-rust": "^0.3.1",
+    "@sylphx/synth-toml": "^0.2.1",
+    "@sylphx/synth-xml": "^0.2.1",
+    "@sylphx/synth-yaml": "^0.2.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.9.2",
+    "drizzle-kit": "^0.28.1",
+    "typescript": "^7.0.2",
+    "vitest": "^4.0.14",
+    "@biomejs/biome": "^2.3.12",
+    "@sylphx/biome-config": "^0.4.1"
+  },
+  "keywords": [
+    "rag",
+    "code-search",
+    "retrieval-augmented-generation",
+    "vector-search",
+    "embeddings",
+    "tfidf",
+    "semantic-search",
+    "code-indexing",
+    "mcp"
+  ],
+  "author": "SylphxAI",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SylphxAI/coderag.git",
+    "directory": "packages/core"
+  }
 }

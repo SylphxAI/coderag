@@ -1,6 +1,6 @@
 {
 	"profile": "coderag_release_gate",
-	"generated_at": "2026-07-09T04:34:11.087Z",
+	"generated_at": "2026-07-09T04:45:00.141Z",
 	"artifact_dir": "/home/codex/src/github.com/SylphxAI/coderag/benchmark-artifacts",
 	"status": "passed",
 	"summary": {
@@ -29,7 +29,7 @@
 			"status": "passed",
 			"message": "doctor reports the golden retrieval corpus is available",
 			"evidence": {
-				"doctorStatus": "degraded"
+				"doctorStatus": "ready"
 			}
 		},
 		{

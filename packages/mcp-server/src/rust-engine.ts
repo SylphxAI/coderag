@@ -33,6 +33,10 @@ export function resolveRustCliBinary(): string {
 	return 'coderag-cli'
 }
 
+export function isRustCliAvailable(): boolean {
+	return resolveRustCliBinary() !== 'coderag-cli'
+}
+
 export function invokeRustEngine(tool: string, input: Record<string, unknown>): RustSearchEnvelope {
 	const binary = resolveRustCliBinary()
 	const payload = JSON.stringify({ tool, input })
@@ -62,5 +66,11 @@ export function invokeRustEngine(tool: string, input: Record<string, unknown>): 
 }
 
 export function shouldUseRustEngine(): boolean {
-	return process.env.CODERAG_USE_RUST_ENGINE === '1'
+	if (process.env.CODERAG_USE_RUST_ENGINE === '0') {
+		return false
+	}
+	if (process.env.CODERAG_USE_RUST_ENGINE === '1') {
+		return true
+	}
+	return isRustCliAvailable()
 }

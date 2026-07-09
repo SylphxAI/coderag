@@ -51,7 +51,7 @@ const probeCliBinary = (): DoctorCheck => {
 		id: 'cli_binary',
 		status: 'warn',
 		message:
-			'Rust CLI binary is not built. Run `cargo build --release` and set CODERAG_USE_RUST_ENGINE=1 to enable the native retrieval path.',
+			'Rust CLI binary is not built. Run `cargo build --release` to enable the default native retrieval path.',
 	}
 }
 
@@ -73,6 +73,14 @@ const probeGoldenEvalFixture = (): DoctorCheck => {
 }
 
 const probeRustEngineFlag = (): DoctorCheck => {
+	if (process.env.CODERAG_USE_RUST_ENGINE === '0') {
+		return {
+			id: 'rust_engine_flag',
+			status: 'warn',
+			message: 'CODERAG_USE_RUST_ENGINE=0 forces the TypeScript indexer adapter path.',
+		}
+	}
+
 	if (process.env.CODERAG_USE_RUST_ENGINE === '1') {
 		return {
 			id: 'rust_engine_flag',
@@ -81,11 +89,20 @@ const probeRustEngineFlag = (): DoctorCheck => {
 		}
 	}
 
+	const binary = resolveRustCliBinary()
+	if (binary !== 'coderag-cli' && existsSync(binary)) {
+		return {
+			id: 'rust_engine_flag',
+			status: 'ok',
+			message: 'Rust CLI is built; keyword retrieval defaults to the Rust core.',
+		}
+	}
+
 	return {
 		id: 'rust_engine_flag',
 		status: 'warn',
 		message:
-			'CODERAG_USE_RUST_ENGINE is not enabled. The TypeScript indexer remains the default adapter path.',
+			'Rust CLI is not built. The TypeScript indexer remains the default adapter path until `cargo build --release`.',
 	}
 }
 

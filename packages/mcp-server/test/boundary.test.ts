@@ -2,11 +2,16 @@ import { describe, expect, test } from 'bun:test'
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { invokeRustEngine } from '../src/rust-engine.js'
+import { invokeRustEngine, isRustCliAvailable, shouldUseRustEngine } from '../src/rust-engine.js'
 
 const fixtureRoot = join(dirname(fileURLToPath(import.meta.url)), '../../../fixtures/benchmark-corpus')
 
 describe('Rust core boundary', () => {
+	test('defaults to the Rust CLI when it is built', () => {
+		expect(isRustCliAvailable()).toBe(true)
+		expect(shouldUseRustEngine()).toBe(true)
+	})
+
 	test('indexes and searches fixture corpus via coderag-cli', () => {
 		const index = invokeRustEngine('coderag_index', { root: fixtureRoot })
 		expect(index.status).toBe('ok')

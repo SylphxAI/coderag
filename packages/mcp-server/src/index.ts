@@ -305,7 +305,7 @@ When to use:
 	// Start indexing BEFORE server.start() since server.start() blocks waiting for client
 	// This way indexing runs concurrently while waiting for MCP client to connect
 	if (useRustEngine) {
-		Logger.info('🦀 Rust TF-IDF engine enabled (CODERAG_USE_RUST_ENGINE=1)')
+		Logger.info('🦀 Rust TF-IDF engine enabled (default when coderag-cli is built)')
 		invokeRustEngine('coderag_index', { root: codebaseRoot, maxFileBytes: maxFileSize })
 	} else if (autoIndex) {
 		Logger.info('📚 Starting automatic indexing...')

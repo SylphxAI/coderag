@@ -23,6 +23,7 @@
 		"build:rust": "cargo build --release -p coderag-core -p coderag-cli -p coderag-mcp-server && bun scripts/stage-rust-mcp.ts",
 		"test:rust": "cargo test",
 		"test:golden-retrieval": "bun run build:rust && bun test test/golden-retrieval.test.ts",
+		"test:retrieval-parity": "bun run build:rust && bun test test/retrieval-parity.test.ts",
 		"test:public-surface": "bun test test/readmeDiscovery.test.ts",
 		"docs:build": "cd docs && bun run docs:build",
 		"docs:preview": "cd docs && bun run docs:preview",

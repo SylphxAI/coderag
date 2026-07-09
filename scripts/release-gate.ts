@@ -85,6 +85,20 @@ export async function buildReleaseGateReport(artifactDir: string): Promise<Relea
 		'Golden retrieval eval test harness is present'
 	)
 
+	addCheck(
+		checks,
+		'fixtures:parity_baseline',
+		fileExists('fixtures/golden-retrieval-baseline.json'),
+		'Frozen retrieval parity baseline fixture is checked in'
+	)
+
+	addCheck(
+		checks,
+		'tests:retrieval_parity',
+		fileExists('test/retrieval-parity.test.ts'),
+		'Retrieval parity test harness is present'
+	)
+
 	const doctor = await runDoctor('0.0.0')
 	addCheck(
 		checks,
@@ -165,6 +179,30 @@ export async function buildReleaseGateReport(artifactDir: string): Promise<Relea
 			binWrapper.includes('resolve_rust_bin') &&
 			binWrapper.includes('use_ts_transport'),
 		'Default npm bin launches the Rust rmcp MCP server; TypeScript adapter is opt-in only'
+	)
+
+	const parityProbe = spawnSync('bun', ['test', 'test/retrieval-parity.test.ts'], {
+		cwd: repoRoot,
+		encoding: 'utf8',
+		env: {
+			...process.env,
+			CODERAG_USE_RUST_ENGINE: '1',
+			CODERAG_MCP_TRANSPORT: '',
+		},
+		timeout: 300_000,
+	})
+	addCheck(
+		checks,
+		'parity:frozen_baseline',
+		parityProbe.status === 0,
+		'Rust retrieval matches the frozen golden baseline on the benchmark corpus',
+		parityProbe.status === 0
+			? { exitCode: 0 }
+			: {
+					exitCode: parityProbe.status,
+					stderr: parityProbe.stderr?.slice(-2000),
+					stdout: parityProbe.stdout?.slice(-2000),
+				}
 	)
 
 	const matrixProbe = spawnSync('bun', ['test', 'test/shippedPath.matrix.test.ts'], {

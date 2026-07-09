@@ -1,0 +1,38 @@
+{
+	"schemaVersion": 1,
+	"profile": "coderag-retrieval-parity-v1",
+	"capturedAt": "2026-07-09T00:00:00Z",
+	"capturedFrom": "rust-tfidf-shipped-path",
+	"corpusRoot": "fixtures/benchmark-corpus",
+	"route": "rust-tfidf",
+	"notes": "Frozen authority contract for Rust-First parity. Top-hit paths and ranked paths captured once from the shipped Rust TF-IDF engine; regressions must match exactly.",
+	"cases": [
+		{
+			"id": "auth-login",
+			"query": "user authentication login",
+			"expectedTopPath": "src/auth/login.ts",
+			"expectedPaths": [
+				"src/auth/login.ts",
+				"src/auth/login.ts",
+				"src/index.ts",
+				"src/services/user-service.ts",
+				"src/auth/login.ts"
+			],
+			"minResults": 1
+		},
+		{
+			"id": "db-pool",
+			"query": "database connection pool",
+			"expectedTopPath": "src/db/pool.ts",
+			"expectedPaths": ["src/db/pool.ts", "src/db/connection.ts", "src/index.ts"],
+			"minResults": 1
+		},
+		{
+			"id": "rate-limit",
+			"query": "checkRateLimit windowMs",
+			"expectedTopPath": "src/api/rate-limit.ts",
+			"expectedPaths": ["src/api/rate-limit.ts"],
+			"minResults": 1
+		}
+	]
+}

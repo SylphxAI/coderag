@@ -35,6 +35,9 @@ jobs:
       - name: Golden retrieval evals
         run: bun test test/golden-retrieval.test.ts
 
+      - name: Retrieval parity (frozen baseline)
+        run: bun test test/retrieval-parity.test.ts
+
       - name: Type check
         run: bun run type-check
 

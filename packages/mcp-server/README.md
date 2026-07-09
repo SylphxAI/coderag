@@ -1,6 +1,9 @@
 # @sylphx/coderag-mcp
 
-MCP server for intelligent codebase search - RAG-ready for AI assistants.
+MCP server for hybrid codebase search — **Did it find the right code?**
+
+Monorepo README, benchmark proof, and Discovery status:
+[github.com/SylphxAI/coderag](https://github.com/SylphxAI/coderag).
 
 ## Quick Start
 
@@ -263,11 +266,13 @@ LLM-optimized output (minimal tokens, maximum content):
 
 ## Performance
 
-| Metric | Value |
-|--------|-------|
-| Startup | 1-5 seconds |
-| Search | <50ms |
-| Memory | ~1-2 MB per 1000 files |
+Run the reproducible public benchmark from the monorepo root (after `bun run build`):
+
+```bash
+bun run benchmark:public-proof
+```
+
+Details: [docs/benchmark.md](https://github.com/SylphxAI/coderag/blob/main/docs/benchmark.md).
 
 ## Development
 

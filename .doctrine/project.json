@@ -1,155 +1,155 @@
 {
-  "schemaVersion": 1,
-  "project": {
-    "repo": "SylphxAI/coderag",
-    "name": "SylphxAI CodeRAG",
-    "lifecycle": "active",
-    "layer": "tooling",
-    "policyPool": "agent-tool",
-    "summary": "TypeScript/Bun monorepo for hybrid code search and an MCP server for AI assistant code retrieval.",
-    "goals": [
-      "Provide the @sylphx/coderag core package for hybrid TF-IDF, vector, AST chunking, indexing, and persistent search.",
-      "Provide the @sylphx/coderag-mcp package as an MCP server surface for AI assistants and IDEs.",
-      "Maintain docs, examples, tests, and package release workflows for the CodeRAG ecosystem."
-    ],
-    "nonGoals": [
-      "Own IDE products, AI assistant runtime policy, or downstream coding-agent behavior.",
-      "Own embedding provider accounts, external vector services, or customer-specific codebase indexes.",
-      "Own enterprise engineering doctrine, standards, or project manifest schema."
-    ]
-  },
-  "boundaries": {
-    "owns": [
-      {
-        "name": "coderag-core",
-        "description": "The core indexing, TF-IDF/vector search, AST chunking, embeddings, storage, cache, and language configuration packages under packages/core."
-      },
-      {
-        "name": "coderag-mcp-server",
-        "description": "The MCP server package, tool surface, installation docs, configuration docs, and integration examples under packages/mcp-server and docs/mcp."
-      }
-    ],
-    "doesNotOwn": [
-      "IDE products, assistant UX, model routing policy, or coding-agent runtime behavior.",
-      "Embedding provider accounts, external vector databases, or customer-specific codebase indexes.",
-      "Enterprise doctrine and manifest schema owned by SylphxAI/doctrine."
-    ],
-    "publicSurfaces": [
-      {
-        "type": "documentation",
-        "name": "Repository README",
-        "location": "README.md"
-      },
-      {
-        "type": "manifest",
-        "name": "Root package manifest and scripts",
-        "location": "package.json"
-      },
-      {
-        "type": "package",
-        "name": "@sylphx/coderag",
-        "location": "packages/core/"
-      },
-      {
-        "type": "package",
-        "name": "@sylphx/coderag-mcp",
-        "location": "packages/mcp-server/"
-      },
-      {
-        "type": "documentation",
-        "name": "Documentation site",
-        "location": "docs/"
-      },
-      {
-        "type": "documentation",
-        "name": "MCP integration docs",
-        "location": "docs/mcp/"
-      },
-      {
-        "type": "test",
-        "name": "Package tests",
-        "location": "packages/*/src/*.test.ts"
-      },
-      {
-        "type": "workflow",
-        "name": "CI and release workflows",
-        "location": ".github/workflows/"
-      }
-    ],
-    "allowedDependencies": [
-      {
-        "repo": "SylphxAI/doctrine",
-        "surface": "project manifest schema and engineering doctrine",
-        "direction": "peer-public"
-      },
-      {
-        "repo": "SylphxAI/.github",
-        "surface": "reusable release workflow",
-        "direction": "upstream-shared"
-      },
-      {
-        "repo": "SylphxAI/synth",
-        "surface": "parser packages for AST chunking",
-        "direction": "upstream-shared"
-      }
-    ],
-    "forbiddenCouplings": [
-      "Do not encode a specific IDE, assistant, model provider, or customer codebase policy into the core search engine.",
-      "Do not store or assume embedding provider credentials in package code or docs examples.",
-      "Do not fork doctrine standards into this repository."
-    ]
-  },
-  "documentation": {
-    "adr": {
-      "path": "docs/adr/",
-      "status": "planned"
-    },
-    "specs": {
-      "path": "docs/guide/",
-      "status": "present"
-    },
-    "catalog": {
-      "path": ".doctrine/project.json",
-      "status": "present"
-    },
-    "runbooks": {
-      "path": "docs/mcp/",
-      "status": "present"
-    },
-    "generatedReferences": {
-      "path": "docs/api/",
-      "status": "present"
-    }
-  },
-  "delivery": {
-    "ciModel": "legacy-ci",
-    "requiredContexts": [],
-    "deployPath": "Pull requests and merge queue run Bun/Turborepo CI; main-branch Release delegates to SylphxAI/.github reusable release workflow for package publication.",
-    "productionProof": "Passing typecheck, tests, package build, MCP smoke/config validation when MCP behavior changes, successful release workflow, and package-registry/docs readback for published versions.",
-    "recoveryClass": "forward-fix-only",
-    "deployable": false
-  },
-  "adoption": {
-    "status": "baseline",
-    "gaps": [
-      {
-        "id": "required-contexts-not-recorded",
-        "description": "CI exists for pull requests and merge queue, but required branch protection contexts are not recorded in this manifest baseline.",
-        "owner": "SylphxAI/coderag",
-        "target": "central ADR-29 required-context rollout or repo-local branch protection audit"
-      },
-      {
-        "id": "embedding-provider-boundary",
-        "description": "Optional vector search can involve provider credentials or external services; keep provider configuration outside package internals and validate through MCP/config tests.",
-        "owner": "SylphxAI/coderag",
-        "target": "next embedding-provider or MCP config change"
-      },
-      {
-        "id": "package-release-forward-fix",
-        "description": "Published package versions and MCP behavior are forward-only for consumers; add release recovery/runbook proof before production lifecycle promotion.",
-        "owner": "SylphxAI/coderag",
-        "target": "before production lifecycle promotion"
-      }
-    ]
-  }
+	"schemaVersion": 1,
+	"project": {
+		"repo": "SylphxAI/coderag",
+		"name": "SylphxAI CodeRAG",
+		"lifecycle": "active",
+		"layer": "tooling",
+		"policyPool": "agent-tool",
+		"summary": "TypeScript/Bun monorepo for hybrid code search and an MCP server for AI assistant code retrieval.",
+		"goals": [
+			"Provide the @sylphx/coderag core package for hybrid TF-IDF, vector, AST chunking, indexing, and persistent search.",
+			"Provide the @sylphx/coderag-mcp package as an MCP server surface for AI assistants and IDEs.",
+			"Maintain docs, examples, tests, and package release workflows for the CodeRAG ecosystem."
+		],
+		"nonGoals": [
+			"Own IDE products, AI assistant runtime policy, or downstream coding-agent behavior.",
+			"Own embedding provider accounts, external vector services, or customer-specific codebase indexes.",
+			"Own enterprise engineering doctrine, standards, or project manifest schema."
+		]
+	},
+	"boundaries": {
+		"owns": [
+			{
+				"name": "coderag-core",
+				"description": "The core indexing, TF-IDF/vector search, AST chunking, embeddings, storage, cache, and language configuration packages under packages/core."
+			},
+			{
+				"name": "coderag-mcp-server",
+				"description": "The MCP server package, tool surface, installation docs, configuration docs, and integration examples under packages/mcp-server and docs/mcp."
+			}
+		],
+		"doesNotOwn": [
+			"IDE products, assistant UX, model routing policy, or coding-agent runtime behavior.",
+			"Embedding provider accounts, external vector databases, or customer-specific codebase indexes.",
+			"Enterprise doctrine and manifest schema owned by SylphxAI/doctrine."
+		],
+		"publicSurfaces": [
+			{
+				"type": "documentation",
+				"name": "Repository README",
+				"location": "README.md"
+			},
+			{
+				"type": "manifest",
+				"name": "Root package manifest and scripts",
+				"location": "package.json"
+			},
+			{
+				"type": "package",
+				"name": "@sylphx/coderag",
+				"location": "packages/core/"
+			},
+			{
+				"type": "package",
+				"name": "@sylphx/coderag-mcp",
+				"location": "packages/mcp-server/"
+			},
+			{
+				"type": "documentation",
+				"name": "Documentation site",
+				"location": "docs/"
+			},
+			{
+				"type": "documentation",
+				"name": "MCP integration docs",
+				"location": "docs/mcp/"
+			},
+			{
+				"type": "test",
+				"name": "Package tests",
+				"location": "packages/*/src/*.test.ts"
+			},
+			{
+				"type": "workflow",
+				"name": "CI and release workflows",
+				"location": ".github/workflows/"
+			}
+		],
+		"allowedDependencies": [
+			{
+				"repo": "SylphxAI/doctrine",
+				"surface": "project manifest schema and engineering doctrine",
+				"direction": "peer-public"
+			},
+			{
+				"repo": "SylphxAI/.github",
+				"surface": "reusable release workflow",
+				"direction": "upstream-shared"
+			},
+			{
+				"repo": "SylphxAI/synth",
+				"surface": "parser packages for AST chunking",
+				"direction": "upstream-shared"
+			}
+		],
+		"forbiddenCouplings": [
+			"Do not encode a specific IDE, assistant, model provider, or customer codebase policy into the core search engine.",
+			"Do not store or assume embedding provider credentials in package code or docs examples.",
+			"Do not fork doctrine standards into this repository."
+		]
+	},
+	"documentation": {
+		"adr": {
+			"path": "docs/adr/",
+			"status": "planned"
+		},
+		"specs": {
+			"path": "docs/guide/",
+			"status": "present"
+		},
+		"catalog": {
+			"path": ".doctrine/project.json",
+			"status": "present"
+		},
+		"runbooks": {
+			"path": "docs/mcp/",
+			"status": "present"
+		},
+		"generatedReferences": {
+			"path": "docs/api/",
+			"status": "present"
+		}
+	},
+	"delivery": {
+		"ciModel": "legacy-ci",
+		"requiredContexts": [],
+		"deployPath": "Pull requests and merge queue run Bun/Turborepo CI; main-branch Release delegates to SylphxAI/.github reusable release workflow for package publication.",
+		"productionProof": "Passing typecheck, tests, package build, MCP smoke/config validation when MCP behavior changes, successful release workflow, and package-registry/docs readback for published versions.",
+		"recoveryClass": "forward-fix-only",
+		"deployable": false
+	},
+	"adoption": {
+		"status": "baseline",
+		"gaps": [
+			{
+				"id": "required-contexts-not-recorded",
+				"description": "CI exists for pull requests and merge queue, but required branch protection contexts are not recorded in this manifest baseline.",
+				"owner": "SylphxAI/coderag",
+				"target": "central ADR-29 required-context rollout or repo-local branch protection audit"
+			},
+			{
+				"id": "embedding-provider-boundary",
+				"description": "Optional vector search can involve provider credentials or external services; keep provider configuration outside package internals and validate through MCP/config tests.",
+				"owner": "SylphxAI/coderag",
+				"target": "next embedding-provider or MCP config change"
+			},
+			{
+				"id": "package-release-forward-fix",
+				"description": "Published package versions and MCP behavior are forward-only for consumers; add release recovery/runbook proof before production lifecycle promotion.",
+				"owner": "SylphxAI/coderag",
+				"target": "before production lifecycle promotion"
+			}
+		]
+	}
 }

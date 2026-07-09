@@ -2,474 +2,251 @@
 
 # CodeRAG
 
-**Lightning-fast hybrid code search for AI assistants**
+### Your agent searched the codebase. **Did it find the right code?**
+
+Local-first hybrid code search for AI assistants. One MCP call indexes your repo
+and returns **semantic chunks** — functions, classes, and methods — not noisy
+grep dumps or slow cloud pipelines.
 
 [![npm version](https://img.shields.io/npm/v/@sylphx/coderag?style=flat-square&label=core)](https://www.npmjs.com/package/@sylphx/coderag)
 [![npm version](https://img.shields.io/npm/v/@sylphx/coderag-mcp?style=flat-square&label=mcp)](https://www.npmjs.com/package/@sylphx/coderag-mcp)
 [![CI](https://img.shields.io/github/actions/workflow/status/SylphxAI/coderag/ci.yml?style=flat-square)](https://github.com/SylphxAI/coderag/actions)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
 
-**Zero dependencies** • **<50ms search** • **Hybrid TF-IDF + Vector** • **MCP ready**
+**Local-first** · **MCP-first** · **Hybrid TF-IDF + Vector** · **~200 tests** · **Reproducible benchmark**
 
-[Quick Start](#-quick-start) • [Features](#-features) • [MCP Setup](#-mcp-server-setup) • [API](#-api-reference)
+[⭐ Star this repo](https://github.com/SylphxAI/coderag) if agents should find code with evidence, not guess from keyword hits.
+· [Quick start](#quick-start) · [See it work](#see-it-work) · [Why not grep alone?](#why-not-grep-alone)
 
 </div>
 
 ---
 
-## Why CodeRAG?
+## The problem
 
-Traditional code search tools are either **slow** (full-text grep), **inaccurate** (keyword matching), or **complex** (require external services).
+Agents search codebases thousands of times per session. Most paths give you one
+of two bad outcomes:
 
-CodeRAG is different:
+1. **grep/ripgrep** — fast, but literal. Misses `authenticateUser` when you ask
+   for "login flow". Returns whole files, not the function you need.
+2. **Cloud RAG** — semantic, but needs Docker, vector DBs, embedding APIs, and
+   10–30s cold starts before the first search.
 
-```
-❌ Old way: Docker + ChromaDB + Ollama + 30 second startup
-✅ CodeRAG: npx @sylphx/coderag-mcp (instant)
-```
+The model still guesses which snippet matters. Wrong chunk → wrong patch → wasted
+context.
 
-| Feature | grep/ripgrep | Cloud RAG | CodeRAG |
-|---------|-------------|-----------|---------|
-| **Semantic understanding** | ❌ | ✅ | ✅ |
-| **Zero external deps** | ✅ | ❌ | ✅ |
+**CodeRAG is built for the moment your agent needs the right code block, not a
+directory of keyword hits.**
+
+## Why not grep alone?
+
+| | grep/ripgrep | Cloud RAG | CodeRAG |
+| --- | --- | --- | --- |
+| **Semantic understanding** | ❌ Literal match | ✅ Embeddings | ✅ TF-IDF + optional vectors |
+| **Zero external deps** | ✅ | ❌ Vector DB + embed API | ✅ Local by default |
 | **Offline support** | ✅ | ❌ | ✅ |
-| **Startup time** | Instant | 10-30s | <1s |
-| **Search latency** | ~100ms | ~500ms | <50ms |
+| **Result shape** | Whole files / lines | Often whole files | AST chunks (functions, classes) |
+| **Agent setup** | Shell tool | Docker + services | `npx @sylphx/coderag-mcp` |
 
----
+Search latency and indexing throughput: reproduce with
+[`bun run benchmark:public-proof`](#benchmark-proof) — do not trust hand-waved
+ms claims.
 
-## ✨ Features
+Full comparison: [how search works](docs/guide/how-search-works.md).
 
-### Search
-- 🔍 **Hybrid Search** - TF-IDF + optional vector embeddings
-- 🧠 **StarCoder2 Tokenizer** - Code-aware tokenization (4.7MB, trained on code)
-- 📊 **Smoothed IDF** - No term gets ignored, stable ranking
-- ⚡ **<50ms Latency** - Instant results even on large codebases
+## See it work
 
-### Indexing
-- 🚀 **1000-2000 files/sec** - Fast initial indexing
-- 💾 **SQLite Persistence** - Instant startup (<100ms) with cached index
-- ⚡ **Incremental Updates** - Smart diff detection, no full rebuilds
-- 👁️ **File Watching** - Real-time index updates on file changes
-
-### Integration
-- 📦 **MCP Server** - Works with Claude Desktop, Cursor, VS Code, Windsurf
-- 🧠 **Vector Search** - Optional OpenAI embeddings for semantic search
-- 🌳 **AST Chunking** - Smart code splitting using [Synth](https://github.com/SylphxAI/synth) parsers (15+ languages)
-- 💻 **Low Memory Mode** - SQL-based search for resource-constrained environments
-
----
-
-## 🚀 Quick Start
-
-### Option 1: MCP Server (Recommended for AI Assistants)
+**Install once. Point at your repo.**
 
 ```bash
-npx @sylphx/coderag-mcp --root=/path/to/project
+claude mcp add coderag -- npx @sylphx/coderag-mcp --root=/absolute/path/to/project
 ```
 
-Or add to your MCP config:
-
-```json
-{
-  "mcpServers": {
-    "coderag": {
-      "command": "npx",
-      "args": ["-y", "@sylphx/coderag-mcp", "--root=/path/to/project"]
-    }
-  }
-}
-```
-
-See [MCP Server Setup](#-mcp-server-setup) for Claude Desktop, Cursor, VS Code, etc.
-
-### Option 2: As a Library
-
-```bash
-npm install @sylphx/coderag
-# or
-bun add @sylphx/coderag
-```
-
-```typescript
-import { CodebaseIndexer, PersistentStorage } from '@sylphx/coderag'
-
-// Create indexer with persistent storage
-const storage = new PersistentStorage({ codebaseRoot: './my-project' })
-const indexer = new CodebaseIndexer({
-  codebaseRoot: './my-project',
-  storage,
-})
-
-// Index codebase (instant on subsequent runs)
-await indexer.index({ watch: true })
-
-// Search
-const results = await indexer.search('authentication logic', { limit: 10 })
-console.log(results)
-// [{ path: 'src/auth/login.ts', score: 0.87, matchedTerms: ['authentication', 'logic'], snippet: '...' }]
-```
-
----
-
-## 📦 Packages
-
-| Package | Description | Install |
-|---------|-------------|---------|
-| [@sylphx/coderag](./packages/core) | Core search library | `npm i @sylphx/coderag` |
-| [@sylphx/coderag-mcp](./packages/mcp-server) | MCP server for AI assistants | `npx @sylphx/coderag-mcp` |
-
----
-
-## 🔌 MCP Server Setup
-
-### Claude Desktop
-
-Add to `claude_desktop_config.json`:
-
-**macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
-**Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
-
-```json
-{
-  "mcpServers": {
-    "coderag": {
-      "command": "npx",
-      "args": ["-y", "@sylphx/coderag-mcp", "--root=/path/to/project"]
-    }
-  }
-}
-```
-
-### Cursor
-
-Add to `~/.cursor/mcp.json` (macOS) or `%USERPROFILE%\.cursor\mcp.json` (Windows):
-
-```json
-{
-  "mcpServers": {
-    "coderag": {
-      "command": "npx",
-      "args": ["-y", "@sylphx/coderag-mcp", "--root=/path/to/project"]
-    }
-  }
-}
-```
-
-### VS Code
-
-Add to VS Code settings (JSON) or `.vscode/mcp.json`:
-
-```json
-{
-  "mcp": {
-    "servers": {
-      "coderag": {
-        "command": "npx",
-        "args": ["-y", "@sylphx/coderag-mcp", "--root=${workspaceFolder}"]
-      }
-    }
-  }
-}
-```
-
-### Windsurf
-
-Add to `~/.codeium/windsurf/mcp_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "coderag": {
-      "command": "npx",
-      "args": ["-y", "@sylphx/coderag-mcp", "--root=/path/to/project"]
-    }
-  }
-}
-```
-
-### Claude Code
-
-```bash
-claude mcp add coderag -- npx -y @sylphx/coderag-mcp --root=/path/to/project
-```
-
----
-
-## 🛠️ MCP Tool: `codebase_search`
-
-Search project source files with hybrid TF-IDF + vector ranking.
-
-### Parameters
-
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `query` | string | Yes | - | Search query |
-| `limit` | number | No | 10 | Max results |
-| `include_content` | boolean | No | true | Include code snippets |
-| `file_extensions` | string[] | No | - | Filter by extension (e.g., `[".ts", ".tsx"]`) |
-| `path_filter` | string | No | - | Filter by path pattern |
-| `exclude_paths` | string[] | No | - | Exclude paths (e.g., `["node_modules", "dist"]`) |
-
-### Example
+Search with the `codebase_search` tool:
 
 ```json
 {
   "query": "user authentication login",
   "limit": 5,
   "file_extensions": [".ts", ".tsx"],
-  "exclude_paths": ["node_modules", "dist", "test"]
+  "exclude_paths": ["node_modules", "dist"]
 }
 ```
 
-### Response Format
-
-LLM-optimized output (minimal tokens, maximum content):
+Returns ranked chunks — not entire files:
 
 ```markdown
 # Search: "user authentication login" (3 results)
 
-## src/auth/login.ts:15-28
+## src/auth/login.ts:1-12
 ```typescript
-15: export async function authenticate(credentials) {
-16:   const user = await findUser(credentials.email)
-17:   return validatePassword(user, credentials.password)
-18: }
-```
-
-## src/middleware/auth.ts:42-55 [md→typescript]
-```typescript
-42: // Embedded code from markdown docs
-43: const authMiddleware = (req, res, next) => {
-```
-
-## src/utils/large.ts:1-200 [truncated]
-```typescript
-1: // First 70% shown...
-
-... [800 chars truncated] ...
-
-195: // Last 20% shown
+export async function authenticate(username: string, password: string) {
+  const user = await findUserByEmail(username)
+  return validatePassword(user, password)
+}
 ```
 ```
 
----
+## Why agents use it
 
-## 📚 API Reference
+| Need | What you get |
+| --- | --- |
+| Find implementation | AST chunks at semantic boundaries (functions, classes, methods) |
+| Keyword + meaning | Hybrid TF-IDF with optional OpenAI embeddings |
+| Fast iteration | Local index, incremental updates, file watching |
+| Low setup | MCP server via `npx` — no Docker or ChromaDB required |
+| Ship with proof | ~200 tests, reproducible public benchmark script |
 
-### `CodebaseIndexer`
+## Quick Start
 
-Main class for indexing and searching.
+### Claude Code (recommended)
+
+```bash
+claude mcp add coderag -- npx @sylphx/coderag-mcp --root=/absolute/path/to/project
+```
+
+### Claude Desktop
+
+Add to `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "coderag": {
+      "command": "npx",
+      "args": ["-y", "@sylphx/coderag-mcp", "--root=/absolute/path/to/project"]
+    }
+  }
+}
+```
+
+### Any MCP Client
+
+```bash
+npx @sylphx/coderag-mcp --root=/absolute/path/to/project
+```
+
+Need Cursor, VS Code, Windsurf, or library usage? See the
+[installation guide](docs/guide/installation.md) and [MCP docs](docs/mcp/overview.md).
+
+### As a Library
+
+```bash
+bun add @sylphx/coderag
+```
 
 ```typescript
 import { CodebaseIndexer, PersistentStorage } from '@sylphx/coderag'
 
-const storage = new PersistentStorage({ codebaseRoot: './project' })
-const indexer = new CodebaseIndexer({
-  codebaseRoot: './project',
-  storage,
-  maxFileSize: 1024 * 1024, // 1MB default
-})
+const storage = new PersistentStorage({ codebaseRoot: './my-project' })
+const indexer = new CodebaseIndexer({ codebaseRoot: './my-project', storage })
 
-// Index with file watching
 await indexer.index({ watch: true })
-
-// Search with options
-const results = await indexer.search('query', {
-  limit: 10,
-  includeContent: true,
-  fileExtensions: ['.ts', '.js'],
-  excludePaths: ['node_modules'],
-})
-
-// Stop watching
-await indexer.stopWatch()
-```
-
-### `PersistentStorage`
-
-SQLite-backed storage for instant startup.
-
-```typescript
-import { PersistentStorage } from '@sylphx/coderag'
-
-const storage = new PersistentStorage({
-  codebaseRoot: './project',  // Creates .coderag/ folder
-  dbPath: './custom.db',      // Optional custom path
-})
-```
-
-### Low-Level TF-IDF Functions
-
-```typescript
-import { buildSearchIndex, searchDocuments, initializeTokenizer } from '@sylphx/coderag'
-
-// Initialize StarCoder2 tokenizer (4.7MB, one-time download)
-await initializeTokenizer()
-
-// Build index
-const documents = [
-  { uri: 'file://auth.ts', content: 'export function authenticate...' },
-  { uri: 'file://user.ts', content: 'export class User...' },
-]
-const index = await buildSearchIndex(documents)
-
-// Search
-const results = await searchDocuments('authenticate user', index, { limit: 5 })
-```
-
-### Vector Search (Optional)
-
-For semantic search with embeddings:
-
-```typescript
-import { hybridSearch, createEmbeddingProvider } from '@sylphx/coderag'
-
-// Requires OPENAI_API_KEY environment variable
-const results = await hybridSearch('authentication flow', indexer, {
-  vectorWeight: 0.7,  // 70% vector, 30% TF-IDF
-  limit: 10,
-})
+const results = await indexer.search('authentication logic', { limit: 10 })
 ```
 
 ---
 
-## ⚙️ Configuration
+## MCP Tool: `codebase_search`
 
-### MCP Server Options
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `query` | string | — | Search query (required) |
+| `limit` | number | 10 | Max results |
+| `include_content` | boolean | true | Include code snippets |
+| `file_extensions` | string[] | — | Filter by extension |
+| `path_filter` | string | — | Filter by path pattern |
+| `exclude_paths` | string[] | — | Exclude paths |
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| `--root=<path>` | Current directory | Codebase root path |
-| `--max-size=<bytes>` | 1048576 (1MB) | Max file size to index |
-| `--no-auto-index` | false | Disable auto-indexing on startup |
-
-### Environment Variables
-
-| Variable | Description |
-|----------|-------------|
-| `OPENAI_API_KEY` | Enable vector search with OpenAI embeddings |
-| `OPENAI_BASE_URL` | Custom OpenAI-compatible endpoint |
-| `EMBEDDING_MODEL` | Embedding model (default: `text-embedding-3-small`) |
-| `EMBEDDING_DIMENSIONS` | Custom embedding dimensions |
+Full tool reference: [docs/mcp/tools.md](docs/mcp/tools.md).
 
 ---
 
-## 📊 Performance
+## Benchmark Proof
 
-| Metric | Value |
-|--------|-------|
-| **Initial indexing** | ~1000-2000 files/sec |
-| **Startup with cache** | <100ms |
-| **Search latency** | <50ms |
-| **Memory per 1000 files** | ~1-2 MB |
-| **Tokenizer size** | 4.7MB (StarCoder2) |
-
-### Benchmarks
-
-Tested on MacBook Pro M1, 16GB RAM:
-
-| Codebase | Files | Index Time | Search Time |
-|----------|-------|------------|-------------|
-| Small (100 files) | 100 | 0.5s | <10ms |
-| Medium (1000 files) | 1,000 | 2s | <30ms |
-| Large (10000 files) | 10,000 | 15s | <50ms |
-
----
-
-## 🏗️ Architecture
-
-```
-coderag/
-├── packages/
-│   ├── core/                     # @sylphx/coderag
-│   │   ├── src/
-│   │   │   ├── indexer.ts           # Main indexer with file watching
-│   │   │   ├── tfidf.ts             # TF-IDF with StarCoder2 tokenizer
-│   │   │   ├── code-tokenizer.ts    # StarCoder2 tokenization
-│   │   │   ├── hybrid-search.ts     # Vector + TF-IDF fusion
-│   │   │   ├── incremental-tfidf.ts # Smart incremental updates
-│   │   │   ├── storage-persistent.ts # SQLite storage
-│   │   │   ├── vector-storage.ts    # LanceDB vector storage
-│   │   │   ├── embeddings.ts        # OpenAI embeddings
-│   │   │   ├── ast-chunking.ts      # Synth AST chunking
-│   │   │   └── language-config.ts   # Language registry (15+ languages)
-│   │   └── package.json
-│   │
-│   └── mcp-server/               # @sylphx/coderag-mcp
-│       ├── src/
-│       │   └── index.ts             # MCP server
-│       └── package.json
-```
-
-### How It Works
-
-1. **Indexing**: Scans codebase, tokenizes with StarCoder2, builds TF-IDF index
-2. **AST Chunking**: Splits code at semantic boundaries (functions, classes, etc.)
-3. **Storage**: Persists to SQLite (`.coderag/` folder) for instant startup
-4. **Watching**: Detects file changes, performs incremental updates
-5. **Search**: Hybrid TF-IDF + optional vector search with score fusion
-
-### Supported Languages
-
-AST-based chunking with semantic boundary detection:
-
-| Category | Languages |
-|----------|-----------|
-| **JavaScript** | JavaScript, TypeScript, JSX, TSX |
-| **Systems** | Python, Go, Java, C |
-| **Markup** | Markdown, HTML, XML |
-| **Data/Config** | JSON, YAML, TOML, INI |
-| **Other** | Protobuf |
-
-**Embedded Code Support**: Automatically parses code blocks in Markdown and `<script>`/`<style>` tags in HTML.
-
----
-
-## 🔧 Development
+Performance claims in this README are backed only by the checked-in public
+benchmark script — not hand-waved marketing numbers.
 
 ```bash
-# Clone
+bun run benchmark:public-proof
+```
+
+The script indexes `fixtures/benchmark-corpus/` (30 TypeScript files), runs
+hybrid TF-IDF search 20 times (3 warmup), and prints indexing throughput plus
+search p50/min/max latency.
+
+See [benchmark proof](docs/benchmark.md) for methodology and latest reproduced
+results.
+
+---
+
+## Packages
+
+| Package | Description | Install |
+| --- | --- | --- |
+| [@sylphx/coderag](packages/core) | Core search library | `npm i @sylphx/coderag` |
+| [@sylphx/coderag-mcp](packages/mcp-server) | MCP server for AI assistants | `npx @sylphx/coderag-mcp` |
+
+---
+
+## Documentation
+
+| Topic | Link |
+| --- | --- |
+| Docs site | [coderag.sylphx.com](https://coderag.sylphx.com) |
+| Getting started | [docs/guide/getting-started.md](docs/guide/getting-started.md) |
+| MCP server | [docs/mcp/overview.md](docs/mcp/overview.md) |
+| How search works | [docs/guide/how-search-works.md](docs/guide/how-search-works.md) |
+| Benchmark proof | [docs/benchmark.md](docs/benchmark.md) |
+| Stop code-search guessing | [docs/articles/stop-code-search-guessing.md](docs/articles/stop-code-search-guessing.md) |
+| API reference | [docs/api/overview.md](docs/api/overview.md) |
+
+---
+
+## Development
+
+```bash
 git clone https://github.com/SylphxAI/coderag.git
 cd coderag
-
-# Install
 bun install
-
-# Build
 bun run build
+bun test
+```
 
-# Test
-bun run test
+Useful checks:
 
-# Lint & Format
+```bash
 bun run lint
-bun run format
+bun run typecheck
+bun run docs:build
+bun run benchmark:public-proof
+bun test test/readmeDiscovery.test.ts
 ```
 
 ---
 
-## 🤝 Contributing
+## Help this reach more builders
 
-Contributions are welcome! Please:
+If wrong code snippets have wasted your agent context, your edits, or your trust
+in search results, you are exactly who this project is for.
 
-1. Open an issue to discuss changes
-2. Fork and create a feature branch
-3. Run `bun run lint` and `bun run test`
-4. Submit a pull request
+**[⭐ Star the repo](https://github.com/SylphxAI/coderag)** — it is the fastest
+way to help more agent builders find chunk-level code search. Share it in your
+MCP client setup, team wiki, or agent stack README.
+
+### Discovery (in progress)
+
+| Channel | Status |
+| --- | --- |
+| [Official MCP Registry](https://registry.modelcontextprotocol.io/) | Not listed yet — no `server.json` publish workflow in this repo |
+| [Glama MCP directory](https://glama.ai/mcp/servers) | Not listed yet |
+| [mcpservers.org submit](https://mcpservers.org/submit) | Not listed yet — free web-form submission |
+| [mcp.so](https://mcp.so) | Not listed yet |
+
+Know another MCP directory? [Open an issue](https://github.com/SylphxAI/coderag/issues/new) with the link.
 
 ---
 
-## 📄 License
+## License
 
-MIT © [Sylphx](https://sylphx.com)
-
----
-
-<div align="center">
-
-**Powered by [Sylphx](https://github.com/SylphxAI)**
-
-Built with [@sylphx/synth](https://github.com/SylphxAI/synth) • [@sylphx/mcp-server-sdk](https://github.com/SylphxAI/mcp-server-sdk)
-
-</div>
+MIT © [SylphxAI](https://github.com/SylphxAI)

@@ -26,11 +26,20 @@ jobs:
       - name: Type check
         run: bun run type-check
 
+      - name: Build packages
+        run: bun run build
+
       - name: Run tests
         run: bun run test
 
-      - name: Build packages
-        run: bun run build
+      - name: Public surface audit (README discovery)
+        run: bun run test:public-surface
+
+      - name: Public benchmark proof
+        run: bun run benchmark:public-proof
+
+      - name: Docs build
+        run: bun run docs:build
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4

@@ -136,12 +136,15 @@ interface SearchOptions {
 
 ## Performance
 
-| Metric | Value |
-|--------|-------|
-| Indexing speed | ~1000-2000 files/sec |
-| Startup with cache | <100ms |
-| Search latency | <50ms |
-| Memory per 1000 files | ~1-2 MB |
+Reproducible numbers live in the monorepo root — do not trust hand-waved latency claims.
+
+```bash
+# From github.com/SylphxAI/coderag
+bun run build
+bun run benchmark:public-proof
+```
+
+See [docs/benchmark.md](https://github.com/SylphxAI/coderag/blob/main/docs/benchmark.md) for methodology and Latest Run results.
 
 ## License
 

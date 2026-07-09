@@ -3,8 +3,8 @@ layout: home
 
 hero:
   name: CodeRAG
-  text: Semantic Code Search
-  tagline: Lightning-fast hybrid search with AST chunking - RAG-ready for AI assistants
+  text: Did it find the right code?
+  tagline: Local-first hybrid search with AST chunking — MCP-ready for AI assistants
   image:
     src: /logo.svg
     alt: CodeRAG
@@ -23,8 +23,8 @@ features:
   - icon:
       svg: '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M13 2.03v2.02c4.39.54 7.5 4.53 6.96 8.92c-.46 3.64-3.32 6.53-6.96 6.96v2c5.5-.55 9.5-5.43 8.95-10.93c-.45-4.75-4.22-8.5-8.95-8.97m-2 .03c-1.95.19-3.81.94-5.33 2.2L7.1 5.74c1.12-.9 2.47-1.48 3.9-1.68zM4.26 5.67A9.9 9.9 0 0 0 2.05 11h2c.19-1.42.75-2.77 1.64-3.9zM2.06 13c.2 1.96.97 3.81 2.21 5.33l1.42-1.43A8 8 0 0 1 4.06 13zm5.04 5.37l-1.43 1.37A10 10 0 0 0 11 21.95v-2c-1.42-.2-2.77-.76-3.9-1.58M12 8l-4 4h3v4h2v-4h3z"/></svg>'
     title: Blazing Fast
-    details: Index 1000-2000 files/sec with instant startup (<100ms). Incremental updates only reindex changed files.
-    link: /guide/performance
+    details: Fast indexing with SQLite persistence and incremental updates. Reproduce throughput with the public benchmark script.
+    link: /benchmark
     linkText: Learn more
 
   - icon:
@@ -102,8 +102,8 @@ console.log(results)
 
 Built with performance in mind from day one:
 
-- **Fast Indexing**: 1000-2000 files/second
-- **Instant Startup**: <100ms with cached index
+- **Fast Indexing**: Reproducible throughput — see [benchmark proof](/benchmark)
+- **Instant Startup**: SQLite-backed cache for warm restarts
 - **Low Memory**: SQL-based search mode available
 - **Incremental Updates**: Only reindex changed files
 

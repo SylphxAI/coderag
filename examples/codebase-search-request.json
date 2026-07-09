@@ -1,0 +1,6 @@
+{
+	"query": "user authentication login",
+	"limit": 5,
+	"file_extensions": [".ts", ".tsx"],
+	"exclude_paths": ["node_modules", "dist", ".git"]
+}

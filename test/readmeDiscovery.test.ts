@@ -19,6 +19,8 @@ describe('README discovery surfaces', () => {
 		expect(readme).toContain('docs/benchmark.md')
 		expect(readme).toContain('docs/articles/stop-code-search-guessing.md')
 		expect(readme).toContain('bun run benchmark:public-proof')
+		expect(readme).toContain('## Security model')
+		expect(readme).toContain('examples/codebase-search-request.json')
 		expect(readme).not.toContain('MacBook Pro')
 		expect(readme).not.toContain('<50ms')
 		expect(readme).not.toContain('1000-2000 files/sec')

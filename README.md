@@ -203,6 +203,17 @@ results.
 
 ---
 
+## Security model
+
+- **Root confinement** — `--root` pins indexing and search to one repository tree.
+- **Exclude paths** — `exclude_paths` and default ignores skip `node_modules`, build output, and VCS metadata.
+- **Local-first** — TF-IDF indexing runs on your machine; embeddings are optional and caller-configured.
+- **Evidence fields** — results include file path, line range, symbol, score route, and index freshness for verification.
+
+Example MCP request: [`examples/codebase-search-request.json`](examples/codebase-search-request.json).
+
+---
+
 ## Development
 
 ```bash

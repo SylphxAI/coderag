@@ -1,6 +1,6 @@
 {
 	"profile": "coderag_release_gate",
-	"generated_at": "2026-07-09T10:21:22.525Z",
+	"generated_at": "2026-07-09T15:37:32.042Z",
 	"artifact_dir": "/home/codex/src/github.com/SylphxAI/coderag/benchmark-artifacts",
 	"status": "passed",
 	"summary": {

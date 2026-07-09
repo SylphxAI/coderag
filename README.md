@@ -11,7 +11,7 @@
 
 **Zero dependencies** • **<50ms search** • **Hybrid TF-IDF + Vector** • **MCP ready**
 
-[Quick Start](#-quick-start) • [Features](#-features) • [MCP Setup](#-mcp-server-setup) • [API](#-api-reference)
+[Quick Start](#-quick-start) • [Features](#-features) • [MCP Setup](#-mcp-server-setup) • [Roadmap](docs/roadmap/sota-family-roadmap.md) • [API](#-api-reference)
 
 </div>
 

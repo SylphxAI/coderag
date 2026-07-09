@@ -32,6 +32,7 @@ This repository owns the CodeRAG core library, MCP server, indexing/search algor
 - MCP server package: [`packages/mcp-server/`](./packages/mcp-server/)
 - Documentation site: [`docs/`](./docs/)
 - MCP docs: [`docs/mcp/`](./docs/mcp/)
+- SOTA family roadmap: [`docs/roadmap/sota-family-roadmap.md`](./docs/roadmap/sota-family-roadmap.md)
 - Examples: [`examples/`](./examples/)
 - CI and release workflows: [`.github/workflows/`](./.github/workflows/)
 

@@ -1,0 +1,16 @@
+[package]
+name = "coderag-cli"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "JSON CLI bridge for the CodeRAG Rust retrieval engine."
+
+[[bin]]
+name = "coderag-cli"
+path = "src/main.rs"
+
+[dependencies]
+coderag-core = { path = "../coderag-core" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"

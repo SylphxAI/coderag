@@ -23,6 +23,18 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build Rust retrieval core
+        run: cargo build --release
+
+      - name: Rust core tests
+        run: cargo test
+
+      - name: Golden retrieval evals
+        run: bun test test/golden-retrieval.test.ts
+
       - name: Type check
         run: bun run type-check
 

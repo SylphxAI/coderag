@@ -246,6 +246,7 @@ pub fn build_index(root: &Path, max_file_bytes: u64) -> Result<(SearchIndex, Ind
         root: root.to_string_lossy().to_string(),
         file_hashes: inventory,
     };
+    save_index(&root, &index)?;
     save_file_hashes(&root, &manifest)?;
 
     Ok((

@@ -22,6 +22,8 @@ export type RustSearchEnvelope = {
 		startLine?: number
 		endLine?: number
 		snippet?: string
+		symbolName?: string
+		chunkType?: string
 	}>
 	index?: {
 		refreshMode?: string

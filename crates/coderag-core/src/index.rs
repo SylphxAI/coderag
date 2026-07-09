@@ -19,6 +19,14 @@ pub struct Chunk {
     pub end_line: u32,
     pub text: String,
     pub tokens: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub symbol_name: Option<String>,
+    #[serde(default = "default_chunk_type")]
+    pub chunk_type: String,
+}
+
+fn default_chunk_type() -> String {
+    "file".into()
 }
 
 #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
@@ -257,44 +265,115 @@ fn should_skip(rel: &str) -> bool {
     rel.split('/').any(|part| DEFAULT_EXCLUDES.contains(&part))
 }
 
+#[derive(Debug, Clone)]
+struct SymbolSpan {
+    name: String,
+    chunk_type: String,
+    start_line: u32,
+}
+
 fn chunk_file(path: &str, content: &str) -> Vec<Chunk> {
-    let export_re = Regex::new(r"(?m)^(export\s+)?(async\s+)?function\s+(\w+)").unwrap();
     let lines: Vec<&str> = content.lines().collect();
-    let mut spans = Vec::new();
-    for cap in export_re.captures_iter(content) {
-        let name = cap.get(3).map(|m| m.as_str()).unwrap_or("chunk");
-        let start_byte = cap.get(0).map(|m| m.start()).unwrap_or(0);
-        let start_line = content[..start_byte].matches('\n').count() as u32 + 1;
-        let end_line = (start_line + 12).min(lines.len() as u32);
-        spans.push((name, start_line, end_line));
-    }
+    let total_lines = lines.len().max(1) as u32;
+    let spans = extract_symbol_spans(content);
 
     if spans.is_empty() {
+        let path_context = path.replace(['/', '.', '-'], " ");
         return vec![Chunk {
             path: path.into(),
             start_line: 1,
-            end_line: lines.len().max(1) as u32,
+            end_line: total_lines,
             text: content.to_string(),
-            tokens: tokenize(content),
+            tokens: tokenize(&format!("{path_context} {content}")),
+            symbol_name: None,
+            chunk_type: "file".into(),
         }];
     }
 
+    let preamble: String = lines
+        .iter()
+        .take(spans.first().map(|span| span.start_line as usize).unwrap_or(1).saturating_sub(1))
+        .copied()
+        .collect::<Vec<_>>()
+        .join("\n");
+    let path_context = path.replace(['/', '.', '-'], " ");
+
     spans
-        .into_iter()
-        .map(|(name, start_line, end_line)| {
+        .iter()
+        .enumerate()
+        .map(|(index, span)| {
+            let end_line = spans
+                .get(index + 1)
+                .map(|next| next.start_line.saturating_sub(1))
+                .unwrap_or(total_lines)
+                .max(span.start_line);
             let snippet: String = lines
-                .get((start_line as usize).saturating_sub(1)..end_line as usize)
+                .get((span.start_line as usize).saturating_sub(1)..end_line as usize)
                 .unwrap_or(&[])
                 .join("\n");
+            let chunk_text = if preamble.is_empty() {
+                snippet.clone()
+            } else {
+                format!("{preamble}\n{snippet}")
+            };
             Chunk {
                 path: path.into(),
-                start_line,
+                start_line: span.start_line,
                 end_line,
-                text: snippet.clone(),
-                tokens: tokenize(&format!("{name} {snippet}")),
+                text: chunk_text.clone(),
+                tokens: tokenize(&format!("{path_context} {} {chunk_text}", span.name)),
+                symbol_name: Some(span.name.clone()),
+                chunk_type: span.chunk_type.clone(),
             }
         })
         .collect()
+}
+
+fn extract_symbol_spans(content: &str) -> Vec<SymbolSpan> {
+    let patterns = [
+        (
+            Regex::new(r"(?m)^export\s+(?:async\s+)?function\s+([A-Za-z_][A-Za-z0-9_]*)").unwrap(),
+            "function",
+        ),
+        (
+            Regex::new(r"(?m)^export\s+class\s+([A-Za-z_][A-Za-z0-9_]*)").unwrap(),
+            "class",
+        ),
+        (
+            Regex::new(r"(?m)^export\s+const\s+([A-Za-z_][A-Za-z0-9_]*)\s*=").unwrap(),
+            "const",
+        ),
+        (
+            Regex::new(r"(?m)^(?:async\s+)?function\s+([A-Za-z_][A-Za-z0-9_]*)").unwrap(),
+            "function",
+        ),
+        (
+            Regex::new(r"(?m)^def\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(").unwrap(),
+            "function",
+        ),
+        (
+            Regex::new(r"(?m)^class\s+([A-Za-z_][A-Za-z0-9_]*)").unwrap(),
+            "class",
+        ),
+    ];
+
+    let mut spans = Vec::new();
+    for (pattern, chunk_type) in patterns {
+        for cap in pattern.captures_iter(content) {
+            let name = cap[1].to_string();
+            let start_byte = cap.get(0).map(|m| m.start()).unwrap_or(0);
+            let start_line = content[..start_byte].matches('\n').count() as u32 + 1;
+            spans.push(SymbolSpan {
+                name,
+                chunk_type: chunk_type.into(),
+                start_line,
+            });
+        }
+    }
+
+    spans.sort_by_key(|span| span.start_line);
+    spans.dedup_by(|left, right| left.start_line == right.start_line && left.name == right.name);
+    spans
 }
 
 pub fn search_index(index: &SearchIndex, query: &str, limit: usize) -> Vec<crate::types::SearchHit> {
@@ -348,6 +427,8 @@ pub fn search_index(index: &SearchIndex, query: &str, limit: usize) -> Vec<crate
                 start_line: Some(chunk.start_line),
                 end_line: Some(chunk.end_line),
                 snippet: Some(chunk.text.clone()),
+                symbol_name: chunk.symbol_name.clone(),
+                chunk_type: Some(chunk.chunk_type.clone()),
             });
         }
     }

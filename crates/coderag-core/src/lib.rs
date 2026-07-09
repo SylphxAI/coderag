@@ -13,6 +13,12 @@ pub use types::{SearchHit, ENGINE_NAME, ENGINE_VERSION};
 mod tests {
     use super::*;
     use std::path::PathBuf;
+    use std::sync::{Mutex, OnceLock};
+
+    fn fixture_index_lock() -> &'static Mutex<()> {
+        static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+        LOCK.get_or_init(|| Mutex::new(()))
+    }
 
     fn fixture_root() -> PathBuf {
         PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -30,6 +36,9 @@ mod tests {
 
     #[test]
     fn persists_and_reloads_index_snapshot() {
+        let _guard = fixture_index_lock()
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
         let root = fixture_root();
         let (index, _) = index::build_index(&root, 1_048_576).expect("index");
         store::save_index(&root, &index).expect("save");
@@ -48,8 +57,11 @@ mod tests {
 
     #[test]
     fn auto_mode_returns_cache_hit_when_inventory_is_unchanged() {
+        let _guard = fixture_index_lock()
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
         let root = fixture_root();
-        let first = index::refresh_index(&root, 1_048_576, index::IndexMode::Auto).expect("index");
+        let first = index::refresh_index(&root, 1_048_576, index::IndexMode::Full).expect("index");
         let second = index::refresh_index(&root, 1_048_576, index::IndexMode::Auto).expect("refresh");
         assert_eq!(first.1.refresh_mode, "full");
         assert_eq!(second.1.refresh_mode, "cache_hit");
@@ -63,5 +75,26 @@ mod tests {
         assert!(!hits.is_empty());
         assert!(!hits[0].score_components.is_empty());
         assert!(hits[0].score_components.iter().any(|part| part.bm25 > 0.0));
+    }
+
+    #[test]
+    fn symbol_chunks_include_function_provenance() {
+        let (index, _) = index::build_index(&fixture_root(), 1_048_576).expect("index");
+        let symbol_chunks: Vec<_> = index
+            .chunks
+            .iter()
+            .filter(|chunk| chunk.symbol_name.is_some())
+            .collect();
+        assert!(
+            !symbol_chunks.is_empty(),
+            "expected symbol-aware chunks in benchmark corpus"
+        );
+        assert!(symbol_chunks.iter().any(|chunk| chunk.chunk_type == "function"));
+
+        let hits = index::search_index(&index, "authenticate", 5);
+        assert!(hits.iter().any(|hit| {
+            hit.chunk_type.as_deref() == Some("function")
+                && hit.symbol_name.as_deref() == Some("authenticate")
+        }));
     }
 }

@@ -103,6 +103,8 @@ export function mapRustHitsToSearchResults(
 		startLine?: number
 		endLine?: number
 		snippet?: string
+		symbolName?: string
+		chunkType?: string
 	}>
 ): SearchResult[] {
 	return hits.map((hit) => ({
@@ -116,5 +118,6 @@ export function mapRustHitsToSearchResults(
 		startLine: hit.startLine,
 		endLine: hit.endLine,
 		snippet: hit.snippet,
+		...(hit.chunkType || hit.symbolName ? { chunkType: hit.chunkType ?? 'function' } : {}),
 	}))
 }

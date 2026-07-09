@@ -24,6 +24,10 @@ pub struct SearchHit {
     pub start_line: Option<u32>,
     pub end_line: Option<u32>,
     pub snippet: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub symbol_name: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub chunk_type: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

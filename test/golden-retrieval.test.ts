@@ -17,6 +17,16 @@ describe('golden retrieval evals (rust-tfidf)', () => {
 		expect(index.status).toBe('ok')
 	})
 
+	it('loads a persisted snapshot on a fresh engine process without re-indexing', () => {
+		const search = invokeRustEngine('coderag_search', {
+			root: fixtureRoot,
+			query: 'user authentication login',
+			limit: 5,
+		})
+		expect(search.status).toBe('ok')
+		expect(search.results?.some((hit) => hit.path.endsWith('src/auth/login.ts'))).toBe(true)
+	})
+
 	for (const { query, expectedPath } of GOLDEN_QUERIES) {
 		it(`returns ${expectedPath} for "${query}"`, () => {
 			const search = invokeRustEngine('coderag_search', {

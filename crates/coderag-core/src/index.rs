@@ -9,7 +9,7 @@ use walkdir::WalkDir;
 use crate::tokenize::{tokenize, unique_terms};
 use crate::types::IndexStats;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Chunk {
     pub path: String,
     pub start_line: u32,
@@ -18,7 +18,7 @@ pub struct Chunk {
     pub tokens: Vec<String>,
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
 pub struct SearchIndex {
     pub root: String,
     pub chunks: Vec<Chunk>,

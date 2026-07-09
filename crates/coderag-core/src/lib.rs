@@ -2,6 +2,7 @@
 
 pub mod engine;
 pub mod index;
+pub mod store;
 pub mod tokenize;
 pub mod types;
 
@@ -25,6 +26,16 @@ mod tests {
         let (index, stats) = index::build_index(&fixture_root(), 1_048_576).expect("index");
         assert!(stats.chunks_indexed > 0);
         assert!(!index.chunks.is_empty());
+    }
+
+    #[test]
+    fn persists_and_reloads_index_snapshot() {
+        let root = fixture_root();
+        let (index, _) = index::build_index(&root, 1_048_576).expect("index");
+        store::save_index(&root, &index).expect("save");
+        let loaded = store::load_index(&root).expect("load");
+        assert_eq!(loaded.chunks.len(), index.chunks.len());
+        assert_eq!(loaded.root, index.root);
     }
 
     #[test]

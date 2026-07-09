@@ -1,7 +1,7 @@
 # ADR-66: Adopt CodeRAG MCP Family SOTA Roadmap
 
-Date: 2026-07-09  
-Status: Proposed in PR #66  
+Date: 2026-07-09
+Status: Proposed in PR #66
 Slug: mcp-family-sota-roadmap
 
 ## Context

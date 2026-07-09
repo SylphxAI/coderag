@@ -1,7 +1,7 @@
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { resolveRustCliBinary } from './rust-engine.ts'
+import { resolveRustCliBinary } from './rust-engine.js'
 
 const here = dirname(fileURLToPath(import.meta.url))
 
@@ -125,8 +125,8 @@ export async function runDoctor(version: string): Promise<DoctorReport> {
 }
 
 if (import.meta.main) {
-	const pkg = await import('../package.json', { with: { type: 'json' } })
-	const report = await runDoctor(pkg.default.version)
+	const pkg = JSON.parse(readFileSync(join(here, '../package.json'), 'utf8')) as { version: string }
+	const report = await runDoctor(pkg.version)
 	console.log(JSON.stringify(report, null, 2))
 	process.exit(report.status === 'unavailable' ? 1 : 0)
 }

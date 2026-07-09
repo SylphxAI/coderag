@@ -1,0 +1,102 @@
+{
+	"profile": "coderag_release_gate",
+	"generated_at": "2026-07-09T15:37:32.042Z",
+	"artifact_dir": "/home/codex/src/github.com/SylphxAI/coderag/benchmark-artifacts",
+	"status": "passed",
+	"summary": {
+		"total": 12,
+		"passed": 12,
+		"failed": 0
+	},
+	"checks": [
+		{
+			"id": "rust:retrieval_core",
+			"status": "passed",
+			"message": "Rust coderag-core retrieval engine is present"
+		},
+		{
+			"id": "fixtures:benchmark_corpus",
+			"status": "passed",
+			"message": "Golden retrieval benchmark corpus is checked in"
+		},
+		{
+			"id": "tests:golden_retrieval",
+			"status": "passed",
+			"message": "Golden retrieval eval test harness is present"
+		},
+		{
+			"id": "doctor:golden_fixture",
+			"status": "passed",
+			"message": "doctor reports the golden retrieval corpus is available",
+			"evidence": {
+				"doctorStatus": "ready"
+			}
+		},
+		{
+			"id": "boundary:coderag_index",
+			"status": "passed",
+			"message": "coderag_index returns ok from the Rust CLI on the benchmark corpus"
+		},
+		{
+			"id": "boundary:incremental_cache_hit",
+			"status": "passed",
+			"message": "coderag_index mode=auto reuses the persisted index when file hashes are unchanged",
+			"evidence": {
+				"refreshMode": "cache_hit"
+			}
+		},
+		{
+			"id": "golden:src/auth/login.ts",
+			"status": "passed",
+			"message": "Rust retrieval returns src/auth/login.ts for \"user authentication login\"",
+			"evidence": {
+				"query": "user authentication login",
+				"expectedPath": "src/auth/login.ts",
+				"hit": true
+			}
+		},
+		{
+			"id": "golden:src/db/pool.ts",
+			"status": "passed",
+			"message": "Rust retrieval returns src/db/pool.ts for \"database connection pool\"",
+			"evidence": {
+				"query": "database connection pool",
+				"expectedPath": "src/db/pool.ts",
+				"hit": true
+			}
+		},
+		{
+			"id": "golden:src/api/rate-limit.ts",
+			"status": "passed",
+			"message": "Rust retrieval returns src/api/rate-limit.ts for \"checkRateLimit windowMs\"",
+			"evidence": {
+				"query": "checkRateLimit windowMs",
+				"expectedPath": "src/api/rate-limit.ts",
+				"hit": true
+			}
+		},
+		{
+			"id": "contract:retrieval_envelope",
+			"status": "passed",
+			"message": "Unified retrieval envelope documents versioned Rust index and hybrid semantic search routes",
+			"evidence": {
+				"contractVersion": "coderag-retrieval-v1",
+				"indexRoute": "rust-tfidf",
+				"searchRoute": "rust-semantic-hybrid"
+			}
+		},
+		{
+			"id": "mcp:rust_adapter_default",
+			"status": "passed",
+			"message": "Default npm bin launches the Rust rmcp MCP server; TypeScript adapter is opt-in only"
+		},
+		{
+			"id": "boundary:rust_cli_engine",
+			"status": "passed",
+			"message": "Shipped-path matrix test proves primary retrieval routes through Rust core without legacy runtime",
+			"evidence": {
+				"exitCode": 0
+			}
+		}
+	]
+}

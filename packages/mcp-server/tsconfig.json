@@ -17,9 +17,14 @@
 		"skipLibCheck": true,
 		"forceConsistentCasingInFileNames": true,
 		"resolveJsonModule": true,
-		"allowSyntheticDefaultImports": true
+		"allowSyntheticDefaultImports": true,
+		"types": ["bun"]
 	},
 	"include": ["src/**/*"],
 	"exclude": ["node_modules", "dist"],
-	"references": [{ "path": "../core" }]
+	"references": [
+		{
+			"path": "../core"
+		}
+	]
 }

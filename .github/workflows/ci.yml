@@ -23,14 +23,38 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build Rust retrieval core
+        run: cargo build --release
+
+      - name: Rust core tests
+        run: cargo test
+
+      - name: Golden retrieval evals
+        run: bun test test/golden-retrieval.test.ts
+
       - name: Type check
         run: bun run type-check
+
+      - name: Build packages
+        run: bun run build
 
       - name: Run tests
         run: bun run test
 
-      - name: Build packages
-        run: bun run build
+      - name: Public surface audit (README discovery)
+        run: bun run test:public-surface
+
+      - name: Public benchmark proof
+        run: bun run benchmark:public-proof
+
+      - name: Release gate
+        run: bun run benchmark:release-gate
+
+      - name: Docs build
+        run: bun run docs:build
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4

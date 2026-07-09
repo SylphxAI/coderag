@@ -2,7 +2,7 @@ import { defineConfig } from 'vitepress'
 
 const title = 'CodeRAG'
 const description =
-	'Lightning-fast semantic code search with AST chunking - RAG-ready for AI assistants'
+	'Local-first hybrid code search with AST chunking — did your agent find the right code?'
 const url = 'https://coderag.sylphx.com'
 const ogImage = `${url}/og-image.png`
 
@@ -68,6 +68,11 @@ export default defineConfig({
 			{
 				text: 'Resources',
 				items: [
+					{ text: 'Benchmark proof', link: '/benchmark' },
+					{
+						text: 'Stop code-search guessing',
+						link: '/articles/stop-code-search-guessing',
+					},
 					{ text: 'GitHub', link: 'https://github.com/SylphxAI/coderag' },
 					{ text: 'npm', link: 'https://www.npmjs.com/package/@sylphx/coderag' },
 					{ text: 'Changelog', link: 'https://github.com/SylphxAI/coderag/releases' },

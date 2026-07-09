@@ -105,3 +105,5 @@ const results = await indexer.search('database connection pool', {
 - [Installation](/guide/installation) - Install CodeRAG in your project
 - [Quick Start](/guide/quick-start) - Build your first search index
 - [MCP Server](/mcp/overview) - Use with AI assistants
+- [Stop code-search guessing](/articles/stop-code-search-guessing) - Why chunk-level search beats grep dumps
+- [Benchmark proof](/benchmark) - Reproducible indexing and search latency

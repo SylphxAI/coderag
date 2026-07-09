@@ -1,5 +1,5 @@
 {
-	"$schema": "https://biomejs.dev/schemas/2.3.8/schema.json",
+	"$schema": "https://biomejs.dev/schemas/2.5.3/schema.json",
 	"extends": ["@sylphx/biome-config"],
 	"vcs": {
 		"enabled": true,
@@ -42,6 +42,14 @@
 	},
 	"files": {
 		"ignoreUnknown": false,
-		"includes": ["**/*.js", "**/*.ts", "**/*.jsx", "**/*.tsx", "**/*.json"]
+		"includes": [
+			"**/*.js",
+			"**/*.ts",
+			"**/*.jsx",
+			"**/*.tsx",
+			"**/*.json",
+			"!benchmark-artifacts/**",
+			"!fixtures/**/.coderag/**"
+		]
 	}
 }

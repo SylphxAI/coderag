@@ -6,6 +6,9 @@
 	"workspaces": [
 		"packages/*"
 	],
+	"bin": {
+		"coderag-mcp": "./bin/coderag-mcp"
+	},
 	"scripts": {
 		"build": "turbo run build",
 		"dev": "turbo run dev",
@@ -17,8 +20,15 @@
 		"format": "biome format --write .",
 		"format:check": "biome format .",
 		"docs:dev": "cd docs && bun run docs:dev",
+		"build:rust": "cargo build --release -p coderag-core -p coderag-cli -p coderag-mcp-server && bun scripts/stage-rust-mcp.ts",
+		"test:rust": "cargo test",
+		"test:golden-retrieval": "bun run build:rust && bun test test/golden-retrieval.test.ts",
+		"test:public-surface": "bun test test/readmeDiscovery.test.ts",
 		"docs:build": "cd docs && bun run docs:build",
 		"docs:preview": "cd docs && bun run docs:preview",
+		"benchmark:public-proof": "bun run scripts/benchmark-public-proof.ts",
+		"doctor": "bun run packages/mcp-server/src/doctor.ts",
+		"benchmark:release-gate": "bun run build:rust && bun run scripts/release-gate.ts",
 		"changeset": "changeset",
 		"version": "changeset version",
 		"release": "echo \"Direct changeset publish is unsafe for workspace packages; use the Sylphx release workflow.\" && exit 1",
@@ -29,7 +39,7 @@
 		"@sylphx/biome-config": "^0.4.0",
 		"lefthook": "^2.0.4",
 		"turbo": "^2.6.1",
-		"typescript": "^5.9.3",
+		"typescript": "^7.0.2",
 		"vitepress": "^1.6.4",
 		"vue": "^3.5.25"
 	},

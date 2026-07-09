@@ -14,6 +14,14 @@ import {
 } from '@sylphx/coderag'
 import { createServer, stdio, text, tool } from '@sylphx/mcp-server-sdk'
 import { array, bool, description, num, object, optional, str } from '@sylphx/vex'
+import { buildCodebaseSearchEnvelope, type RetrievalRoute } from './evidence.js'
+import { invokeRustEngine, shouldUseRustEngine } from './rust-engine.js'
+import {
+	buildRetrievalEngineEvidence,
+	mapHybridResultsToSearchResults,
+	mapRustSearchEnvelope,
+	mergeRustLexicalWithSemantic,
+} from './search-coordinator.js'
 
 // Logger utility (stderr for MCP)
 const Logger = {
@@ -72,6 +80,8 @@ async function main() {
 	}
 
 	const isSemanticSearch = !!embeddingProvider
+	const useRustIndexing = shouldUseRustEngine()
+	const useRustSearch = shouldUseRustEngine() && !isSemanticSearch
 
 	// Create persistent storage
 	const storage = new PersistentStorage({ codebaseRoot })
@@ -93,6 +103,7 @@ async function main() {
 
 	// Track indexing state for search handler
 	let indexingPending = autoIndex // Will be set to false once indexing completes or fails
+	let rustIndexedChunks = 0
 
 	// Tool descriptions based on search mode
 	const toolDescription = isSemanticSearch
@@ -196,24 +207,63 @@ When to use:
 					snippet?: string
 					content?: string
 				}>
+				let route: RetrievalRoute = useRustSearch
+					? 'rust-tfidf'
+					: isSemanticSearch
+						? 'semantic'
+						: 'tfidf'
+
 				try {
-					results = isSemanticSearch
-						? await semanticSearch(query, indexer, {
-								limit,
+					if (useRustSearch) {
+						const rust = invokeRustEngine('coderag_search', {
+							root: codebaseRoot,
+							query,
+							limit,
+						})
+						if (rust.status === 'ok' && rust.results) {
+							results = mapRustSearchEnvelope(rust, limit)
+						} else {
+							throw new Error(rust.message ?? 'Rust retrieval engine failed')
+						}
+					} else if (isSemanticSearch && useRustIndexing) {
+						const candidateLimit = Math.max(limit * 4, 20)
+						const rust = invokeRustEngine('coderag_search', {
+							root: codebaseRoot,
+							query,
+							limit: candidateLimit,
+						})
+						const rustHits = mapRustSearchEnvelope(rust, candidateLimit)
+						const semanticHits = mapHybridResultsToSearchResults(
+							await semanticSearch(query, indexer, {
+								limit: candidateLimit,
 								fileExtensions: file_extensions,
 								pathFilter: path_filter,
 								excludePaths: exclude_paths,
 							})
-						: await indexer.search(query, {
-								limit,
-								includeContent: include_content,
-								fileExtensions: file_extensions,
-								pathFilter: path_filter,
-								excludePaths: exclude_paths,
-								contextLines: context_lines,
-								maxSnippetChars: max_snippet_chars,
-								maxSnippetBlocks: max_snippet_blocks,
-							})
+						)
+						results = mergeRustLexicalWithSemantic(rustHits, semanticHits, limit)
+						route = 'rust-semantic-hybrid'
+					} else {
+						results = isSemanticSearch
+							? mapHybridResultsToSearchResults(
+									await semanticSearch(query, indexer, {
+										limit,
+										fileExtensions: file_extensions,
+										pathFilter: path_filter,
+										excludePaths: exclude_paths,
+									})
+								)
+							: await indexer.search(query, {
+									limit,
+									includeContent: include_content,
+									fileExtensions: file_extensions,
+									pathFilter: path_filter,
+									excludePaths: exclude_paths,
+									contextLines: context_lines,
+									maxSnippetChars: max_snippet_chars,
+									maxSnippetBlocks: max_snippet_blocks,
+								})
+					}
 				} catch (searchError) {
 					// Index not ready yet (background indexing hasn't completed)
 					const errorMsg = (searchError as Error).message
@@ -240,101 +290,23 @@ When to use:
 					throw searchError
 				}
 
-				// Get indexed count for display
-				const indexedCount = await indexer.getIndexedCount()
+				const indexedCount = useRustIndexing ? rustIndexedChunks : await indexer.getIndexedCount()
 
-				if (results.length === 0) {
-					return text(
-						`# Search: "${query}" (0 results)\n\nNo matches found. Try different terms or check filters.\nIndexed files: ${indexedCount}`
-					)
-				}
+				const envelope = buildCodebaseSearchEnvelope({
+					query,
+					route,
+					engine: buildRetrievalEngineEvidence({
+						useRustIndexing,
+						route,
+					}),
+					indexedFiles: indexedCount,
+					indexing: status.isIndexing,
+					results: results as import('@sylphx/coderag').SearchResult[],
+					warnings:
+						results.length === 0 ? ['No matches found for the query and active filters.'] : [],
+				})
 
-				// Format results - optimized for LLM consumption (minimal tokens, maximum content)
-				let formattedResults = `# Search: "${query}" (${results.length} results)\n\n`
-
-				for (const result of results as Array<{
-					path: string
-					score: number
-					language?: string
-					size?: number
-					matchedTerms?: string[]
-					snippet?: string
-					content?: string
-					chunkType?: string
-					startLine?: number
-					endLine?: number
-				}>) {
-					// Build file path with line range (check !== undefined since 0 is valid)
-					let header = result.path
-					if (result.startLine !== undefined && result.endLine !== undefined) {
-						header += `:${result.startLine}-${result.endLine}`
-					}
-
-					// Add embedded indicator for code blocks in markdown/html
-					const isEmbedded =
-						result.chunkType?.startsWith('code') &&
-						(result.language === 'Markdown' || result.language === 'HTML')
-					if (isEmbedded) {
-						// Extract embedded language from snippet if available (e.g., "66: ```typescript")
-						const langMatch = result.snippet?.match(/```(\w+)/)
-						const embeddedLang = langMatch?.[1] || 'code'
-						header += ` [${result.language?.toLowerCase()}→${embeddedLang}]`
-					}
-
-					formattedResults += `## ${header}\n`
-
-					// Show content snippet
-					const maxSnippetLen = 2000 // Max chars for snippet display
-
-					if (result.snippet) {
-						// Determine language for syntax highlighting
-						let lang = ''
-						if (isEmbedded) {
-							// For embedded code, extract the actual language
-							const langMatch = result.snippet.match(/```(\w+)/)
-							lang = langMatch?.[1] || ''
-						} else {
-							lang = result.language?.toLowerCase() || ''
-						}
-
-						// Truncate long snippets with head+tail format
-						let snippetContent = result.snippet
-						if (snippetContent.length > maxSnippetLen) {
-							const headLen = Math.floor(maxSnippetLen * 0.7) // 70% head
-							const tailLen = Math.floor(maxSnippetLen * 0.2) // 20% tail
-							const head = snippetContent.substring(0, headLen)
-							const tail = snippetContent.substring(snippetContent.length - tailLen)
-							const truncatedChars = snippetContent.length - headLen - tailLen
-							snippetContent = `${head}\n\n... [${truncatedChars} chars truncated] ...\n\n${tail}`
-							// Add truncation indicator to header
-							formattedResults = `${formattedResults.trimEnd()} [truncated]\n`
-						}
-						formattedResults += `\`\`\`${lang}\n${snippetContent}\n\`\`\`\n\n`
-					} else if (result.content) {
-						// Truncate long content with head+tail format
-						const maxLen = 500
-						let preview: string
-						let isTruncated = false
-						if (result.content.length > maxLen) {
-							isTruncated = true
-							// Show first 350 chars + ... + last 100 chars
-							const headLen = 350
-							const tailLen = 100
-							const head = result.content.substring(0, headLen)
-							const tail = result.content.substring(result.content.length - tailLen)
-							preview = `${head}\n\n... [${result.content.length - headLen - tailLen} chars truncated] ...\n\n${tail}`
-						} else {
-							preview = result.content
-						}
-						// Add truncation indicator to header if needed
-						if (isTruncated) {
-							formattedResults = `${formattedResults.trimEnd()} [truncated]\n`
-						}
-						formattedResults += `\`\`\`\n${preview}\n\`\`\`\n\n`
-					}
-				}
-
-				return text(formattedResults)
+				return text(JSON.stringify(envelope, null, 2))
 			} catch (error) {
 				return text(`✗ Codebase search error: ${(error as Error).message}`)
 			}
@@ -361,7 +333,24 @@ When to use:
 
 	// Start indexing BEFORE server.start() since server.start() blocks waiting for client
 	// This way indexing runs concurrently while waiting for MCP client to connect
-	if (autoIndex) {
+	if (useRustIndexing) {
+		Logger.info(
+			isSemanticSearch
+				? '🦀 Rust TF-IDF index enabled for semantic hybrid retrieval'
+				: '🦀 Rust TF-IDF engine enabled (default when coderag-cli is built)'
+		)
+		const rustIndex = invokeRustEngine('coderag_index', {
+			root: codebaseRoot,
+			maxFileBytes: maxFileSize,
+			mode: 'auto',
+		})
+		rustIndexedChunks = rustIndex.index?.chunksIndexed ?? 0
+		if (!isSemanticSearch) {
+			indexingPending = false
+		}
+	}
+
+	if ((!useRustIndexing || isSemanticSearch) && autoIndex) {
 		Logger.info('📚 Starting automatic indexing...')
 		// Don't await - let it run in background
 		indexer

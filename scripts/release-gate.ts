@@ -1,0 +1,235 @@
+import { spawnSync } from 'node:child_process'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import path from 'node:path'
+import { runDoctor } from '../packages/mcp-server/src/doctor.ts'
+import { buildCodebaseSearchEnvelope } from '../packages/mcp-server/src/evidence.ts'
+import { invokeRustEngine } from '../packages/mcp-server/src/rust-engine.ts'
+import {
+	buildRetrievalEngineEvidence,
+	RETRIEVAL_CONTRACT_VERSION,
+} from '../packages/mcp-server/src/search-coordinator.ts'
+
+const ARTIFACT_DIR_ENV = 'CODERAG_BENCHMARK_OUTPUT_DIR'
+const DEFAULT_ARTIFACT_DIR = 'benchmark-artifacts'
+const ARTIFACT_FILE = 'coderag_release_gate.json'
+
+type GateStatus = 'passed' | 'failed'
+
+interface GateCheck {
+	id: string
+	status: GateStatus
+	message: string
+	evidence?: Record<string, unknown>
+}
+
+interface ReleaseGateReport {
+	profile: 'coderag_release_gate'
+	generated_at: string
+	artifact_dir: string
+	status: GateStatus
+	summary: {
+		total: number
+		passed: number
+		failed: number
+	}
+	checks: GateCheck[]
+}
+
+const repoRoot = path.resolve(import.meta.dirname, '..')
+const fixtureRoot = path.join(repoRoot, 'fixtures/benchmark-corpus')
+
+const GOLDEN_QUERIES: Array<{ query: string; expectedPath: string }> = [
+	{ query: 'user authentication login', expectedPath: 'src/auth/login.ts' },
+	{ query: 'database connection pool', expectedPath: 'src/db/pool.ts' },
+	{ query: 'checkRateLimit windowMs', expectedPath: 'src/api/rate-limit.ts' },
+]
+
+const addCheck = (
+	checks: GateCheck[],
+	id: string,
+	passed: boolean,
+	message: string,
+	evidence?: Record<string, unknown>
+): void => {
+	checks.push({
+		id,
+		status: passed ? 'passed' : 'failed',
+		message,
+		...(evidence ? { evidence } : {}),
+	})
+}
+
+const fileExists = (relativePath: string): boolean => existsSync(path.join(repoRoot, relativePath))
+
+export async function buildReleaseGateReport(artifactDir: string): Promise<ReleaseGateReport> {
+	const checks: GateCheck[] = []
+
+	addCheck(
+		checks,
+		'rust:retrieval_core',
+		fileExists('crates/coderag-core/src/engine.rs'),
+		'Rust coderag-core retrieval engine is present'
+	)
+
+	addCheck(
+		checks,
+		'fixtures:benchmark_corpus',
+		fileExists('fixtures/benchmark-corpus/src/auth/login.ts'),
+		'Golden retrieval benchmark corpus is checked in'
+	)
+
+	addCheck(
+		checks,
+		'tests:golden_retrieval',
+		fileExists('test/golden-retrieval.test.ts'),
+		'Golden retrieval eval test harness is present'
+	)
+
+	const doctor = await runDoctor('0.0.0')
+	addCheck(
+		checks,
+		'doctor:golden_fixture',
+		doctor.checks.find((check) => check.id === 'golden_fixture')?.status === 'ok',
+		'doctor reports the golden retrieval corpus is available',
+		{ doctorStatus: doctor.status }
+	)
+
+	const index = invokeRustEngine('coderag_index', { root: fixtureRoot, mode: 'full' })
+	addCheck(
+		checks,
+		'boundary:coderag_index',
+		index.status === 'ok',
+		'coderag_index returns ok from the Rust CLI on the benchmark corpus'
+	)
+
+	const autoRefresh = invokeRustEngine('coderag_index', { root: fixtureRoot, mode: 'auto' })
+	addCheck(
+		checks,
+		'boundary:incremental_cache_hit',
+		autoRefresh.status === 'ok' && autoRefresh.index?.refreshMode === 'cache_hit',
+		'coderag_index mode=auto reuses the persisted index when file hashes are unchanged',
+		{ refreshMode: autoRefresh.index?.refreshMode }
+	)
+
+	for (const { query, expectedPath } of GOLDEN_QUERIES) {
+		const search = invokeRustEngine('coderag_search', {
+			root: fixtureRoot,
+			query,
+			limit: 5,
+		})
+		const hit = search.results?.some((result) => result.path.endsWith(expectedPath)) ?? false
+		addCheck(
+			checks,
+			`golden:${expectedPath}`,
+			search.status === 'ok' && hit,
+			`Rust retrieval returns ${expectedPath} for "${query}"`,
+			{ query, expectedPath, hit }
+		)
+	}
+
+	const sampleEnvelope = buildCodebaseSearchEnvelope({
+		query: 'user authentication login',
+		route: 'rust-semantic-hybrid',
+		engine: buildRetrievalEngineEvidence({
+			useRustIndexing: true,
+			route: 'rust-semantic-hybrid',
+		}),
+		indexedFiles: index.index?.chunksIndexed ?? 0,
+		indexing: false,
+		results: [],
+	})
+	addCheck(
+		checks,
+		'contract:retrieval_envelope',
+		sampleEnvelope.engine.contract_version === RETRIEVAL_CONTRACT_VERSION &&
+			sampleEnvelope.engine.index === 'rust-tfidf' &&
+			sampleEnvelope.engine.search === 'rust-semantic-hybrid',
+		'Unified retrieval envelope documents versioned Rust index and hybrid semantic search routes',
+		{
+			contractVersion: sampleEnvelope.engine.contract_version,
+			indexRoute: sampleEnvelope.engine.index,
+			searchRoute: sampleEnvelope.engine.search,
+		}
+	)
+
+	const pkg = JSON.parse(readFileSync(path.join(repoRoot, 'package.json'), 'utf8')) as {
+		bin?: Record<string, string>
+	}
+
+	const binWrapper = readFileSync(path.join(repoRoot, 'bin/coderag-mcp'), 'utf8')
+	addCheck(
+		checks,
+		'mcp:rust_adapter_default',
+		typeof pkg.bin?.['coderag-mcp'] === 'string' &&
+			binWrapper.includes('coderag-mcp-server') &&
+			binWrapper.includes('resolve_rust_bin') &&
+			binWrapper.includes('use_ts_transport'),
+		'Default npm bin launches the Rust rmcp MCP server; TypeScript adapter is opt-in only'
+	)
+
+	const matrixProbe = spawnSync('bun', ['test', 'test/shippedPath.matrix.test.ts'], {
+		cwd: repoRoot,
+		encoding: 'utf8',
+		env: {
+			...process.env,
+			CODERAG_USE_RUST_ENGINE: '1',
+			CODERAG_MCP_TRANSPORT: '',
+		},
+		timeout: 300_000,
+	})
+	addCheck(
+		checks,
+		'boundary:rust_cli_engine',
+		fileExists('crates/coderag-mcp-server/src/tool_routes.rs') && matrixProbe.status === 0,
+		'Shipped-path matrix test proves primary retrieval routes through Rust core without legacy runtime',
+		matrixProbe.status === 0
+			? { exitCode: 0 }
+			: {
+					exitCode: matrixProbe.status,
+					stderr: matrixProbe.stderr?.slice(-2000),
+					stdout: matrixProbe.stdout?.slice(-2000),
+				}
+	)
+
+	const passed = checks.filter((check) => check.status === 'passed').length
+	const failed = checks.length - passed
+
+	return {
+		profile: 'coderag_release_gate',
+		generated_at: new Date().toISOString(),
+		artifact_dir: artifactDir,
+		status: failed === 0 ? 'passed' : 'failed',
+		summary: {
+			total: checks.length,
+			passed,
+			failed,
+		},
+		checks,
+	}
+}
+
+async function main(): Promise<void> {
+	const artifactDir = path.resolve(
+		process.env[ARTIFACT_DIR_ENV] ?? path.join(repoRoot, DEFAULT_ARTIFACT_DIR)
+	)
+
+	const report = await buildReleaseGateReport(artifactDir)
+	mkdirSync(artifactDir, { recursive: true })
+	const outputPath = path.join(artifactDir, ARTIFACT_FILE)
+	writeFileSync(outputPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8')
+	console.error(`CodeRAG release gate report written to ${outputPath}`)
+
+	if (report.status !== 'passed') {
+		for (const check of report.checks.filter((entry) => entry.status === 'failed')) {
+			console.error(`[FAILED] ${check.id}: ${check.message}`)
+		}
+		process.exit(1)
+	}
+}
+
+if (import.meta.main) {
+	main().catch((error: unknown) => {
+		console.error(error)
+		process.exit(1)
+	})
+}

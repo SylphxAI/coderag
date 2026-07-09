@@ -41,7 +41,8 @@
 		"clean": "rm -rf dist",
 		"db:generate": "drizzle-kit generate",
 		"db:migrate": "drizzle-kit migrate",
-		"db:studio": "drizzle-kit studio"
+		"db:studio": "drizzle-kit studio",
+		"lint:fix": "biome check --write ."
 	},
 	"dependencies": {
 		"@ai-sdk/openai": "^1.0.11",
@@ -76,8 +77,10 @@
 	"devDependencies": {
 		"@types/node": "^24.9.2",
 		"drizzle-kit": "^0.28.1",
-		"typescript": "^5.9.3",
-		"vitest": "^4.0.14"
+		"typescript": "^7.0.2",
+		"vitest": "^4.0.14",
+		"@biomejs/biome": "^2.3.12",
+		"@sylphx/biome-config": "^0.4.1"
 	},
 	"keywords": [
 		"rag",

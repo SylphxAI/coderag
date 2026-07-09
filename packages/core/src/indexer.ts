@@ -1554,10 +1554,19 @@ export class CodebaseIndexer {
 	}
 }
 
+export interface ScoreComponent {
+	term: string
+	termFrequency: number
+	documentFrequency: number
+	idf: number
+	bm25: number
+}
+
 export interface SearchResult {
 	path: string
 	score: number
 	matchedTerms: string[]
+	scoreComponents?: ScoreComponent[]
 	language?: string
 	size: number
 	snippet?: string

@@ -17,6 +17,7 @@ grep dumps or slow cloud pipelines.
 
 [⭐ Star this repo](https://github.com/SylphxAI/coderag) if agents should find code with evidence, not guess from keyword hits.
 · [Quick start](#quick-start) · [See it work](#see-it-work) · [Why not grep alone?](#why-not-grep-alone)
+· [Roadmap](docs/roadmap/sota-family-roadmap.md)
 
 </div>
 

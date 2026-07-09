@@ -1,7 +1,12 @@
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { runDoctor } from '../packages/mcp-server/src/doctor.ts'
+import { buildCodebaseSearchEnvelope } from '../packages/mcp-server/src/evidence.ts'
 import { invokeRustEngine } from '../packages/mcp-server/src/rust-engine.ts'
+import {
+	buildRetrievalEngineEvidence,
+	RETRIEVAL_CONTRACT_VERSION,
+} from '../packages/mcp-server/src/search-coordinator.ts'
 
 const ARTIFACT_DIR_ENV = 'CODERAG_BENCHMARK_OUTPUT_DIR'
 const DEFAULT_ARTIFACT_DIR = 'benchmark-artifacts'
@@ -120,6 +125,31 @@ export async function buildReleaseGateReport(artifactDir: string): Promise<Relea
 			{ query, expectedPath, hit }
 		)
 	}
+
+	const sampleEnvelope = buildCodebaseSearchEnvelope({
+		query: 'user authentication login',
+		route: 'rust-semantic-hybrid',
+		engine: buildRetrievalEngineEvidence({
+			useRustIndexing: true,
+			route: 'rust-semantic-hybrid',
+		}),
+		indexedFiles: index.index?.chunksIndexed ?? 0,
+		indexing: false,
+		results: [],
+	})
+	addCheck(
+		checks,
+		'contract:retrieval_envelope',
+		sampleEnvelope.engine.contract_version === RETRIEVAL_CONTRACT_VERSION &&
+			sampleEnvelope.engine.index === 'rust-tfidf' &&
+			sampleEnvelope.engine.search === 'rust-semantic-hybrid',
+		'Unified retrieval envelope documents versioned Rust index and hybrid semantic search routes',
+		{
+			contractVersion: sampleEnvelope.engine.contract_version,
+			indexRoute: sampleEnvelope.engine.index,
+			searchRoute: sampleEnvelope.engine.search,
+		}
+	)
 
 	const passed = checks.filter((check) => check.status === 'passed').length
 	const failed = checks.length - passed

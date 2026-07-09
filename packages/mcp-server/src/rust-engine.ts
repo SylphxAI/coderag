@@ -29,6 +29,8 @@ export type RustSearchEnvelope = {
 		refreshMode?: string
 		filesChanged?: number
 		filesRemoved?: number
+		filesScanned?: number
+		chunksIndexed?: number
 	}
 	code?: string
 	message?: string

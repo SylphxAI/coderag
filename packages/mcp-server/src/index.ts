@@ -14,12 +14,14 @@ import {
 } from '@sylphx/coderag'
 import { createServer, stdio, text, tool } from '@sylphx/mcp-server-sdk'
 import { array, bool, description, num, object, optional, str } from '@sylphx/vex'
-import {
-	buildCodebaseSearchEnvelope,
-	mapRustHitsToSearchResults,
-	type RetrievalRoute,
-} from './evidence.js'
+import { buildCodebaseSearchEnvelope, type RetrievalRoute } from './evidence.js'
 import { invokeRustEngine, shouldUseRustEngine } from './rust-engine.js'
+import {
+	buildRetrievalEngineEvidence,
+	mapHybridResultsToSearchResults,
+	mapRustSearchEnvelope,
+	mergeRustLexicalWithSemantic,
+} from './search-coordinator.js'
 
 // Logger utility (stderr for MCP)
 const Logger = {
@@ -78,7 +80,8 @@ async function main() {
 	}
 
 	const isSemanticSearch = !!embeddingProvider
-	const useRustEngine = shouldUseRustEngine() && !isSemanticSearch
+	const useRustIndexing = shouldUseRustEngine()
+	const useRustSearch = shouldUseRustEngine() && !isSemanticSearch
 
 	// Create persistent storage
 	const storage = new PersistentStorage({ codebaseRoot })
@@ -100,6 +103,7 @@ async function main() {
 
 	// Track indexing state for search handler
 	let indexingPending = autoIndex // Will be set to false once indexing completes or fails
+	let rustIndexedChunks = 0
 
 	// Tool descriptions based on search mode
 	const toolDescription = isSemanticSearch
@@ -203,26 +207,52 @@ When to use:
 					snippet?: string
 					content?: string
 				}>
+				let route: RetrievalRoute = useRustSearch
+					? 'rust-tfidf'
+					: isSemanticSearch
+						? 'semantic'
+						: 'tfidf'
+
 				try {
-					if (useRustEngine) {
+					if (useRustSearch) {
 						const rust = invokeRustEngine('coderag_search', {
 							root: codebaseRoot,
 							query,
 							limit,
 						})
 						if (rust.status === 'ok' && rust.results) {
-							results = mapRustHitsToSearchResults(rust.results)
+							results = mapRustSearchEnvelope(rust, limit)
 						} else {
 							throw new Error(rust.message ?? 'Rust retrieval engine failed')
 						}
+					} else if (isSemanticSearch && useRustIndexing) {
+						const candidateLimit = Math.max(limit * 4, 20)
+						const rust = invokeRustEngine('coderag_search', {
+							root: codebaseRoot,
+							query,
+							limit: candidateLimit,
+						})
+						const rustHits = mapRustSearchEnvelope(rust, candidateLimit)
+						const semanticHits = mapHybridResultsToSearchResults(
+							await semanticSearch(query, indexer, {
+								limit: candidateLimit,
+								fileExtensions: file_extensions,
+								pathFilter: path_filter,
+								excludePaths: exclude_paths,
+							})
+						)
+						results = mergeRustLexicalWithSemantic(rustHits, semanticHits, limit)
+						route = 'rust-semantic-hybrid'
 					} else {
 						results = isSemanticSearch
-							? await semanticSearch(query, indexer, {
-									limit,
-									fileExtensions: file_extensions,
-									pathFilter: path_filter,
-									excludePaths: exclude_paths,
-								})
+							? mapHybridResultsToSearchResults(
+									await semanticSearch(query, indexer, {
+										limit,
+										fileExtensions: file_extensions,
+										pathFilter: path_filter,
+										excludePaths: exclude_paths,
+									})
+								)
 							: await indexer.search(query, {
 									limit,
 									includeContent: include_content,
@@ -260,16 +290,15 @@ When to use:
 					throw searchError
 				}
 
-				const indexedCount = useRustEngine ? results.length : await indexer.getIndexedCount()
-				const route: RetrievalRoute = useRustEngine
-					? 'rust-tfidf'
-					: isSemanticSearch
-						? 'semantic'
-						: 'tfidf'
+				const indexedCount = useRustIndexing ? rustIndexedChunks : await indexer.getIndexedCount()
 
 				const envelope = buildCodebaseSearchEnvelope({
 					query,
 					route,
+					engine: buildRetrievalEngineEvidence({
+						useRustIndexing,
+						route,
+					}),
 					indexedFiles: indexedCount,
 					indexing: status.isIndexing,
 					results: results as import('@sylphx/coderag').SearchResult[],
@@ -304,14 +333,24 @@ When to use:
 
 	// Start indexing BEFORE server.start() since server.start() blocks waiting for client
 	// This way indexing runs concurrently while waiting for MCP client to connect
-	if (useRustEngine) {
-		Logger.info('🦀 Rust TF-IDF engine enabled (default when coderag-cli is built)')
-		invokeRustEngine('coderag_index', {
+	if (useRustIndexing) {
+		Logger.info(
+			isSemanticSearch
+				? '🦀 Rust TF-IDF index enabled for semantic hybrid retrieval'
+				: '🦀 Rust TF-IDF engine enabled (default when coderag-cli is built)'
+		)
+		const rustIndex = invokeRustEngine('coderag_index', {
 			root: codebaseRoot,
 			maxFileBytes: maxFileSize,
 			mode: 'auto',
 		})
-	} else if (autoIndex) {
+		rustIndexedChunks = rustIndex.index?.chunksIndexed ?? 0
+		if (!isSemanticSearch) {
+			indexingPending = false
+		}
+	}
+
+	if ((!useRustIndexing || isSemanticSearch) && autoIndex) {
 		Logger.info('📚 Starting automatic indexing...')
 		// Don't await - let it run in background
 		indexer

@@ -1,6 +1,12 @@
 import type { SearchResult } from '@sylphx/coderag'
 
-export type RetrievalRoute = 'tfidf' | 'semantic' | 'rust-tfidf'
+export type RetrievalRoute = 'tfidf' | 'semantic' | 'rust-tfidf' | 'rust-semantic-hybrid'
+
+export interface RetrievalEngineEvidence {
+	contract_version: string
+	index: 'rust-tfidf' | 'typescript'
+	search: RetrievalRoute
+}
 
 export interface RetrievalLocator {
 	path: string
@@ -34,6 +40,7 @@ export interface CodebaseSearchEnvelope {
 	subject: 'codebase_search'
 	query: string
 	route: RetrievalRoute
+	engine: RetrievalEngineEvidence
 	freshness: {
 		indexedFiles: number
 		indexing: boolean
@@ -47,6 +54,7 @@ export interface CodebaseSearchEnvelope {
 export function buildCodebaseSearchEnvelope(input: {
 	query: string
 	route: RetrievalRoute
+	engine: RetrievalEngineEvidence
 	indexedFiles: number
 	indexing: boolean
 	results: SearchResult[]
@@ -57,6 +65,7 @@ export function buildCodebaseSearchEnvelope(input: {
 		subject: 'codebase_search',
 		query: input.query,
 		route: input.route,
+		engine: input.engine,
 		freshness: {
 			indexedFiles: input.indexedFiles,
 			indexing: input.indexing,

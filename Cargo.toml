@@ -1,5 +1,9 @@
 [workspace]
-members = ["crates/coderag-core", "crates/coderag-cli"]
+members = [
+    "crates/coderag-core",
+    "crates/coderag-cli",
+    "crates/coderag-mcp-server",
+]
 resolver = "2"
 
 [workspace.package]

@@ -1,11 +1,11 @@
 {
 	"profile": "coderag_release_gate",
-	"generated_at": "2026-07-09T04:54:40.019Z",
+	"generated_at": "2026-07-09T10:21:22.525Z",
 	"artifact_dir": "/home/codex/src/github.com/SylphxAI/coderag/benchmark-artifacts",
 	"status": "passed",
 	"summary": {
-		"total": 9,
-		"passed": 9,
+		"total": 12,
+		"passed": 12,
 		"failed": 0
 	},
 	"checks": [
@@ -73,6 +73,29 @@
 				"query": "checkRateLimit windowMs",
 				"expectedPath": "src/api/rate-limit.ts",
 				"hit": true
+			}
+		},
+		{
+			"id": "contract:retrieval_envelope",
+			"status": "passed",
+			"message": "Unified retrieval envelope documents versioned Rust index and hybrid semantic search routes",
+			"evidence": {
+				"contractVersion": "coderag-retrieval-v1",
+				"indexRoute": "rust-tfidf",
+				"searchRoute": "rust-semantic-hybrid"
+			}
+		},
+		{
+			"id": "mcp:rust_adapter_default",
+			"status": "passed",
+			"message": "Default npm bin launches the Rust rmcp MCP server; TypeScript adapter is opt-in only"
+		},
+		{
+			"id": "boundary:rust_cli_engine",
+			"status": "passed",
+			"message": "Shipped-path matrix test proves primary retrieval routes through Rust core without legacy runtime",
+			"evidence": {
+				"exitCode": 0
 			}
 		}
 	]

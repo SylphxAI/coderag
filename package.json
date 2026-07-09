@@ -6,6 +6,9 @@
 	"workspaces": [
 		"packages/*"
 	],
+	"bin": {
+		"coderag-mcp": "./bin/coderag-mcp"
+	},
 	"scripts": {
 		"build": "turbo run build",
 		"dev": "turbo run dev",
@@ -17,7 +20,7 @@
 		"format": "biome format --write .",
 		"format:check": "biome format .",
 		"docs:dev": "cd docs && bun run docs:dev",
-		"build:rust": "cargo build --release",
+		"build:rust": "cargo build --release -p coderag-core -p coderag-cli -p coderag-mcp-server && bun scripts/stage-rust-mcp.ts",
 		"test:rust": "cargo test",
 		"test:golden-retrieval": "bun run build:rust && bun test test/golden-retrieval.test.ts",
 		"test:public-surface": "bun test test/readmeDiscovery.test.ts",

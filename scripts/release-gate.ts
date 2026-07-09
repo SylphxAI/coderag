@@ -1,4 +1,5 @@
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { runDoctor } from '../packages/mcp-server/src/doctor.ts'
 import { buildCodebaseSearchEnvelope } from '../packages/mcp-server/src/evidence.ts'
@@ -149,6 +150,45 @@ export async function buildReleaseGateReport(artifactDir: string): Promise<Relea
 			indexRoute: sampleEnvelope.engine.index,
 			searchRoute: sampleEnvelope.engine.search,
 		}
+	)
+
+	const pkg = JSON.parse(readFileSync(path.join(repoRoot, 'package.json'), 'utf8')) as {
+		bin?: Record<string, string>
+	}
+
+	const binWrapper = readFileSync(path.join(repoRoot, 'bin/coderag-mcp'), 'utf8')
+	addCheck(
+		checks,
+		'mcp:rust_adapter_default',
+		typeof pkg.bin?.['coderag-mcp'] === 'string' &&
+			binWrapper.includes('coderag-mcp-server') &&
+			binWrapper.includes('resolve_rust_bin') &&
+			binWrapper.includes('use_ts_transport'),
+		'Default npm bin launches the Rust rmcp MCP server; TypeScript adapter is opt-in only'
+	)
+
+	const matrixProbe = spawnSync('bun', ['test', 'test/shippedPath.matrix.test.ts'], {
+		cwd: repoRoot,
+		encoding: 'utf8',
+		env: {
+			...process.env,
+			CODERAG_USE_RUST_ENGINE: '1',
+			CODERAG_MCP_TRANSPORT: '',
+		},
+		timeout: 300_000,
+	})
+	addCheck(
+		checks,
+		'boundary:rust_cli_engine',
+		fileExists('crates/coderag-mcp-server/src/tool_routes.rs') && matrixProbe.status === 0,
+		'Shipped-path matrix test proves primary retrieval routes through Rust core without legacy runtime',
+		matrixProbe.status === 0
+			? { exitCode: 0 }
+			: {
+					exitCode: matrixProbe.status,
+					stderr: matrixProbe.stderr?.slice(-2000),
+					stdout: matrixProbe.stdout?.slice(-2000),
+				}
 	)
 
 	const passed = checks.filter((check) => check.status === 'passed').length

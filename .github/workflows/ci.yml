@@ -50,6 +50,9 @@ jobs:
       - name: Public benchmark proof
         run: bun run benchmark:public-proof
 
+      - name: Release gate
+        run: bun run benchmark:release-gate
+
       - name: Docs build
         run: bun run docs:build
 

@@ -24,6 +24,8 @@
 		"docs:build": "cd docs && bun run docs:build",
 		"docs:preview": "cd docs && bun run docs:preview",
 		"benchmark:public-proof": "bun run scripts/benchmark-public-proof.ts",
+		"doctor": "bun run packages/mcp-server/src/doctor.ts",
+		"benchmark:release-gate": "bun run build:rust && bun run scripts/release-gate.ts",
 		"changeset": "changeset",
 		"version": "changeset version",
 		"release": "echo \"Direct changeset publish is unsafe for workspace packages; use the Sylphx release workflow.\" && exit 1",

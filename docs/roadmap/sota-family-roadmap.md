@@ -3,6 +3,7 @@
 Status: adoption plan  
 Owner: CodeRAG  
 Scope: repo-local future plan and its role in the SylphxAI MCP family
+Decision record: `docs/adr/ADR-66-mcp-family-sota-roadmap.md`
 
 ## Family Role
 

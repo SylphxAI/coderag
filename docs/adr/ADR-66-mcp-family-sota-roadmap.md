@@ -16,9 +16,9 @@ it supports architecture, reader, filesystem, and consultation workflows.
 Adopt `docs/roadmap/sota-family-roadmap.md` as the local roadmap for CodeRAG's
 family role.
 
-CodeRAG owns code evidence retrieval. It should evolve toward a Rust indexing
-and ranking core with a stable public TypeScript/Bun package surface during
-migration.
+CodeRAG owns code evidence retrieval. It should evolve toward Rust indexing,
+ranking, and MCP serving while preserving the public `codebase_search` contract
+during migration.
 
 ## Consequences
 
@@ -27,6 +27,13 @@ migration.
 - Non-code media extraction stays in Reader MCPs.
 - Future ranking and indexing work must include retrieval evals, evidence
   locators, freshness, and benchmark gates.
+
+## Amendment: Rust-Native MCP Runtime
+
+The family runtime direction now targets Rust MCP servers using
+`modelcontextprotocol/rust-sdk` / `rmcp`. For CodeRAG, TypeScript can remain as
+a compatibility wrapper or generated client surface, but it is not the target
+MCP server runtime.
 
 ## Verification
 

@@ -36,10 +36,14 @@ that explains why a result was returned and how fresh the indexed evidence is.
 
 ## Runtime Direction
 
-The current TypeScript/Bun implementation remains the public package surface.
-The SOTA target is a Rust core for scanning, indexing, ranking, persistence,
-snippet extraction, and incremental updates, with the MCP adapter kept thin
-during migration.
+The current TypeScript/Bun implementation remains the compatibility surface.
+The SOTA target is Rust for scanning, indexing, ranking, persistence, snippet
+extraction, incremental updates, and MCP serving.
+
+The Rust MCP server should use `modelcontextprotocol/rust-sdk` / `rmcp` while
+preserving the existing `codebase_search` public contract. TypeScript can remain
+for generated client types, compatibility wrappers, and package transition
+tests, but it is not the target MCP adapter runtime.
 
 WASM can be used for portable tokenization or sandboxed analyzers only where
 benchmarks prove the tradeoff. Native Rust remains the default for hot paths.
@@ -58,7 +62,9 @@ benchmarks prove the tradeoff. Native Rust remains the default for hot paths.
 
 - Build Rust primitives for repository walking, hashing, chunk persistence,
   lexical ranking, and snippet extraction.
-- Keep TypeScript package compatibility through a thin adapter.
+- Add a Rust MCP server facade for the frozen `codebase_search` contract.
+- Keep TypeScript package compatibility as a wrapper or generated client layer,
+  not as the long-term MCP server.
 - Add deterministic snapshot tests and cache invalidation tests.
 - Add install diagnostics for missing native engine packages.
 

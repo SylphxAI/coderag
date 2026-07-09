@@ -45,4 +45,23 @@ mod tests {
         assert!(!hits.is_empty());
         assert!(hits.iter().any(|hit| hit.path.contains("auth/login")));
     }
+
+    #[test]
+    fn auto_mode_returns_cache_hit_when_inventory_is_unchanged() {
+        let root = fixture_root();
+        let first = index::refresh_index(&root, 1_048_576, index::IndexMode::Auto).expect("index");
+        let second = index::refresh_index(&root, 1_048_576, index::IndexMode::Auto).expect("refresh");
+        assert_eq!(first.1.refresh_mode, "full");
+        assert_eq!(second.1.refresh_mode, "cache_hit");
+        assert_eq!(first.0.chunks.len(), second.0.chunks.len());
+    }
+
+    #[test]
+    fn search_hits_include_score_components() {
+        let (index, _) = index::build_index(&fixture_root(), 1_048_576).expect("index");
+        let hits = index::search_index(&index, "user authentication login", 1);
+        assert!(!hits.is_empty());
+        assert!(!hits[0].score_components.is_empty());
+        assert!(hits[0].score_components.iter().any(|part| part.bm25 > 0.0));
+    }
 }

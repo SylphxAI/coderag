@@ -12,10 +12,22 @@ export type RustSearchEnvelope = {
 		path: string
 		score: number
 		matchedTerms: string[]
+		scoreComponents?: Array<{
+			term: string
+			termFrequency: number
+			documentFrequency: number
+			idf: number
+			bm25: number
+		}>
 		startLine?: number
 		endLine?: number
 		snippet?: string
 	}>
+	index?: {
+		refreshMode?: string
+		filesChanged?: number
+		filesRemoved?: number
+	}
 	code?: string
 	message?: string
 }

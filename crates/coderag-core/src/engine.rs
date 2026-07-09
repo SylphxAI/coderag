@@ -2,7 +2,7 @@ use std::path::Path;
 use std::sync::{Mutex, OnceLock};
 use std::time::Instant;
 
-use crate::index::{build_index, search_index, SearchIndex};
+use crate::index::{refresh_index, search_index, IndexMode, SearchIndex};
 use crate::store::{load_index, save_index};
 use crate::types::ToolEnvelope;
 
@@ -29,8 +29,13 @@ fn coderag_index(input: serde_json::Value) -> ToolEnvelope {
         .get("maxFileBytes")
         .and_then(|v| v.as_u64())
         .unwrap_or(1_048_576);
+    let mode = input
+        .get("mode")
+        .and_then(|v| v.as_str())
+        .map(IndexMode::parse)
+        .unwrap_or(IndexMode::Auto);
 
-    match build_index(Path::new(root), max_file_bytes) {
+    match refresh_index(Path::new(root), max_file_bytes, mode) {
         Ok((index, stats)) => {
             if let Err(message) = save_index(Path::new(root), &index) {
                 return ToolEnvelope::error("INDEX_PERSIST_FAILED", &message);
@@ -67,7 +72,7 @@ fn resolve_index(root: Option<&str>) -> Result<SearchIndex, ToolEnvelope> {
             }
             Ok(index)
         }
-        Err(_) => match build_index(Path::new(root), 1_048_576) {
+        Err(_) => match refresh_index(Path::new(root), 1_048_576, IndexMode::Auto) {
             Ok((index, _)) => {
                 let _ = save_index(Path::new(root), &index);
                 if let Ok(mut guard) = index_store().lock() {

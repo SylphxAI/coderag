@@ -306,7 +306,11 @@ When to use:
 	// This way indexing runs concurrently while waiting for MCP client to connect
 	if (useRustEngine) {
 		Logger.info('🦀 Rust TF-IDF engine enabled (default when coderag-cli is built)')
-		invokeRustEngine('coderag_index', { root: codebaseRoot, maxFileBytes: maxFileSize })
+		invokeRustEngine('coderag_index', {
+			root: codebaseRoot,
+			maxFileBytes: maxFileSize,
+			mode: 'auto',
+		})
 	} else if (autoIndex) {
 		Logger.info('📚 Starting automatic indexing...')
 		// Don't await - let it run in background

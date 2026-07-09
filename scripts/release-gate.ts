@@ -88,12 +88,21 @@ export async function buildReleaseGateReport(artifactDir: string): Promise<Relea
 		{ doctorStatus: doctor.status }
 	)
 
-	const index = invokeRustEngine('coderag_index', { root: fixtureRoot })
+	const index = invokeRustEngine('coderag_index', { root: fixtureRoot, mode: 'full' })
 	addCheck(
 		checks,
 		'boundary:coderag_index',
 		index.status === 'ok',
 		'coderag_index returns ok from the Rust CLI on the benchmark corpus'
+	)
+
+	const autoRefresh = invokeRustEngine('coderag_index', { root: fixtureRoot, mode: 'auto' })
+	addCheck(
+		checks,
+		'boundary:incremental_cache_hit',
+		autoRefresh.status === 'ok' && autoRefresh.index?.refreshMode === 'cache_hit',
+		'coderag_index mode=auto reuses the persisted index when file hashes are unchanged',
+		{ refreshMode: autoRefresh.index?.refreshMode }
 	)
 
 	for (const { query, expectedPath } of GOLDEN_QUERIES) {

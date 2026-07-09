@@ -1,11 +1,11 @@
 {
 	"profile": "coderag_release_gate",
-	"generated_at": "2026-07-09T04:45:00.141Z",
+	"generated_at": "2026-07-09T04:54:40.019Z",
 	"artifact_dir": "/home/codex/src/github.com/SylphxAI/coderag/benchmark-artifacts",
 	"status": "passed",
 	"summary": {
-		"total": 8,
-		"passed": 8,
+		"total": 9,
+		"passed": 9,
 		"failed": 0
 	},
 	"checks": [
@@ -36,6 +36,14 @@
 			"id": "boundary:coderag_index",
 			"status": "passed",
 			"message": "coderag_index returns ok from the Rust CLI on the benchmark corpus"
+		},
+		{
+			"id": "boundary:incremental_cache_hit",
+			"status": "passed",
+			"message": "coderag_index mode=auto reuses the persisted index when file hashes are unchanged",
+			"evidence": {
+				"refreshMode": "cache_hit"
+			}
 		},
 		{
 			"id": "golden:src/auth/login.ts",

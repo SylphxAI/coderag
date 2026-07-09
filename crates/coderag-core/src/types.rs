@@ -5,10 +5,22 @@ pub const ENGINE_VERSION: &str = "0.1.0";
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct ScoreComponent {
+    pub term: String,
+    pub term_frequency: f64,
+    pub document_frequency: f64,
+    pub idf: f64,
+    pub bm25: f64,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SearchHit {
     pub path: String,
     pub score: f64,
     pub matched_terms: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub score_components: Vec<ScoreComponent>,
     pub start_line: Option<u32>,
     pub end_line: Option<u32>,
     pub snippet: Option<String>,
@@ -20,6 +32,9 @@ pub struct IndexStats {
     pub files_scanned: usize,
     pub chunks_indexed: usize,
     pub elapsed_ms: u64,
+    pub refresh_mode: String,
+    pub files_changed: usize,
+    pub files_removed: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

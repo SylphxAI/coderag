@@ -8,11 +8,20 @@ export interface RetrievalLocator {
 	endLine?: number
 }
 
+export interface ScoreComponentEvidence {
+	term: string
+	termFrequency: number
+	documentFrequency: number
+	idf: number
+	bm25: number
+}
+
 export interface RetrievalResultEvidence {
 	path: string
 	locator: RetrievalLocator
 	score: number
 	matchedTerms: string[]
+	scoreComponents?: ScoreComponentEvidence[]
 	route: RetrievalRoute
 	confidence: 'deterministic' | 'derived' | 'inferred' | 'unknown'
 	snippet?: string
@@ -62,6 +71,9 @@ export function buildCodebaseSearchEnvelope(input: {
 			},
 			score: result.score,
 			matchedTerms: result.matchedTerms ?? [],
+			...(result.scoreComponents && result.scoreComponents.length > 0
+				? { scoreComponents: result.scoreComponents }
+				: {}),
 			route: input.route,
 			confidence: 'deterministic',
 			snippet: result.snippet,
@@ -81,6 +93,13 @@ export function mapRustHitsToSearchResults(
 		path: string
 		score: number
 		matchedTerms: string[]
+		scoreComponents?: Array<{
+			term: string
+			termFrequency: number
+			documentFrequency: number
+			idf: number
+			bm25: number
+		}>
 		startLine?: number
 		endLine?: number
 		snippet?: string
@@ -90,6 +109,9 @@ export function mapRustHitsToSearchResults(
 		path: hit.path,
 		score: hit.score,
 		matchedTerms: hit.matchedTerms,
+		...(hit.scoreComponents && hit.scoreComponents.length > 0
+			? { scoreComponents: hit.scoreComponents }
+			: {}),
 		size: hit.snippet?.length ?? 0,
 		startLine: hit.startLine,
 		endLine: hit.endLine,

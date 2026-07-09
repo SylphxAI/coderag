@@ -42,6 +42,14 @@
 	},
 	"files": {
 		"ignoreUnknown": false,
-		"includes": ["**/*.js", "**/*.ts", "**/*.jsx", "**/*.tsx", "**/*.json"]
+		"includes": [
+			"**/*.js",
+			"**/*.ts",
+			"**/*.jsx",
+			"**/*.tsx",
+			"**/*.json",
+			"!benchmark-artifacts/**",
+			"!fixtures/**/.coderag/**"
+		]
 	}
 }

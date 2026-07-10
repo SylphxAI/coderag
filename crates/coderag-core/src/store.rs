@@ -39,7 +39,7 @@ pub fn save_file_hashes(root: &Path, manifest: &FileHashManifest) -> Result<(), 
     }
     let bytes =
         serde_json::to_vec_pretty(manifest).map_err(|err| format!("HASH_PERSIST_FAILED: {err}"))?;
-    fs::write(path, bytes).map_err(|err| format!("HASH_PERSIST_FAILED: {err}"))?;
+    atomic_write(&path, &bytes).map_err(|err| format!("HASH_PERSIST_FAILED: {err}"))?;
     Ok(())
 }
 
@@ -81,7 +81,27 @@ pub fn save_index(root: &Path, index: &SearchIndex) -> Result<(), String> {
         index: index.clone(),
     };
     let bytes = serde_json::to_vec(&snapshot).map_err(|err| format!("INDEX_PERSIST_FAILED: {err}"))?;
-    fs::write(&path, bytes).map_err(|err| format!("INDEX_PERSIST_FAILED: {err}"))?;
+    atomic_write(&path, &bytes).map_err(|err| format!("INDEX_PERSIST_FAILED: {err}"))?;
+    Ok(())
+}
+
+/// Write via temp file + rename so concurrent readers never observe a truncated body.
+fn atomic_write(path: &Path, bytes: &[u8]) -> Result<(), String> {
+    let parent = path
+        .parent()
+        .ok_or_else(|| format!("invalid persist path: {}", path.display()))?;
+    let tmp = parent.join(format!(
+        ".{}.tmp-{}",
+        path.file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or("persist"),
+        std::process::id()
+    ));
+    fs::write(&tmp, bytes).map_err(|err| err.to_string())?;
+    fs::rename(&tmp, path).map_err(|err| {
+        let _ = fs::remove_file(&tmp);
+        err.to_string()
+    })?;
     Ok(())
 }
 

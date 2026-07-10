@@ -3,33 +3,39 @@
 	"version": "0.3.33",
 	"description": "MCP server for CodeRAG - Model Context Protocol integration for RAG",
 	"type": "module",
-	"main": "./dist/index.js",
+	"main": "./dist/rust-engine.js",
 	"bin": {
-		"coderag-mcp": "./dist/index.js"
+		"coderag-mcp": "./bin/coderag-mcp"
 	},
 	"exports": {
-		".": {
-			"types": "./dist/index.d.ts",
-			"import": "./dist/index.js"
+		"./evidence": {
+			"types": "./dist/evidence.d.ts",
+			"import": "./dist/evidence.js"
+		},
+		"./rust-engine": {
+			"types": "./dist/rust-engine.d.ts",
+			"import": "./dist/rust-engine.js"
+		},
+		"./search-coordinator": {
+			"types": "./dist/search-coordinator.d.ts",
+			"import": "./dist/search-coordinator.js"
 		}
 	},
 	"files": [
+		"bin",
+		"bin/native",
 		"dist",
 		"README.md"
 	],
 	"scripts": {
 		"build": "tsc",
-		"dev": "bun run src/index.ts",
-		"start": "node dist/index.js",
 		"test": "bun test",
 		"type-check": "tsc --noEmit",
 		"clean": "rm -rf dist",
 		"lint:fix": "biome check --write ."
 	},
 	"dependencies": {
-		"@sylphx/coderag": "workspace:*",
-		"@sylphx/mcp-server-sdk": "^2.1.0",
-		"@sylphx/vex": "^0.1.11"
+		"@sylphx/coderag": "workspace:*"
 	},
 	"devDependencies": {
 		"@types/bun": "^1.3.3",

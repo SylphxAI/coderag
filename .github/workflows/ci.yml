@@ -38,6 +38,21 @@ jobs:
       - name: Retrieval parity (frozen baseline)
         run: bun test test/retrieval-parity.test.ts
 
+      - name: Web MCP HTTP authority gate (no TS HTTP backend)
+        run: bun run check:no-ts-http-backend && bun test test/check-no-ts-http-backend.test.ts
+
+      - name: TS stdio adapter deletion gate (transport/stdio-ts-adapter ts_deleted)
+        run: bun run check:ts-adapter-deleted && bun test test/tsAdapterDeletion.matrix.test.ts
+
+      - name: MCP stdio Rust authority gate (transport/stdio-rust-rmcp rust_impl)
+        run: bash scripts/check-no-ts-stdio-backend.sh && bun test test/check-no-ts-stdio-backend.test.ts && bun test test/stdioTransport.matrix.test.ts
+
+      - name: codebase_search Rust authority gate (tool/codebase_search rust_impl)
+        run: bash scripts/check-no-ts-codebase-search.sh && bun test test/check-no-ts-codebase-search.test.ts
+
+      - name: rej-010 differential harness design gate
+        run: bun test test/check-differential-harness.test.ts
+
       - name: Type check
         run: bun run type-check
 

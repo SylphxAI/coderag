@@ -177,8 +177,120 @@ export async function buildReleaseGateReport(artifactDir: string): Promise<Relea
 		typeof pkg.bin?.['coderag-mcp'] === 'string' &&
 			binWrapper.includes('coderag-mcp-server') &&
 			binWrapper.includes('resolve_rust_bin') &&
-			binWrapper.includes('use_ts_transport'),
-		'Default npm bin launches the Rust rmcp MCP server; TypeScript adapter is opt-in only'
+			!binWrapper.includes('use_ts_transport'),
+		'Default npm bin launches the Rust rmcp MCP server; TS stdio adapter retired'
+	)
+
+	const httpTransportSource = readFileSync(
+		path.join(repoRoot, 'crates/coderag-mcp-server/src/http_transport.rs'),
+		'utf8'
+	)
+	addCheck(
+		checks,
+		'mcp:rust_web_http_transport',
+		httpTransportSource.includes('StreamableHttpService') &&
+			httpTransportSource.includes('/mcp/health') &&
+			binWrapper.includes('resolve_transport') &&
+			binWrapper.includes('CODERAG_MCP_TRANSPORT=http'),
+		'Rust rmcp streamable HTTP Web MCP transport is wired; npm bin routes CODERAG_MCP_TRANSPORT=http to Rust'
+	)
+
+	const httpParityProbe = spawnSync('bun', ['test', 'test/integration/http-transport.test.ts'], {
+		cwd: repoRoot,
+		encoding: 'utf8',
+		timeout: 300_000,
+	})
+	addCheck(
+		checks,
+		'mcp:http_transport_parity',
+		fileExists('test/integration/http-transport.test.ts') && httpParityProbe.status === 0,
+		'HTTP transport integration test proves Rust rmcp codebase_search golden parity over streamable HTTP',
+		httpParityProbe.status === 0
+			? { exitCode: 0 }
+			: {
+					exitCode: httpParityProbe.status,
+					stderr: httpParityProbe.stderr?.slice(-2000),
+					stdout: httpParityProbe.stdout?.slice(-2000),
+				}
+	)
+
+	const tsAdapterDeletedGate = fileExists('scripts/check-ts-adapter-deletion-ready.sh')
+	const stdioAuthorityGate = fileExists('scripts/check-no-ts-stdio-backend.sh')
+	const rustMain = fileExists('crates/coderag-mcp-server/src/main.rs')
+		? readFileSync(path.join(repoRoot, 'crates/coderag-mcp-server/src/main.rs'), 'utf8')
+		: ''
+	const httpAuthorityGate = fileExists('scripts/check-no-ts-http-backend.sh')
+	addCheck(
+		checks,
+		'mcp:http_authority_rust',
+		httpAuthorityGate &&
+			tsAdapterDeletedGate &&
+			httpTransportSource.includes('StreamableHttpService') &&
+			binWrapper.includes('CODERAG_MCP_TRANSPORT=http') &&
+			!fileExists('packages/mcp-server/src/index.ts'),
+		'Web MCP HTTP transport is Rust-only authority: bin routes http to rmcp and TS stdio adapter is deleted',
+		{
+			httpAuthorityGate,
+			tsAdapterDeletedGate,
+			tsStdioAdapterPresent: fileExists('packages/mcp-server/src/index.ts'),
+		}
+	)
+
+	addCheck(
+		checks,
+		'mcp:stdio_ts_adapter_deleted',
+		tsAdapterDeletedGate &&
+			!fileExists('packages/mcp-server/src/index.ts') &&
+			!fileExists('packages/mcp-server/dist/index.js') &&
+			!binWrapper.includes('use_ts_transport'),
+		'transport/stdio-ts-adapter retired: no TS stdio MCP entrypoint or opt-in routing remains',
+		{
+			tsAdapterDeletedGate,
+			tsStdioAdapterPresent: fileExists('packages/mcp-server/src/index.ts'),
+		}
+	)
+
+	addCheck(
+		checks,
+		'mcp:stdio_rust_authority_rust',
+		stdioAuthorityGate &&
+			rustMain.includes('transport::stdio') &&
+			binWrapper.includes('resolve_rust_bin') &&
+			binWrapper.includes('stdio') &&
+			!fileExists('packages/mcp-server/src/index.ts'),
+		'MCP stdio transport is Rust-only authority: default bin routes to rmcp stdio and TS stdio adapter is deleted',
+		{
+			stdioAuthorityGate,
+			stdioGoldenParity: fileExists('crates/coderag-mcp-server/tests/golden_parity.rs'),
+			tsStdioAdapterPresent: fileExists('packages/mcp-server/src/index.ts'),
+		}
+	)
+
+	const codebaseSearchHandler = fileExists('crates/coderag-mcp-server/src/codebase_search.rs')
+		? readFileSync(path.join(repoRoot, 'crates/coderag-mcp-server/src/codebase_search.rs'), 'utf8')
+		: ''
+	const toolRoutes = fileExists('crates/coderag-mcp-server/src/tool_routes.rs')
+		? readFileSync(path.join(repoRoot, 'crates/coderag-mcp-server/src/tool_routes.rs'), 'utf8')
+		: ''
+	const codebaseSearchAuthorityGate = fileExists('scripts/check-no-ts-codebase-search.sh')
+	addCheck(
+		checks,
+		'mcp:codebase_search_authority_rust',
+		codebaseSearchAuthorityGate &&
+			codebaseSearchHandler.includes('coderag_index') &&
+			codebaseSearchHandler.includes('coderag_search') &&
+			codebaseSearchHandler.includes('CODEBASE_SEARCH_ROUTE') &&
+			toolRoutes.includes('"codebase_search"') &&
+			toolRoutes.includes('RustCore') &&
+			!fileExists('packages/mcp-server/src/index.ts'),
+		'codebase_search tool authority is Rust-only on rmcp stdio and HTTP; golden baseline parity proven on both transports',
+		{
+			codebaseSearchAuthorityGate,
+			rmcpHandlerPresent: fileExists('crates/coderag-mcp-server/src/codebase_search.rs'),
+			stdioGoldenParity: fileExists('crates/coderag-mcp-server/tests/golden_parity.rs'),
+			httpGoldenParity: fileExists('test/integration/http-transport.test.ts'),
+			tsMcpEntryPresent: fileExists('packages/mcp-server/src/index.ts'),
+		}
 	)
 
 	const parityProbe = spawnSync('bun', ['test', 'test/retrieval-parity.test.ts'], {

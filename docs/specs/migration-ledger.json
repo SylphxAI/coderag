@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 2,
+  "repo": "SylphxAI/coderag",
+  "lockedAt": "2026-07-09T22:00:00Z",
+  "inventorySource": [
+    "mcp-tools",
+    "gateway",
+    "manual"
+  ],
+  "inScopeBoundary": {
+    "includeGlobs": [
+      "packages/mcp-server/**",
+      "packages/core/**",
+      "crates/coderag-core/**",
+      "crates/coderag-cli/**",
+      "crates/coderag-mcp-server/**",
+      "bin/**",
+      "test/**",
+      "fixtures/**"
+    ],
+    "excludeGlobs": [
+      "packages/core/**/*.test.ts",
+      "node_modules/**",
+      "docs/**",
+      ".claude/**"
+    ]
+  },
+  "capabilities": [
+    {
+      "id": "transport/web-mcp-http",
+      "domain": "transport",
+      "weight": 5,
+      "state": "ts_only",
+      "notes": "No Web MCP HTTP transport shipped. Target: Streamable HTTP on Rust IO shell via mcp-server-sdk contract."
+    },
+    {
+      "id": "transport/stdio-rust-rmcp",
+      "domain": "transport",
+      "weight": 4,
+      "state": "parity_proven",
+      "rustSurface": "crates/coderag-mcp-server/src/main.rs (rmcp::transport::stdio())",
+      "parityTest": "crates/coderag-mcp-server/tests/golden_parity.rs; test/shippedPath.matrix.test.ts",
+      "prodProbe": "benchmark:release-gate \u2192 mcp:rust_adapter_default",
+      "notes": "Default npm bin launches Rust rmcp stdio server; golden MCP tool parity proven on benchmark corpus."
+    },
+    {
+      "id": "transport/stdio-ts-adapter",
+      "domain": "transport",
+      "weight": 4,
+      "state": "ts_only",
+      "tsSurface": "packages/mcp-server/src/index.ts",
+      "notes": "Opt-in TS stdio MCP adapter (CODERAG_MCP_TRANSPORT=ts); must be deleted after Web MCP + Rust IO parity."
+    },
+    {
+      "id": "tool/codebase_search",
+      "domain": "mcp-tools",
+      "weight": 5,
+      "state": "parity_proven",
+      "tsSurface": "packages/mcp-server/src/index.ts",
+      "rustSurface": "crates/coderag-mcp-server/src/codebase_search.rs",
+      "parityTest": "fixtures/golden-retrieval-baseline.json; test/retrieval-parity.test.ts; test/golden-retrieval.test.ts",
+      "prodProbe": "benchmark:release-gate \u2192 golden:* checks",
+      "notes": "Rust TF-IDF default on rmcp; frozen baseline parity proven. TS adapter retains semantic/OpenAI hybrid path until Web MCP cutover."
+    }
+  ],
+  "summary": {
+    "total": 4,
+    "ts_only": 2,
+    "contracted": 0,
+    "rust_impl": 0,
+    "parity_proven": 2,
+    "authority_rust": 0,
+    "ts_deleted": 0,
+    "completion_progress": 0.0,
+    "authority_progress": 0.0,
+    "weighted_progress": 0.335
+  },
+  "repoLedgerPath": "docs/specs/migration-ledger.json"
+}

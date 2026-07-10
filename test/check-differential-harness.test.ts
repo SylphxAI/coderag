@@ -82,6 +82,7 @@ describe('coderag differential harness (rej-010)', () => {
 		expect(stageScript).toContain('packages/mcp-server/bin/native/coderag-mcp-server')
 		expect(stageScript).toContain('packages/mcp-server/bin/native/coderag-cli')
 		expect(pkg.files).toContain('bin/native')
-		expect(pkgBin).toContain('packages/mcp-server/bin/native/coderag-mcp-server')
+		// Package-local bin resolves staged native relative to PACKAGE_ROOT (published layout).
+		expect(pkgBin).toContain('bin/native/coderag-mcp-server')
 	})
 })

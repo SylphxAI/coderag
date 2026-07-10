@@ -1,69 +1,152 @@
 {
-	"schemaVersion": 1,
-	"repo": "SylphxAI/coderag",
-	"lockedAt": "2026-07-09T22:00:00Z",
-	"inventorySource": ["mcp-tools", "gateway", "manual"],
-	"inScopeBoundary": {
-		"includeGlobs": [
-			"packages/mcp-server/**",
-			"packages/core/**",
-			"crates/coderag-core/**",
-			"crates/coderag-cli/**",
-			"crates/coderag-mcp-server/**",
-			"bin/**",
-			"test/**",
-			"fixtures/**"
-		],
-		"excludeGlobs": ["packages/core/**/*.test.ts", "node_modules/**", "docs/**", ".claude/**"]
-	},
-	"capabilities": [
-		{
-			"id": "transport/web-mcp-http",
-			"domain": "transport",
-			"weight": 5,
-			"state": "ts_only",
-			"notes": "No Web MCP HTTP transport shipped. Target: Streamable HTTP on Rust IO shell via mcp-server-sdk contract."
-		},
-		{
-			"id": "transport/stdio-rust-rmcp",
-			"domain": "transport",
-			"weight": 4,
-			"state": "parity_proven",
-			"rustSurface": "crates/coderag-mcp-server/src/main.rs (rmcp::transport::stdio())",
-			"parityTest": "crates/coderag-mcp-server/tests/golden_parity.rs; test/shippedPath.matrix.test.ts",
-			"prodProbe": "benchmark:release-gate → mcp:rust_adapter_default",
-			"notes": "Default npm bin launches Rust rmcp stdio server; golden MCP tool parity proven on benchmark corpus."
-		},
-		{
-			"id": "transport/stdio-ts-adapter",
-			"domain": "transport",
-			"weight": 4,
-			"state": "ts_only",
-			"tsSurface": "packages/mcp-server/src/index.ts",
-			"notes": "Opt-in TS stdio MCP adapter (CODERAG_MCP_TRANSPORT=ts); must be deleted after Web MCP + Rust IO parity."
-		},
-		{
-			"id": "tool/codebase_search",
-			"domain": "mcp-tools",
-			"weight": 5,
-			"state": "parity_proven",
-			"tsSurface": "packages/mcp-server/src/index.ts",
-			"rustSurface": "crates/coderag-mcp-server/src/codebase_search.rs",
-			"parityTest": "fixtures/golden-retrieval-baseline.json; test/retrieval-parity.test.ts; test/golden-retrieval.test.ts",
-			"prodProbe": "benchmark:release-gate → golden:* checks",
-			"notes": "Rust TF-IDF default on rmcp; frozen baseline parity proven. TS adapter retains semantic/OpenAI hybrid path until Web MCP cutover."
-		}
-	],
-	"summary": {
-		"total": 4,
-		"ts_only": 2,
-		"contracted": 0,
-		"rust_impl": 0,
-		"parity_proven": 2,
-		"authority_rust": 0,
-		"ts_deleted": 0,
-		"completion_progress": 0.0,
-		"authority_progress": 0.0,
-		"weighted_progress": 0.335
-	}
+  "schemaVersion": 1,
+  "repo": "SylphxAI/coderag",
+  "lockedAt": "2026-07-09T22:00:00Z",
+  "reauditRef": "rej-010",
+  "verificationRef": "verification/coderag-2026-07-10T2130-codebase-search-stdio-differential.json",
+  "inventorySource": ["mcp-tools", "gateway", "manual"],
+  "promotionFreeze": {
+    "active": true,
+    "reason": "rej-010: no promotions past rust_impl until differential_green at bound SHAs + prod_audit_pass",
+    "rejectionRef": "rej-010",
+    "since": "2026-07-10T21:30:00Z"
+  },
+  "inScopeBoundary": {
+    "includeGlobs": [
+      "packages/mcp-server/**",
+      "packages/core/**",
+      "crates/coderag-core/**",
+      "crates/coderag-cli/**",
+      "crates/coderag-mcp-server/**",
+      "bin/**",
+      "test/**",
+      "fixtures/**"
+    ],
+    "excludeGlobs": ["packages/core/**/*.test.ts", "node_modules/**", "docs/**", ".claude/**"]
+  },
+  "capabilities": [
+    {
+      "id": "transport/web-mcp-http",
+      "domain": "transport",
+      "weight": 5,
+      "state": "rust_impl",
+      "proof": {
+        "status": "stale",
+        "staleReason": "rej-010 cycle37: HTTP differential harness landed — awaiting differential_green at bound SHAs",
+        "staleAt": "2026-07-10T21:30:00Z",
+        "verificationRef": "scripts/run-coderag-differential.sh --slice transport/web-mcp-http"
+      },
+      "promotionHold": {
+        "active": true,
+        "reason": "rej-010 promotion freeze — rust_impl only until differential_green",
+        "rejectionRef": "rej-010",
+        "since": "2026-07-10T21:30:00Z"
+      },
+      "rustSurface": "crates/coderag-mcp-server/src/http_transport.rs (rmcp StreamableHttpService)",
+      "parityTest": "test/check-no-ts-http-backend.test.ts; test/integration/http-transport.test.ts; scripts/check-no-ts-http-backend.sh",
+      "differentialTest": "crates/coderag-mcp-server/tests/http_codebase_search_differential.rs#transport_web_mcp_http_differential_matches_ts_oracle; scripts/run-coderag-differential.sh --slice transport/web-mcp-http",
+      "prodProbe": "benchmark:release-gate → mcp:rust_web_http_transport",
+      "notes": "S2: CODERAG_MCP_TRANSPORT=http routes exclusively to Rust rmcp Streamable HTTP; check-no-ts-http-backend gate blocks parallel TS HTTP backend. Cycle29/cycle37 harness on disk; authority_rust NOT claimed under rej-010."
+    },
+    {
+      "id": "transport/stdio-rust-rmcp",
+      "domain": "transport",
+      "weight": 4,
+      "state": "rust_impl",
+      "proof": {
+        "status": "missing",
+        "dependencyGlobs": [
+          "crates/coderag-mcp-server/src/main.rs",
+          "bin/coderag-mcp",
+          "scripts/check-no-ts-stdio-backend.sh",
+          "scripts/differential/**",
+          "scripts/run-coderag-differential.sh"
+        ],
+        "staleReason": "rej-010: differential harness landed — awaiting differential_green at bound SHAs",
+        "verificationRef": "verification/coderag-2026-07-10T2130-codebase-search-stdio-differential.json"
+      },
+      "promotionHold": {
+        "active": true,
+        "reason": "rej-010: differential harness landed — awaiting differential_green at bound SHAs; NO auto-promotion",
+        "rejectionRef": "rej-010",
+        "since": "2026-07-10T21:30:00Z"
+      },
+      "rustSurface": "crates/coderag-mcp-server/src/main.rs (rmcp::transport::stdio())",
+      "parityTest": "crates/coderag-mcp-server/tests/golden_parity.rs; test/shippedPath.matrix.test.ts; test/stdioTransport.matrix.test.ts; scripts/check-no-ts-stdio-backend.sh",
+      "differentialTest": "crates/coderag-mcp-server/tests/stdio_codebase_search_differential.rs#transport_stdio_rust_rmcp_differential_matches_ts_oracle; scripts/run-coderag-differential.sh --slice transport/stdio-rust-rmcp",
+      "prodProbe": "benchmark:release-gate → mcp:rust_adapter_default",
+      "notes": "S5 authority routing: default npm bin launches Rust rmcp stdio. Cycle29 rej-010 bounded slice harness landed (3 stdio cases). parity_proven NOT restored until differential_green + prod smoke."
+    },
+    {
+      "id": "transport/stdio-ts-adapter",
+      "domain": "transport",
+      "weight": 4,
+      "state": "ts_deleted",
+      "tsSurface": "packages/mcp-server/src/index.ts (deleted)",
+      "parityTest": "scripts/check-ts-adapter-deletion-ready.sh; scripts/check-no-ts-stdio-backend.sh; test/tsAdapterDeletion.matrix.test.ts",
+      "notes": "TS stdio MCP adapter deleted; sole MCP transport is Rust rmcp via bin/coderag-mcp. Deletion gate enforces no use_ts_transport / node launch paths."
+    },
+    {
+      "id": "tool/codebase_search",
+      "domain": "mcp-tools",
+      "weight": 5,
+      "state": "rust_impl",
+      "proof": {
+        "status": "missing",
+        "dependencyGlobs": [
+          "fixtures/golden-retrieval-baseline.json",
+          "fixtures/benchmark-corpus/**",
+          "crates/coderag-mcp-server/src/codebase_search.rs",
+          "crates/coderag-core/**",
+          "packages/mcp-server/src/rust-engine.ts",
+          "scripts/differential/**",
+          "scripts/run-coderag-differential.sh",
+          "scripts/check-no-ts-codebase-search.sh"
+        ],
+        "staleReason": "rej-010: differential harness landed — awaiting differential_green at bound SHAs",
+        "verificationRef": "verification/coderag-2026-07-10T2130-codebase-search-stdio-differential.json"
+      },
+      "promotionHold": {
+        "active": true,
+        "reason": "rej-010: differential harness landed — awaiting differential_green at bound SHAs; NO auto-promotion",
+        "rejectionRef": "rej-010",
+        "since": "2026-07-10T21:30:00Z"
+      },
+      "tsSurface": "packages/mcp-server/src/rust-engine.ts (oracle via coderag-cli; no parallel TS MCP tool handler)",
+      "rustSurface": "crates/coderag-mcp-server/src/codebase_search.rs",
+      "parityTest": "fixtures/golden-retrieval-baseline.json; test/retrieval-parity.test.ts; test/golden-retrieval.test.ts; scripts/check-no-ts-codebase-search.sh; test/check-no-ts-codebase-search.test.ts",
+      "differentialTest": "crates/coderag-mcp-server/tests/stdio_codebase_search_differential.rs#tool_codebase_search_differential_matches_ts_oracle; scripts/run-coderag-differential.sh --slice tool/codebase_search",
+      "prodProbe": "benchmark:release-gate → golden:* checks",
+      "notes": "S4 authority routing: Rust TF-IDF default on rmcp; Cycle29 rej-010 bounded slice harness landed (3 tool cases). Frozen baseline + golden_parity on disk; parity_proven NOT restored until differential_green."
+    }
+  ],
+  "slices": {
+    "S2": {
+      "id": "transport/web-mcp-http",
+      "status": "harness_landed",
+      "notes": "HTTP Streamable transport + differential harness on disk"
+    },
+    "S4": {
+      "id": "tool/codebase_search",
+      "status": "harness_landed",
+      "notes": "Cycle29 rej-010 tool differential harness landed"
+    },
+    "S5": {
+      "id": "transport/stdio-rust-rmcp",
+      "status": "harness_landed",
+      "notes": "Cycle29 rej-010 stdio differential harness landed"
+    }
+  },
+  "summary": {
+    "total": 4,
+    "ts_only": 0,
+    "contracted": 0,
+    "rust_impl": 3,
+    "parity_proven": 0,
+    "authority_rust": 0,
+    "ts_deleted": 1,
+    "completion_progress": 0.0,
+    "authority_progress": 0.0,
+    "weighted_progress": 0.25
+  }
 }

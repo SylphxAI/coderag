@@ -1,0 +1,27 @@
+{
+	"schemaVersion": 2,
+	"repo": "SylphxAI/coderag",
+	"cycle": "cycle47",
+	"reauditRef": "rej-010",
+	"verifiedAt": "2026-07-10T29:00:00Z",
+	"status": "rust_impl_on_disk_verified",
+	"executionStatus": "harness_present_shell_unavailable",
+	"promotionPolicy": "NO_PROMOTIONS — rust_impl ONLY per rej-010; proof.status remains missing until differential_green at bound SHAs",
+	"slice": "transport/web-mcp-http|transport/stdio-rust-rmcp|tool/codebase_search",
+	"capabilities": ["transport/web-mcp-http", "transport/stdio-rust-rmcp", "tool/codebase_search"],
+	"harness": {
+		"entrypoint": "scripts/run-coderag-differential.sh",
+		"matrixTest": "test/check-differential-harness.test.ts",
+		"paritySlice": "docs/specs/codebase-search-parity-slice.json"
+	},
+	"caseCounts": {
+		"corpusTotal": 9
+	},
+	"resumeCommands": [
+		"bun test test/check-differential-harness.test.ts",
+		"bash scripts/run-coderag-differential.sh --slice transport/web-mcp-http",
+		"bash scripts/run-coderag-differential.sh --slice transport/stdio-rust-rmcp",
+		"bash scripts/run-coderag-differential.sh --slice tool/codebase_search"
+	],
+	"notes": "Cycle47 rej-010: 3 tool/transport rust_impl bounded slices re-verified on disk. Shell unavailable (rej-007 gen-9)."
+}

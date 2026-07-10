@@ -1,5 +1,6 @@
 pub mod cli_bridge;
 pub mod codebase_search;
+pub mod http_transport;
 pub mod tool_routes;
 
 use rmcp::{

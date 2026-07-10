@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+PACKAGE_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+REPO_ROOT="$(cd "$PACKAGE_ROOT/../.." && pwd)"
+
+resolve_rust_bin() {
+	if [[ -n "${CODERAG_MCP_RUST_BIN:-}" && -x "${CODERAG_MCP_RUST_BIN}" ]]; then
+		printf '%s\n' "${CODERAG_MCP_RUST_BIN}"
+		return 0
+	fi
+
+	for candidate in \
+		"$PACKAGE_ROOT/bin/native/coderag-mcp-server" \
+		"$REPO_ROOT/bin/native/coderag-mcp-server" \
+		"$REPO_ROOT/target/release/coderag-mcp-server" \
+		"$REPO_ROOT/target/debug/coderag-mcp-server"; do
+		if [[ -x "$candidate" ]]; then
+			printf '%s\n' "$candidate"
+			return 0
+		fi
+	done
+
+	return 1
+}
+
+resolve_transport() {
+	if [[ -n "${CODERAG_MCP_TRANSPORT:-}" ]]; then
+		printf '%s\n' "${CODERAG_MCP_TRANSPORT}"
+		return 0
+	fi
+	if [[ -n "${MCP_TRANSPORT:-}" ]]; then
+		printf '%s\n' "${MCP_TRANSPORT}"
+		return 0
+	fi
+	printf '%s\n' "stdio"
+}
+
+if bin="$(resolve_rust_bin)"; then
+	transport="$(resolve_transport)"
+	if [[ "$transport" == "http" ]]; then
+		export MCP_TRANSPORT=http
+		export CODERAG_MCP_TRANSPORT=http
+	fi
+	exec "$bin" "$@"
+fi
+
+echo "[coderag-mcp] Rust MCP server (rmcp) is not built. Run: bun run build:rust" >&2
+exit 1

@@ -85,41 +85,46 @@ if [[ -f "${TS_DIST}" ]]; then
 fi
 
 if [[ -f "${LEDGER}" ]]; then
-	node - "${LEDGER}" <<'NODE'
-const [ledgerPath] = process.argv.slice(2);
-const ledger = JSON.parse(require("node:fs").readFileSync(ledgerPath, "utf8"));
-const entry = ledger.capabilities.find((cap) => cap.id === "tool/codebase_search");
-if (!entry) {
-  console.error("[check-no-ts-codebase-search] missing capability tool/codebase_search");
-  process.exit(1);
-}
-const rustAuthorityStates = new Set(["rust_impl", "authority_rust"]);
-if (!rustAuthorityStates.has(entry.state)) {
-  console.error(
-    `[check-no-ts-codebase-search] tool/codebase_search is ${entry.state}; expected rust_impl (rej-010) or authority_rust`
-  );
-  process.exit(1);
-}
-if (entry.state === "rust_impl" && entry.proof?.status !== "missing") {
-  console.error(
-    `[check-no-ts-codebase-search] tool/codebase_search rust_impl must carry proof.status=missing until differential_green`
-  );
-  process.exit(1);
-}
-if (!entry.notes?.includes("S4")) {
-  console.error(
-    "[check-no-ts-codebase-search] tool/codebase_search notes must document S4 authority routing"
-  );
-  process.exit(1);
-}
-const httpTransport = ledger.capabilities.find((cap) => cap.id === "transport/web-mcp-http");
-if (!httpTransport || !rustAuthorityStates.has(httpTransport.state)) {
-  console.error(
-    `[check-no-ts-codebase-search] transport/web-mcp-http is ${httpTransport?.state ?? "missing"}; expected rust_impl (rej-010) or authority_rust`
-  );
-  process.exit(1);
-}
-NODE
+python3 - "${LEDGER}" <<'PY'
+import json
+import sys
+
+ledger_path = sys.argv[1]
+with open(ledger_path, encoding="utf-8") as handle:
+    ledger = json.load(handle)
+caps = ledger.get("capabilities", [])
+entry = next((cap for cap in caps if cap.get("id") == "tool/codebase_search"), None)
+if entry is None:
+    print("[check-no-ts-codebase-search] missing capability tool/codebase_search", file=sys.stderr)
+    sys.exit(1)
+rust_authority_states = {"rust_impl", "authority_rust"}
+if entry.get("state") not in rust_authority_states:
+    print(
+        f"[check-no-ts-codebase-search] tool/codebase_search is {entry.get('state')}; expected rust_impl (rej-010) or authority_rust",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+if entry.get("state") == "rust_impl" and (entry.get("proof") or {}).get("status") != "missing":
+    print(
+        "[check-no-ts-codebase-search] tool/codebase_search rust_impl must carry proof.status=missing until differential_green",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+if "S4" not in (entry.get("notes") or ""):
+    print(
+        "[check-no-ts-codebase-search] tool/codebase_search notes must document S4 authority routing",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+http_transport = next((cap for cap in caps if cap.get("id") == "transport/web-mcp-http"), None)
+if http_transport is None or http_transport.get("state") not in rust_authority_states:
+    state = http_transport.get("state") if http_transport else "missing"
+    print(
+        f"[check-no-ts-codebase-search] transport/web-mcp-http is {state}; expected rust_impl (rej-010) or authority_rust",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+PY
 fi
 
 if [[ -f "${PACKAGE_JSON}" ]]; then

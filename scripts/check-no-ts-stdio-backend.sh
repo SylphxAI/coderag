@@ -73,45 +73,48 @@ if [[ -f "${TS_DIST}" ]]; then
 fi
 
 if [[ -f "${LEDGER}" ]]; then
-	node - "${LEDGER}" <<'NODE'
-const [ledgerPath] = process.argv.slice(2);
-const ledger = JSON.parse(require("node:fs").readFileSync(ledgerPath, "utf8"));
-const stdioRust = ledger.capabilities.find((cap) => cap.id === "transport/stdio-rust-rmcp");
-const tsAdapter = ledger.capabilities.find((cap) => cap.id === "transport/stdio-ts-adapter");
-if (!stdioRust) {
-  console.error("[check-no-ts-stdio-backend] missing capability transport/stdio-rust-rmcp");
-  process.exit(1);
-}
-if (!tsAdapter) {
-  console.error("[check-no-ts-stdio-backend] missing capability transport/stdio-ts-adapter");
-  process.exit(1);
-}
-const rustAuthorityStates = new Set(["rust_impl", "authority_rust"]);
-if (!rustAuthorityStates.has(stdioRust.state)) {
-  console.error(
-    `[check-no-ts-stdio-backend] transport/stdio-rust-rmcp is ${stdioRust.state}; expected rust_impl (rej-010) or authority_rust`
-  );
-  process.exit(1);
-}
-if (stdioRust.state === "rust_impl" && stdioRust.proof?.status !== "missing") {
-  console.error(
-    `[check-no-ts-stdio-backend] transport/stdio-rust-rmcp rust_impl must carry proof.status=missing until differential_green`
-  );
-  process.exit(1);
-}
-if (!stdioRust.notes?.includes("S5")) {
-  console.error(
-    "[check-no-ts-stdio-backend] transport/stdio-rust-rmcp notes must document S5 authority routing"
-  );
-  process.exit(1);
-}
-if (tsAdapter.state !== "ts_deleted") {
-  console.error(
-    `[check-no-ts-stdio-backend] transport/stdio-ts-adapter is ${tsAdapter.state}; expected ts_deleted`
-  );
-  process.exit(1);
-}
-NODE
+python3 - "${LEDGER}" <<'PY'
+import json
+import sys
+
+ledger_path = sys.argv[1]
+with open(ledger_path, encoding="utf-8") as handle:
+    ledger = json.load(handle)
+caps = ledger.get("capabilities", [])
+stdio_rust = next((cap for cap in caps if cap.get("id") == "transport/stdio-rust-rmcp"), None)
+ts_adapter = next((cap for cap in caps if cap.get("id") == "transport/stdio-ts-adapter"), None)
+if stdio_rust is None:
+    print("[check-no-ts-stdio-backend] missing capability transport/stdio-rust-rmcp", file=sys.stderr)
+    sys.exit(1)
+if ts_adapter is None:
+    print("[check-no-ts-stdio-backend] missing capability transport/stdio-ts-adapter", file=sys.stderr)
+    sys.exit(1)
+rust_authority_states = {"rust_impl", "authority_rust"}
+if stdio_rust.get("state") not in rust_authority_states:
+    print(
+        f"[check-no-ts-stdio-backend] transport/stdio-rust-rmcp is {stdio_rust.get('state')}; expected rust_impl (rej-010) or authority_rust",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+if stdio_rust.get("state") == "rust_impl" and (stdio_rust.get("proof") or {}).get("status") != "missing":
+    print(
+        "[check-no-ts-stdio-backend] transport/stdio-rust-rmcp rust_impl must carry proof.status=missing until differential_green",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+if "S5" not in (stdio_rust.get("notes") or ""):
+    print(
+        "[check-no-ts-stdio-backend] transport/stdio-rust-rmcp notes must document S5 authority routing",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+if ts_adapter.get("state") != "ts_deleted":
+    print(
+        f"[check-no-ts-stdio-backend] transport/stdio-ts-adapter is {ts_adapter.get('state')}; expected ts_deleted",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+PY
 fi
 
 if [[ -f "${PACKAGE_JSON}" ]]; then

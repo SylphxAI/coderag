@@ -13,39 +13,50 @@ PKG_BIN="$ROOT/packages/mcp-server/bin/coderag-mcp"
 require_ledger_state() {
 	local capability="$1"
 	local expected="$2"
-	node - "$LEDGER" "$capability" "$expected" <<'NODE'
-const [ledgerPath, capability, expected] = process.argv.slice(2);
-const ledger = JSON.parse(require("node:fs").readFileSync(ledgerPath, "utf8"));
-const entry = ledger.capabilities.find((cap) => cap.id === capability);
-if (!entry) {
-  console.error(`[check-ts-adapter-deleted] missing capability ${capability}`);
-  process.exit(1);
-}
-if (entry.state !== expected) {
-  console.error(
-    `[check-ts-adapter-deleted] ${capability} is ${entry.state}; expected ${expected}`
-  );
-  process.exit(1);
-}
-NODE
+	python3 - "$LEDGER" "$capability" "$expected" <<'PY'
+import json
+import sys
+
+ledger_path, capability, expected = sys.argv[1:4]
+with open(ledger_path, encoding="utf-8") as handle:
+    ledger = json.load(handle)
+entry = next((cap for cap in ledger.get("capabilities", []) if cap.get("id") == capability), None)
+if entry is None:
+    print(f"[check-ts-adapter-deleted] missing capability {capability}", file=sys.stderr)
+    sys.exit(1)
+if entry.get("state") != expected:
+    print(
+        f"[check-ts-adapter-deleted] {capability} is {entry.get('state')}; expected {expected}",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+PY
 }
 
 echo "[check-ts-adapter-deleted] verifying transport/stdio-ts-adapter retirement in ${LEDGER}"
 
 require_ledger_state "transport/stdio-ts-adapter" "ts_deleted"
 
-node - "$LEDGER" <<'NODE'
-const [ledgerPath] = process.argv.slice(2);
-const ledger = JSON.parse(require("node:fs").readFileSync(ledgerPath, "utf8"));
-const http = ledger.capabilities.find((cap) => cap.id === "transport/web-mcp-http");
-const rustAuthorityStates = new Set(["rust_impl", "authority_rust"]);
-if (!http || !rustAuthorityStates.has(http.state)) {
-  console.error(
-    `[check-ts-adapter-deleted] transport/web-mcp-http is ${http?.state ?? "missing"}; expected rust_impl or authority_rust`
-  );
-  process.exit(1);
-}
-NODE
+python3 - "$LEDGER" <<'PY'
+import json
+import sys
+
+ledger_path = sys.argv[1]
+with open(ledger_path, encoding="utf-8") as handle:
+    ledger = json.load(handle)
+http = next(
+    (cap for cap in ledger.get("capabilities", []) if cap.get("id") == "transport/web-mcp-http"),
+    None,
+)
+rust_authority_states = {"rust_impl", "authority_rust"}
+if http is None or http.get("state") not in rust_authority_states:
+    state = http.get("state") if http else "missing"
+    print(
+        f"[check-ts-adapter-deleted] transport/web-mcp-http is {state}; expected rust_impl or authority_rust",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+PY
 
 if [[ -f "${TS_ENTRY}" ]]; then
 	echo "[check-ts-adapter-deleted] packages/mcp-server/src/index.ts must be deleted when transport/stdio-ts-adapter is ts_deleted" >&2

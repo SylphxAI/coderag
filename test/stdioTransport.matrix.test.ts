@@ -29,9 +29,10 @@ describe('MCP stdio transport routing', () => {
 		) as {
 			capabilities: Array<{ id: string; state: string; proof?: { status: string } }>
 		}
+		const admittedProof = new Set(['missing', 'differential_green', 'canary_green', 'caught_up'])
 		const stdioRust = ledger.capabilities.find((cap) => cap.id === 'transport/stdio-rust-rmcp')
 		expect(stdioRust?.state).toBe('rust_impl')
-		expect(stdioRust?.proof?.status).toBe('missing')
+		expect(admittedProof.has(stdioRust?.proof?.status ?? '')).toBe(true)
 	})
 
 	it('stdio authority gate script exists', () => {

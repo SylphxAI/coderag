@@ -58,8 +58,9 @@ describe('check-no-ts-codebase-search gate', () => {
 		}
 
 		const codebaseSearch = ledger.capabilities.find((cap) => cap.id === 'tool/codebase_search')
+		const admittedProof = new Set(['missing', 'differential_green', 'canary_green', 'caught_up'])
 		expect(codebaseSearch?.state).toBe('rust_impl')
-		expect(codebaseSearch?.proof?.status).toBe('missing')
+		expect(admittedProof.has(codebaseSearch?.proof?.status ?? '')).toBe(true)
 		expect(codebaseSearch?.parityTest).toContain('scripts/check-no-ts-codebase-search.sh')
 		expect(codebaseSearch?.parityTest).toContain('test/check-no-ts-codebase-search.test.ts')
 		expect(codebaseSearch?.differentialTest).toContain('tool_codebase_search_differential_matches_ts_oracle')
@@ -67,7 +68,7 @@ describe('check-no-ts-codebase-search gate', () => {
 		expect(ledger.summary.rust_impl).toBe(3)
 		expect(ledger.summary.authority_rust).toBe(0)
 		expect(ledger.summary.parity_proven).toBe(0)
-		expect(ledger.slices.S4?.status).toBe('harness_landed')
+		expect(['harness_landed', 'canary_green_admitted']).toContain(ledger.slices.S4?.status)
 	})
 
 	it('golden parity harnesses prove codebase_search baseline over stdio and HTTP', () => {

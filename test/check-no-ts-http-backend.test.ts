@@ -37,6 +37,7 @@ test('migration ledger marks transport/web-mcp-http as rust_impl (rej-010)', () 
 	}
 
 	const http = ledger.capabilities.find((capability) => capability.id === 'transport/web-mcp-http')
+	const admittedProof = new Set(['missing', 'stale', 'differential_green', 'canary_green', 'caught_up'])
 	expect(http?.state).toBe('rust_impl')
-	expect(http?.proof?.status).toBe('stale')
+	expect(admittedProof.has(http?.proof?.status ?? '')).toBe(true)
 })

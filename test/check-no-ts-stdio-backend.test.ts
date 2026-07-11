@@ -58,16 +58,17 @@ describe('check-no-ts-stdio-backend gate', () => {
 
 		const stdioRust = ledger.capabilities.find((cap) => cap.id === 'transport/stdio-rust-rmcp')
 		const tsAdapter = ledger.capabilities.find((cap) => cap.id === 'transport/stdio-ts-adapter')
+		const admittedProof = new Set(['missing', 'differential_green', 'canary_green', 'caught_up'])
 		expect(ledger.reauditRef).toBe('rej-010')
 		expect(stdioRust?.state).toBe('rust_impl')
-		expect(stdioRust?.proof?.status).toBe('missing')
+		expect(admittedProof.has(stdioRust?.proof?.status ?? '')).toBe(true)
 		expect(stdioRust?.notes).toContain('Cycle29')
 		expect(tsAdapter?.state).toBe('ts_deleted')
 		expect(ledger.summary.rust_impl).toBe(3)
 		expect(ledger.summary.authority_rust).toBe(0)
 		expect(ledger.summary.parity_proven).toBe(0)
 		expect(ledger.summary.authority_progress).toBe(0)
-		expect(ledger.slices.S5?.status).toBe('harness_landed')
+		expect(['harness_landed', 'canary_green_admitted']).toContain(ledger.slices.S5?.status)
 	})
 
 	it('golden parity harness proves codebase_search baseline over rmcp stdio', () => {

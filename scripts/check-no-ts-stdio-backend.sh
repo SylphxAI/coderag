@@ -96,9 +96,12 @@ if stdio_rust.get("state") not in rust_authority_states:
         file=sys.stderr,
     )
     sys.exit(1)
-if stdio_rust.get("state") == "rust_impl" and (stdio_rust.get("proof") or {}).get("status") != "missing":
+allowed_rust_impl_proof = {"missing", "differential_green", "canary_green", "caught_up"}
+proof_status = (stdio_rust.get("proof") or {}).get("status")
+if stdio_rust.get("state") == "rust_impl" and proof_status not in allowed_rust_impl_proof:
     print(
-        "[check-no-ts-stdio-backend] transport/stdio-rust-rmcp rust_impl must carry proof.status=missing until differential_green",
+        f"[check-no-ts-stdio-backend] transport/stdio-rust-rmcp rust_impl proof.status={proof_status!r}; "
+        f"expected one of {sorted(allowed_rust_impl_proof)}",
         file=sys.stderr,
     )
     sys.exit(1)

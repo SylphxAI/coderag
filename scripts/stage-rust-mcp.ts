@@ -54,20 +54,14 @@ for (const binary of binaries) {
 		console.log(`[stage-rust-mcp] Staged ${target}`)
 	}
 
-	// Also stage host platform optionalDependency package binary (mcp-server only).
-	if (binary.name === 'coderag-mcp-server') {
-		const platformDir = hostPlatformDir()
-		if (platformDir) {
-			const platformTarget = path.join(
-				repoRoot,
-				'packages/mcp-server/npm',
-				platformDir,
-				'coderag-mcp-server'
-			)
-			fs.mkdirSync(path.dirname(platformTarget), { recursive: true })
-			fs.copyFileSync(binary.source, platformTarget)
-			fs.chmodSync(platformTarget, 0o755)
-			console.log(`[stage-rust-mcp] Staged platform package binary ${platformTarget}`)
-		}
+	// Stage both natives into the host platform optionalDependency package so
+	// local install/layout matches the published multi-arch consumer path.
+	const platformDir = hostPlatformDir()
+	if (platformDir) {
+		const platformTarget = path.join(repoRoot, 'packages/mcp-server/npm', platformDir, binary.name)
+		fs.mkdirSync(path.dirname(platformTarget), { recursive: true })
+		fs.copyFileSync(binary.source, platformTarget)
+		fs.chmodSync(platformTarget, 0o755)
+		console.log(`[stage-rust-mcp] Staged platform package binary ${platformTarget}`)
 	}
 }

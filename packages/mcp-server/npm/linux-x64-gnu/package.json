@@ -1,7 +1,7 @@
 {
 	"name": "@sylphx/coderag-mcp-linux-x64-gnu",
 	"version": "0.4.1",
-	"description": "CodeRAG MCP server native binary for linux-x64-gnu",
+	"description": "CodeRAG MCP server + CLI native binaries for linux-x64-gnu",
 	"os": [
 		"linux"
 	],
@@ -12,7 +12,8 @@
 		"glibc"
 	],
 	"files": [
-		"coderag-mcp-server"
+		"coderag-mcp-server",
+		"coderag-cli"
 	],
 	"license": "MIT",
 	"publishConfig": {

@@ -40,6 +40,26 @@ export function resolveRustCliBinary(): string {
 	const env = process.env.CODERAG_RUST_CLI
 	if (env && existsSync(env)) return env
 
+	// Staged natives next to the published package (bin/native layout).
+	const staged = [
+		join(here, '../bin/native/coderag-cli'),
+		join(here, '../../../bin/native/coderag-cli'),
+	]
+	for (const candidate of staged) {
+		if (existsSync(candidate)) return candidate
+	}
+
+	// Platform optionalDependency packages ship mcp-server + cli together.
+	const platformCandidates = [
+		join(here, '../npm/darwin-arm64/coderag-cli'),
+		join(here, '../npm/darwin-x64/coderag-cli'),
+		join(here, '../npm/linux-x64-gnu/coderag-cli'),
+		join(here, '../npm/linux-arm64-gnu/coderag-cli'),
+	]
+	for (const candidate of platformCandidates) {
+		if (existsSync(candidate)) return candidate
+	}
+
 	const release = join(here, '../../../target/release/coderag-cli')
 	if (existsSync(release)) return release
 

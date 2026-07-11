@@ -118,10 +118,18 @@ describe('coderag differential harness (rej-010)', () => {
 				files: string[]
 			}
 			expect(platformPkg.name).toBe(`@sylphx/coderag-mcp-${platform}`)
+			// Both natives ship together so tools/call can resolve sibling coderag-cli.
 			expect(platformPkg.files).toContain('coderag-mcp-server')
+			expect(platformPkg.files).toContain('coderag-cli')
 			expect(platformPkg.os.length).toBeGreaterThan(0)
 			expect(platformPkg.cpu.length).toBeGreaterThan(0)
 		}
+
+		// Multi-arch assemble + release must package both natives.
+		expect(assembleScript).toContain('coderag-cli')
+		expect(assembleScript).toContain('coderag-mcp-server')
+		expect(releaseWorkflow).toContain('coderag-cli')
+		expect(nativeWorkflow).toContain('coderag-cli')
 
 		// Package-local bin is arch-aware: optionalDeps first, then staged native, fail-closed.
 		expect(pkgBin).toContain('resolve_rust_bin')

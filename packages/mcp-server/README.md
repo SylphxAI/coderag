@@ -23,7 +23,10 @@ Using [Claude Desktop](#with-claude-desktop), [VS Code](#with-vs-code), [Cursor]
 ```
 
 The default `coderag-mcp` bin launches the **Rust rmcp** server only (no TypeScript
-fallback). Platform-native binaries ship as optionalDependencies:
+fallback). Platform-native binaries ship as optionalDependencies. Each platform
+package includes **both** `coderag-mcp-server` and `coderag-cli` so
+`tools/call codebase_search` works from a clean npm/npx install without a
+monorepo Rust build.
 
 | Platform | Package |
 | --- | --- |
@@ -34,7 +37,8 @@ fallback). Platform-native binaries ship as optionalDependencies:
 
 npm installs the matching package automatically. If the native is missing or the
 host platform is unsupported, the bin **exits non-zero** (fail-closed). Build
-from source with `bun run build:rust` in a clone, or set `CODERAG_MCP_RUST_BIN`.
+from source with `bun run build:rust` in a clone, or set `CODERAG_MCP_RUST_BIN` /
+`CODERAG_RUST_CLI`.
 
 ### With Claude Desktop
 

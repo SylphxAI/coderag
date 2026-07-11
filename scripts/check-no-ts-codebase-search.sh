@@ -104,9 +104,12 @@ if entry.get("state") not in rust_authority_states:
         file=sys.stderr,
     )
     sys.exit(1)
-if entry.get("state") == "rust_impl" and (entry.get("proof") or {}).get("status") != "missing":
+allowed_rust_impl_proof = {"missing", "differential_green", "canary_green", "caught_up"}
+proof_status = (entry.get("proof") or {}).get("status")
+if entry.get("state") == "rust_impl" and proof_status not in allowed_rust_impl_proof:
     print(
-        "[check-no-ts-codebase-search] tool/codebase_search rust_impl must carry proof.status=missing until differential_green",
+        f"[check-no-ts-codebase-search] tool/codebase_search rust_impl proof.status={proof_status!r}; "
+        f"expected one of {sorted(allowed_rust_impl_proof)}",
         file=sys.stderr,
     )
     sys.exit(1)

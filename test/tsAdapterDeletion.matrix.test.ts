@@ -72,9 +72,10 @@ describe('TS stdio adapter deletion matrix', () => {
 			capabilities: Array<{ id: string; state: string; proof?: { status: string } }>
 			summary: { rust_impl: number; authority_rust: number; parity_proven: number; authority_progress: number }
 		}
+		const admittedProof = new Set(['missing', 'differential_green', 'canary_green', 'caught_up'])
 		const stdioRust = ledger.capabilities.find((cap) => cap.id === 'transport/stdio-rust-rmcp')
 		expect(stdioRust?.state).toBe('rust_impl')
-		expect(stdioRust?.proof?.status).toBe('missing')
+		expect(admittedProof.has(stdioRust?.proof?.status ?? '')).toBe(true)
 		expect(ledger.summary.rust_impl).toBe(3)
 		expect(ledger.summary.authority_rust).toBe(0)
 		expect(ledger.summary.parity_proven).toBe(0)
@@ -88,9 +89,10 @@ describe('TS stdio adapter deletion matrix', () => {
 			capabilities: Array<{ id: string; state: string; proof?: { status: string } }>
 			summary: { rust_impl: number; authority_rust: number; parity_proven: number }
 		}
+		const admittedProof = new Set(['missing', 'differential_green', 'canary_green', 'caught_up'])
 		const codebaseSearch = ledger.capabilities.find((cap) => cap.id === 'tool/codebase_search')
 		expect(codebaseSearch?.state).toBe('rust_impl')
-		expect(codebaseSearch?.proof?.status).toBe('missing')
+		expect(admittedProof.has(codebaseSearch?.proof?.status ?? '')).toBe(true)
 		expect(ledger.summary.rust_impl).toBe(3)
 		expect(ledger.summary.authority_rust).toBe(0)
 		expect(ledger.summary.parity_proven).toBe(0)

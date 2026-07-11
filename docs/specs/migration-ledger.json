@@ -15,7 +15,7 @@
     "reason": "CODERAG-TS-DELETED-ADMISSION-TICK023: evidence-bound ts_deleted admitted for full 4-cap denominator; per-cap promotionHold released. Freezes rej-010/011 remain as policy (no generic lift, no FCP, no fleet completion claim). Further authority ladder claims still evidence-bound.",
     "rejectionRef": "rej-010",
     "since": "2026-07-10T21:30:00Z",
-    "note": "Per-cap holds released for ts_deleted only; freeze object retained as non-generic policy marker. | tick027 digest rebind only — freeze not lifted."
+    "note": "Per-cap holds released for ts_deleted only; freeze object retained as non-generic policy marker. | tick027 digest rebind only \u2014 freeze not lifted."
   },
   "inScopeBoundary": {
     "includeGlobs": [
@@ -45,13 +45,13 @@
         "status": "canary_green",
         "baselineTsSha": "d365ccf695afd933355db515a253944136e6ab14",
         "rustCandidateSha": "7e3d79cb4dc187abf36da49431e479c745215e27",
-        "lastComparedMainSha": "8fd7a45a7ab5727aa724cbc37be6fbf87937624c",
-        "mergeGroupSha": "8fd7a45a7ab5727aa724cbc37be6fbf87937624c",
+        "lastComparedMainSha": "0ef0ce514fae2e8b3378cb7022336410d63b7f99",
+        "mergeGroupSha": "0ef0ce514fae2e8b3378cb7022336410d63b7f99",
         "behaviorSpecHash": "5d3ddb2611fb2543638e75c2f285051835426db22d488d04df21971df5e11650",
         "fixtureCorpusHash": "5d3ddb2611fb2543638e75c2f285051835426db22d488d04df21971df5e11650",
         "imageDigest": "sha256:2bd259afb590a7a8af1d02eeb7c07e9502703d93778c259b530ab2ebca546e26",
-        "verifiedAt": "2026-07-11T15:45:00Z",
-        "verificationRef": "rust-first-fleet-control-plane/implementer/receipts/CODERAG-PACKAGING-REVERIFY-TICK025/artifacts/mcp-tools-call.json",
+        "verifiedAt": "2026-07-11T19:05:16Z",
+        "verificationRef": "rust-first-fleet-control-plane/implementer/receipts/FINISH-LINE-NEAR-COMPLETE-TICK030/artifacts/mcp-tools-call.json",
         "dependencyGlobs": [
           "crates/coderag-mcp-server/src/http_transport.rs",
           "crates/coderag-mcp-server/tests/http_codebase_search_differential.rs",
@@ -95,8 +95,8 @@
       "rustSurface": "crates/coderag-mcp-server/src/http_transport.rs (rmcp StreamableHttpService)",
       "parityTest": "test/check-no-ts-http-backend.test.ts; test/integration/http-transport.test.ts; scripts/check-no-ts-http-backend.sh",
       "differentialTest": "crates/coderag-mcp-server/tests/http_codebase_search_differential.rs#transport_web_mcp_http_differential_matches_ts_oracle; scripts/run-coderag-differential.sh --slice transport/web-mcp-http",
-      "prodProbe": "npm install @sylphx/coderag-mcp@0.4.2 → MCP initialize + tools/list; check-no-ts-http-backend",
-      "notes": "S2: CODERAG_MCP_TRANSPORT=http routes exclusively to Rust rmcp Streamable HTTP; check-no-ts-http-backend gate blocks parallel TS HTTP backend. CODERAG-TS-DELETED-ADMISSION-TICK023: state=ts_deleted admitted (prior rust_impl). proof.status=canary_green retained with npm@0.4.2 gitHead=8fd7a45 bind + main_durable differential (http×3 of 9) + Darwin consumer smoke. No parallel TS HTTP backend ever shipped on golden path after stdio adapter retirement. | CODERAG-DIGEST-REBIND-0.4.2-TICK027: imageDigest/packageVersion rebound 0.4.1→0.4.2 (tarball sha256 2bd259afb590…; gitHead 7e3d79c); canary consumer tools/call rust-tfidf PASS (PACKAGING-REVERIFY-TICK025 / REQUAL-TICK025); state=ts_deleted retained (no NEW admission); freezes ON; NOT verified_complete; differential case proof not re-claimed at 7e3d79c.",
+      "prodProbe": "npm install @sylphx/coderag-mcp@0.4.2 \u2192 MCP initialize + tools/list; check-no-ts-http-backend",
+      "notes": "S2: CODERAG_MCP_TRANSPORT=http routes exclusively to Rust rmcp Streamable HTTP; check-no-ts-http-backend gate blocks parallel TS HTTP backend. CODERAG-TS-DELETED-ADMISSION-TICK023: state=ts_deleted admitted (prior rust_impl). proof.status=canary_green retained with npm@0.4.2 gitHead=8fd7a45 bind + main_durable differential (http\u00d73 of 9) + Darwin consumer smoke. No parallel TS HTTP backend ever shipped on golden path after stdio adapter retirement. | CODERAG-DIGEST-REBIND-0.4.2-TICK027: imageDigest/packageVersion rebound 0.4.1\u21920.4.2 (tarball sha256 2bd259afb590\u2026; gitHead 7e3d79c); canary consumer tools/call rust-tfidf PASS (PACKAGING-REVERIFY-TICK025 / REQUAL-TICK025); state=ts_deleted retained (no NEW admission); freezes ON; NOT verified_complete; differential case proof not re-claimed at 7e3d79c.",
       "tsDeletedAt": "2026-07-11T11:40:30Z",
       "tsSurface": null
     },
@@ -109,13 +109,13 @@
         "status": "canary_green",
         "baselineTsSha": "d365ccf695afd933355db515a253944136e6ab14",
         "rustCandidateSha": "7e3d79cb4dc187abf36da49431e479c745215e27",
-        "lastComparedMainSha": "8fd7a45a7ab5727aa724cbc37be6fbf87937624c",
-        "mergeGroupSha": "8fd7a45a7ab5727aa724cbc37be6fbf87937624c",
+        "lastComparedMainSha": "0ef0ce514fae2e8b3378cb7022336410d63b7f99",
+        "mergeGroupSha": "0ef0ce514fae2e8b3378cb7022336410d63b7f99",
         "behaviorSpecHash": "5d3ddb2611fb2543638e75c2f285051835426db22d488d04df21971df5e11650",
         "fixtureCorpusHash": "5d3ddb2611fb2543638e75c2f285051835426db22d488d04df21971df5e11650",
         "imageDigest": "sha256:2bd259afb590a7a8af1d02eeb7c07e9502703d93778c259b530ab2ebca546e26",
-        "verifiedAt": "2026-07-11T15:45:00Z",
-        "verificationRef": "rust-first-fleet-control-plane/implementer/receipts/CODERAG-PACKAGING-REVERIFY-TICK025/artifacts/mcp-tools-call.json",
+        "verifiedAt": "2026-07-11T19:05:16Z",
+        "verificationRef": "rust-first-fleet-control-plane/implementer/receipts/FINISH-LINE-NEAR-COMPLETE-TICK030/artifacts/mcp-tools-call.json",
         "dependencyGlobs": [
           "crates/coderag-mcp-server/src/main.rs",
           "packages/mcp-server/bin/coderag-mcp",
@@ -159,8 +159,8 @@
       "rustSurface": "crates/coderag-mcp-server/src/main.rs (rmcp::transport::stdio())",
       "parityTest": "crates/coderag-mcp-server/tests/golden_parity.rs; test/shippedPath.matrix.test.ts; test/stdioTransport.matrix.test.ts; scripts/check-no-ts-stdio-backend.sh",
       "differentialTest": "crates/coderag-mcp-server/tests/stdio_codebase_search_differential.rs#transport_stdio_rust_rmcp_differential_matches_ts_oracle; scripts/run-coderag-differential.sh --slice transport/stdio-rust-rmcp",
-      "prodProbe": "npm install @sylphx/coderag-mcp@0.4.2 → bin/coderag-mcp stdio initialize + tools/list",
-      "notes": "S5 authority routing: default npm bin launches Rust rmcp stdio (optionalDeps-first, fail-closed). CODERAG-TS-DELETED-ADMISSION-TICK023: state=ts_deleted admitted (prior rust_impl). proof.status=canary_green retained; Darwin arm64 process smoke initialize+tools/list PASS via @sylphx/coderag-mcp-darwin-arm64@0.4.2. TS stdio adapter is separate cap (already ts_deleted); no residual TS stdio authority on this surface. | CODERAG-DIGEST-REBIND-0.4.2-TICK027: imageDigest/packageVersion rebound 0.4.1→0.4.2 (tarball sha256 2bd259afb590…; gitHead 7e3d79c); canary consumer tools/call rust-tfidf PASS (PACKAGING-REVERIFY-TICK025 / REQUAL-TICK025); state=ts_deleted retained (no NEW admission); freezes ON; NOT verified_complete; differential case proof not re-claimed at 7e3d79c.",
+      "prodProbe": "npm install @sylphx/coderag-mcp@0.4.2 \u2192 bin/coderag-mcp stdio initialize + tools/list",
+      "notes": "S5 authority routing: default npm bin launches Rust rmcp stdio (optionalDeps-first, fail-closed). CODERAG-TS-DELETED-ADMISSION-TICK023: state=ts_deleted admitted (prior rust_impl). proof.status=canary_green retained; Darwin arm64 process smoke initialize+tools/list PASS via @sylphx/coderag-mcp-darwin-arm64@0.4.2. TS stdio adapter is separate cap (already ts_deleted); no residual TS stdio authority on this surface. | CODERAG-DIGEST-REBIND-0.4.2-TICK027: imageDigest/packageVersion rebound 0.4.1\u21920.4.2 (tarball sha256 2bd259afb590\u2026; gitHead 7e3d79c); canary consumer tools/call rust-tfidf PASS (PACKAGING-REVERIFY-TICK025 / REQUAL-TICK025); state=ts_deleted retained (no NEW admission); freezes ON; NOT verified_complete; differential case proof not re-claimed at 7e3d79c.",
       "tsDeletedAt": "2026-07-11T11:40:30Z",
       "tsSurface": null
     },
@@ -176,10 +176,10 @@
         "status": "canary_green",
         "baselineTsSha": "d365ccf695afd933355db515a253944136e6ab14",
         "rustCandidateSha": "7e3d79cb4dc187abf36da49431e479c745215e27",
-        "lastComparedMainSha": "8fd7a45a7ab5727aa724cbc37be6fbf87937624c",
-        "mergeGroupSha": "8fd7a45a7ab5727aa724cbc37be6fbf87937624c",
+        "lastComparedMainSha": "0ef0ce514fae2e8b3378cb7022336410d63b7f99",
+        "mergeGroupSha": "0ef0ce514fae2e8b3378cb7022336410d63b7f99",
         "imageDigest": "sha256:2bd259afb590a7a8af1d02eeb7c07e9502703d93778c259b530ab2ebca546e26",
-        "verifiedAt": "2026-07-11T15:45:00Z",
+        "verifiedAt": "2026-07-11T19:05:16Z",
         "verificationRef": "scripts/check-ts-adapter-deletion-ready.sh; scripts/check-no-ts-stdio-backend.sh",
         "dependencyGlobs": [
           "packages/mcp-server/src/**",
@@ -218,7 +218,7 @@
         "releasedAt": "2026-07-11T11:40:30Z",
         "releaseRef": "CODERAG-TS-DELETED-ADMISSION-TICK023"
       },
-      "notes": "CODERAG-TS-DELETED-ADMISSION-TICK023: pre-existing state=ts_deleted retained (adapter deleted on main; check-no-ts + deletion-ready PASS). Proof fields remain canary_green + npm digest. Full denominator now closed with sibling rust_impl caps also ts_deleted. | CODERAG-DIGEST-REBIND-0.4.2-TICK027: imageDigest/packageVersion rebound 0.4.1→0.4.2 (tarball sha256 2bd259afb590…; gitHead 7e3d79c); canary consumer tools/call rust-tfidf PASS (PACKAGING-REVERIFY-TICK025 / REQUAL-TICK025); state=ts_deleted retained (no NEW admission); freezes ON; NOT verified_complete; differential case proof not re-claimed at 7e3d79c."
+      "notes": "CODERAG-TS-DELETED-ADMISSION-TICK023: pre-existing state=ts_deleted retained (adapter deleted on main; check-no-ts + deletion-ready PASS). Proof fields remain canary_green + npm digest. Full denominator now closed with sibling rust_impl caps also ts_deleted. | CODERAG-DIGEST-REBIND-0.4.2-TICK027: imageDigest/packageVersion rebound 0.4.1\u21920.4.2 (tarball sha256 2bd259afb590\u2026; gitHead 7e3d79c); canary consumer tools/call rust-tfidf PASS (PACKAGING-REVERIFY-TICK025 / REQUAL-TICK025); state=ts_deleted retained (no NEW admission); freezes ON; NOT verified_complete; differential case proof not re-claimed at 7e3d79c."
     },
     {
       "id": "tool/codebase_search",
@@ -229,13 +229,13 @@
         "status": "canary_green",
         "baselineTsSha": "d365ccf695afd933355db515a253944136e6ab14",
         "rustCandidateSha": "7e3d79cb4dc187abf36da49431e479c745215e27",
-        "lastComparedMainSha": "8fd7a45a7ab5727aa724cbc37be6fbf87937624c",
-        "mergeGroupSha": "8fd7a45a7ab5727aa724cbc37be6fbf87937624c",
+        "lastComparedMainSha": "0ef0ce514fae2e8b3378cb7022336410d63b7f99",
+        "mergeGroupSha": "0ef0ce514fae2e8b3378cb7022336410d63b7f99",
         "behaviorSpecHash": "5d3ddb2611fb2543638e75c2f285051835426db22d488d04df21971df5e11650",
         "fixtureCorpusHash": "5d3ddb2611fb2543638e75c2f285051835426db22d488d04df21971df5e11650",
         "imageDigest": "sha256:2bd259afb590a7a8af1d02eeb7c07e9502703d93778c259b530ab2ebca546e26",
-        "verifiedAt": "2026-07-11T15:45:00Z",
-        "verificationRef": "rust-first-fleet-control-plane/implementer/receipts/CODERAG-PACKAGING-REVERIFY-TICK025/artifacts/mcp-tools-call.json",
+        "verifiedAt": "2026-07-11T19:05:16Z",
+        "verificationRef": "rust-first-fleet-control-plane/implementer/receipts/FINISH-LINE-NEAR-COMPLETE-TICK030/artifacts/mcp-tools-call.json",
         "dependencyGlobs": [
           "fixtures/golden-retrieval-baseline.json",
           "fixtures/benchmark-corpus/**",
@@ -282,8 +282,8 @@
       "rustSurface": "crates/coderag-mcp-server/src/codebase_search.rs",
       "parityTest": "fixtures/golden-retrieval-baseline.json; test/retrieval-parity.test.ts; test/golden-retrieval.test.ts; scripts/check-no-ts-codebase-search.sh; test/check-no-ts-codebase-search.test.ts",
       "differentialTest": "crates/coderag-mcp-server/tests/stdio_codebase_search_differential.rs#tool_codebase_search_differential_matches_ts_oracle; scripts/run-coderag-differential.sh --slice tool/codebase_search",
-      "prodProbe": "npm MCP tools/list exposes codebase_search; differential tool×3 green; check-no-ts-codebase-search",
-      "notes": "S4 authority routing: Rust TF-IDF default on rmcp. CODERAG-TS-DELETED-ADMISSION-TICK023: state=ts_deleted admitted (prior rust_impl). proof.status=canary_green retained; tool×3 differential green @ 8fd7a45; consumer tools/list returns codebase_search on Rust rmcp. Residual TS rust-engine/search-coordinator/doctor/evidence are library/oracle helpers only — check-no-ts-codebase-search PASS proves no parallel TS MCP tool authority. | CODERAG-DIGEST-REBIND-0.4.2-TICK027: imageDigest/packageVersion rebound 0.4.1→0.4.2 (tarball sha256 2bd259afb590…; gitHead 7e3d79c); canary consumer tools/call rust-tfidf PASS (PACKAGING-REVERIFY-TICK025 / REQUAL-TICK025); state=ts_deleted retained (no NEW admission); freezes ON; NOT verified_complete; differential case proof not re-claimed at 7e3d79c.",
+      "prodProbe": "npm MCP tools/list exposes codebase_search; differential tool\u00d73 green; check-no-ts-codebase-search",
+      "notes": "S4 authority routing: Rust TF-IDF default on rmcp. CODERAG-TS-DELETED-ADMISSION-TICK023: state=ts_deleted admitted (prior rust_impl). proof.status=canary_green retained; tool\u00d73 differential green @ 8fd7a45; consumer tools/list returns codebase_search on Rust rmcp. Residual TS rust-engine/search-coordinator/doctor/evidence are library/oracle helpers only \u2014 check-no-ts-codebase-search PASS proves no parallel TS MCP tool authority. | CODERAG-DIGEST-REBIND-0.4.2-TICK027: imageDigest/packageVersion rebound 0.4.1\u21920.4.2 (tarball sha256 2bd259afb590\u2026; gitHead 7e3d79c); canary consumer tools/call rust-tfidf PASS (PACKAGING-REVERIFY-TICK025 / REQUAL-TICK025); state=ts_deleted retained (no NEW admission); freezes ON; NOT verified_complete; differential case proof not re-claimed at 7e3d79c.",
       "tsDeletedAt": "2026-07-11T11:40:30Z"
     }
   ],
@@ -291,17 +291,17 @@
     "S2": {
       "id": "transport/web-mcp-http",
       "status": "ts_deleted_admitted",
-      "notes": "CODERAG-TS-DELETED-ADMISSION-TICK023: canary_green + npm@0.4.2(rebind-tick027; admitted@0.4.1) + check-no-ts → state=ts_deleted"
+      "notes": "CODERAG-TS-DELETED-ADMISSION-TICK023: canary_green + npm@0.4.2(rebind-tick027; admitted@0.4.1) + check-no-ts \u2192 state=ts_deleted"
     },
     "S4": {
       "id": "tool/codebase_search",
       "status": "ts_deleted_admitted",
-      "notes": "CODERAG-TS-DELETED-ADMISSION-TICK023: canary_green + npm@0.4.2(rebind-tick027; admitted@0.4.1) + check-no-ts → state=ts_deleted"
+      "notes": "CODERAG-TS-DELETED-ADMISSION-TICK023: canary_green + npm@0.4.2(rebind-tick027; admitted@0.4.1) + check-no-ts \u2192 state=ts_deleted"
     },
     "S5": {
       "id": "transport/stdio-rust-rmcp",
       "status": "ts_deleted_admitted",
-      "notes": "CODERAG-TS-DELETED-ADMISSION-TICK023: canary_green + npm@0.4.2(rebind-tick027; admitted@0.4.1) + check-no-ts → state=ts_deleted"
+      "notes": "CODERAG-TS-DELETED-ADMISSION-TICK023: canary_green + npm@0.4.2(rebind-tick027; admitted@0.4.1) + check-no-ts \u2192 state=ts_deleted"
     }
   },
   "npmBind": {
@@ -420,7 +420,7 @@
       "canaryScope": "npm multi-arch MCP consumer path @0.4.1; Darwin process smoke + linux package registry bind",
       "imageDigest": "npm tarball sha256 (not container image digest)",
       "serverInfoVersion": "cosmetic 0.3.33 vs package 0.4.1 (P2 hold)",
-      "fleetLedger": "control-plane projection still stale until separate reconcile — not mutated by this product PR"
+      "fleetLedger": "control-plane projection still stale until separate reconcile \u2014 not mutated by this product PR"
     },
     "nextResidual": "authority_rust consideration only after freeze policy packet; formal NEW ts_deleted for remaining rust_impl requires full ladder + policy; fleet ledger reconcile; optional serverInfo.version fix",
     "subsequentRebind": {
@@ -444,7 +444,7 @@
     "authority_progress": 1.0,
     "verified_authority_progress": 1.0,
     "weighted_progress": 1.0,
-    "notes": "CODERAG-TS-DELETED-ADMISSION-TICK023: admitted state=ts_deleted for remaining 3× rust_impl caps (web-mcp-http, stdio-rust-rmcp, tool/codebase_search) after canary_green×4 + npm@0.4.1 digest + check-no-ts×4 PASS + prod_audit_pass; pre-existing stdio-ts-adapter ts_deleted retained; ts_deleted=4/4; completion_progress=1.0; per-cap holds released evidence-bound; freezes not generically lifted; NOT fleet FCP. | SSOT-SYNC: canonical docs/specs/migration-ledger.json synced from coderag-migration-ledger.json post-#81 so fleet reconcile github readback projects ts_deleted×4 + canary_green×4. | CODERAG-DIGEST-REBIND-0.4.2-TICK027: live proof fields rebound npm@0.4.1→0.4.2 (imageDigest sha256:2bd259afb590… gitHead 7e3d79c); canary_green×4 retained; ts_deleted=4/4 unchanged; no NEW admissions; freezes ON; NOT verified_complete / NOT REPO_COMPLETE_ADMISSIBLE; differential not re-claimed at 7e3d79c.",
+    "notes": "CODERAG-TS-DELETED-ADMISSION-TICK023: admitted state=ts_deleted for remaining 3\u00d7 rust_impl caps (web-mcp-http, stdio-rust-rmcp, tool/codebase_search) after canary_green\u00d74 + npm@0.4.1 digest + check-no-ts\u00d74 PASS + prod_audit_pass; pre-existing stdio-ts-adapter ts_deleted retained; ts_deleted=4/4; completion_progress=1.0; per-cap holds released evidence-bound; freezes not generically lifted; NOT fleet FCP. | SSOT-SYNC: canonical docs/specs/migration-ledger.json synced from coderag-migration-ledger.json post-#81 so fleet reconcile github readback projects ts_deleted\u00d74 + canary_green\u00d74. | CODERAG-DIGEST-REBIND-0.4.2-TICK027: live proof fields rebound npm@0.4.1\u21920.4.2 (imageDigest sha256:2bd259afb590\u2026 gitHead 7e3d79c); canary_green\u00d74 retained; ts_deleted=4/4 unchanged; no NEW admissions; freezes ON; NOT verified_complete / NOT REPO_COMPLETE_ADMISSIBLE; differential not re-claimed at 7e3d79c. | FINISH-LINE-NEAR-COMPLETE-TICK030: tip-watermark rebind lastComparedMainSha/mergeGroupSha\u21920ef0ce514fae (TICK028 CI after 0.4.2); rustCandidateSha retained @0.4.2 gitHead 7e3d79cb4dc1; imageDigest 0.4.2 tarball sha256 retained; clean-npm tools/call reconfirm PASS; NO NEW ts_deleted; freezes ON; independent completion-verify NOT_YET / NOT REPO_COMPLETE_ADMISSIBLE.",
     "tick023_ts_deleted_delta": {
       "packetId": "CODERAG-TS-DELETED-ADMISSION-TICK023",
       "newTsDeleted": 3,
@@ -457,7 +457,23 @@
     },
     "liveNpmVersion": "0.4.2",
     "liveImageDigest": "sha256:2bd259afb590a7a8af1d02eeb7c07e9502703d93778c259b530ab2ebca546e26",
-    "liveGitHead": "7e3d79cb4dc187abf36da49431e479c745215e27"
+    "liveGitHead": "7e3d79cb4dc187abf36da49431e479c745215e27",
+    "liveMainTip": "0ef0ce514fae2e8b3378cb7022336410d63b7f99",
+    "lastMutation": "FINISH-LINE-NEAR-COMPLETE-TICK030",
+    "updatedAt": "2026-07-11T19:05:16Z",
+    "tick030_delta": {
+      "packetId": "FINISH-LINE-NEAR-COMPLETE-TICK030",
+      "action": "tip_watermark_rebind_plus_tools_call_reconfirm",
+      "mainTip": "0ef0ce514fae2e8b3378cb7022336410d63b7f99",
+      "npmVersion": "0.4.2",
+      "gitHead": "7e3d79cb4dc187abf36da49431e479c745215e27",
+      "imageDigest": "sha256:2bd259afb590a7a8af1d02eeb7c07e9502703d93778c259b530ab2ebca546e26",
+      "toolsCall": "pass",
+      "statesUnchanged": true,
+      "promotions": false,
+      "repoCompleteAdmissible": false,
+      "completionVerify": "NOT_YET"
+    }
   },
   "tick023_ts_deleted": {
     "packetId": "CODERAG-TS-DELETED-ADMISSION-TICK023",
@@ -511,7 +527,7 @@
     "honestyNotes": {
       "canaryScope": "npm multi-arch MCP consumer path @0.4.1; Darwin process smoke + linux package registry bind",
       "imageDigest": "npm tarball sha256 (not container image digest)",
-      "tsResidualAuthority": "none — check-no-ts×4 PASS",
+      "tsResidualAuthority": "none \u2014 check-no-ts\u00d74 PASS",
       "tsResidualNonAuthority": "packages/mcp-server/src/{rust-engine,doctor,evidence,search-coordinator}.ts retained as library/oracle helpers; packages/core TS library out of MCP authority path",
       "serverInfoVersion": "cosmetic 0.3.33 vs package 0.4.1 (P2 hold)",
       "linuxLiveProcessSmoke": "not re-run on Darwin builder; registry+ELF bind + multi-arch CI",
@@ -631,7 +647,7 @@
       "canaryScope": "npm multi-arch MCP consumer path @0.4.2; Darwin process smoke initialize+tools/list+tools/call PASS; linux registry bind",
       "imageDigest": "npm tarball sha256 (not container image digest)",
       "serverInfoVersion": "cosmetic 0.3.33 vs package 0.4.2 (P2 hold)",
-      "packagingGap": "0.4.1 missing coderag-cli in optionalDeps → tools/call -32600; closed at 0.4.2 (PR #83/#84)",
+      "packagingGap": "0.4.1 missing coderag-cli in optionalDeps \u2192 tools/call -32600; closed at 0.4.2 (PR #83/#84)",
       "freeze": "promotionFreeze.active remains true; rej-010/011/013 policy not lifted"
     }
   }

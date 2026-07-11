@@ -44,14 +44,14 @@
       "proof": {
         "status": "canary_green",
         "baselineTsSha": "d365ccf695afd933355db515a253944136e6ab14",
-        "rustCandidateSha": "7e3d79cb4dc187abf36da49431e479c745215e27",
-        "lastComparedMainSha": "760473646b2ae10b5c5388e70e28abe598f99d7d",
-        "mergeGroupSha": "760473646b2ae10b5c5388e70e28abe598f99d7d",
+        "rustCandidateSha": "0455a72950aeb12d0578f743245a3a4c90870fac",
+        "lastComparedMainSha": "0455a72950aeb12d0578f743245a3a4c90870fac",
+        "mergeGroupSha": "0455a72950aeb12d0578f743245a3a4c90870fac",
         "behaviorSpecHash": "5d3ddb2611fb2543638e75c2f285051835426db22d488d04df21971df5e11650",
         "fixtureCorpusHash": "5d3ddb2611fb2543638e75c2f285051835426db22d488d04df21971df5e11650",
         "imageDigest": "sha256:2bd259afb590a7a8af1d02eeb7c07e9502703d93778c259b530ab2ebca546e26",
-        "verifiedAt": "2026-07-11T21:22:04Z",
-        "verificationRef": "rust-first-fleet-control-plane/implementer/receipts/FINISH-LINE-CODERAG-TICK032/artifacts/mcp-tools-call.json",
+        "verifiedAt": "2026-07-11T23:16:15+01:00",
+        "verificationRef": "rust-first-fleet-control-plane/implementer/receipts/STALE-GREEN-PROOF-REBIND-TICK033/verification/coderag-tip-differential.json",
         "dependencyGlobs": [
           "crates/coderag-mcp-server/src/http_transport.rs",
           "crates/coderag-mcp-server/tests/http_codebase_search_differential.rs",
@@ -95,7 +95,7 @@
           "deploySpecs": "d2c88d34ad7740cbeb1bc1f2d0041a810b4ce78648a4bfba5d527df8a37e7629"
         },
         "proofInputDigestVersion": 1,
-        "proofInputDigestBoundSha": "760473646b2ae10b5c5388e70e28abe598f99d7d",
+        "proofInputDigestBoundSha": "0455a72950aeb12d0578f743245a3a4c90870fac",
         "tipDifferentialVerificationRef": "local:scripts/run-coderag-differential.sh@FINISH-LINE-CODERAG-TICK032",
         "tipDifferentialBoundSha": "760473646b2ae10b5c5388e70e28abe598f99d7d",
         "tipDifferential": {
@@ -109,7 +109,8 @@
           "packetId": "FINISH-LINE-CODERAG-TICK032",
           "durability": "local_main_tree_reconfirm",
           "honesty": "Re-run on worktree at origin/main tip; not a new merge_group CI admission claim. priorDifferentialBoundSha historical CI retained."
-        }
+        },
+        "notes": "STALE-GREEN-PROOF-REBIND-TICK033: tip-rebind at live main after TICK032 finish-line merge; differential reconfirm green (cases=9 tool+stdio+http); lastCompared/mergeGroup/rustCandidate watermarked; proofInputDigest restamped; NO new ts_deleted/authority."
       },
       "promotionHold": {
         "active": false,
@@ -135,14 +136,14 @@
       "proof": {
         "status": "canary_green",
         "baselineTsSha": "d365ccf695afd933355db515a253944136e6ab14",
-        "rustCandidateSha": "7e3d79cb4dc187abf36da49431e479c745215e27",
-        "lastComparedMainSha": "760473646b2ae10b5c5388e70e28abe598f99d7d",
-        "mergeGroupSha": "760473646b2ae10b5c5388e70e28abe598f99d7d",
+        "rustCandidateSha": "0455a72950aeb12d0578f743245a3a4c90870fac",
+        "lastComparedMainSha": "0455a72950aeb12d0578f743245a3a4c90870fac",
+        "mergeGroupSha": "0455a72950aeb12d0578f743245a3a4c90870fac",
         "behaviorSpecHash": "5d3ddb2611fb2543638e75c2f285051835426db22d488d04df21971df5e11650",
         "fixtureCorpusHash": "5d3ddb2611fb2543638e75c2f285051835426db22d488d04df21971df5e11650",
         "imageDigest": "sha256:2bd259afb590a7a8af1d02eeb7c07e9502703d93778c259b530ab2ebca546e26",
-        "verifiedAt": "2026-07-11T21:22:04Z",
-        "verificationRef": "rust-first-fleet-control-plane/implementer/receipts/FINISH-LINE-CODERAG-TICK032/artifacts/mcp-tools-call.json",
+        "verifiedAt": "2026-07-11T23:16:15+01:00",
+        "verificationRef": "rust-first-fleet-control-plane/implementer/receipts/STALE-GREEN-PROOF-REBIND-TICK033/verification/coderag-tip-differential.json",
         "dependencyGlobs": [
           "crates/coderag-mcp-server/src/main.rs",
           "packages/mcp-server/bin/coderag-mcp",
@@ -186,7 +187,7 @@
           "deploySpecs": "d2c88d34ad7740cbeb1bc1f2d0041a810b4ce78648a4bfba5d527df8a37e7629"
         },
         "proofInputDigestVersion": 1,
-        "proofInputDigestBoundSha": "760473646b2ae10b5c5388e70e28abe598f99d7d",
+        "proofInputDigestBoundSha": "0455a72950aeb12d0578f743245a3a4c90870fac",
         "tipDifferentialVerificationRef": "local:scripts/run-coderag-differential.sh@FINISH-LINE-CODERAG-TICK032",
         "tipDifferentialBoundSha": "760473646b2ae10b5c5388e70e28abe598f99d7d",
         "tipDifferential": {
@@ -200,7 +201,8 @@
           "packetId": "FINISH-LINE-CODERAG-TICK032",
           "durability": "local_main_tree_reconfirm",
           "honesty": "Re-run on worktree at origin/main tip; not a new merge_group CI admission claim. priorDifferentialBoundSha historical CI retained."
-        }
+        },
+        "notes": "STALE-GREEN-PROOF-REBIND-TICK033: tip-rebind at live main after TICK032 finish-line merge; differential reconfirm green (cases=9 tool+stdio+http); lastCompared/mergeGroup/rustCandidate watermarked; proofInputDigest restamped; NO new ts_deleted/authority."
       },
       "promotionHold": {
         "active": false,
@@ -229,12 +231,12 @@
       "proof": {
         "status": "canary_green",
         "baselineTsSha": "d365ccf695afd933355db515a253944136e6ab14",
-        "rustCandidateSha": "7e3d79cb4dc187abf36da49431e479c745215e27",
-        "lastComparedMainSha": "760473646b2ae10b5c5388e70e28abe598f99d7d",
-        "mergeGroupSha": "760473646b2ae10b5c5388e70e28abe598f99d7d",
+        "rustCandidateSha": "0455a72950aeb12d0578f743245a3a4c90870fac",
+        "lastComparedMainSha": "0455a72950aeb12d0578f743245a3a4c90870fac",
+        "mergeGroupSha": "0455a72950aeb12d0578f743245a3a4c90870fac",
         "imageDigest": "sha256:2bd259afb590a7a8af1d02eeb7c07e9502703d93778c259b530ab2ebca546e26",
-        "verifiedAt": "2026-07-11T21:22:04Z",
-        "verificationRef": "scripts/check-ts-adapter-deletion-ready.sh; scripts/check-no-ts-stdio-backend.sh",
+        "verifiedAt": "2026-07-11T23:16:15+01:00",
+        "verificationRef": "rust-first-fleet-control-plane/implementer/receipts/STALE-GREEN-PROOF-REBIND-TICK033/verification/coderag-tip-differential.json",
         "dependencyGlobs": [
           "packages/mcp-server/src/**",
           "packages/mcp-server/bin/coderag-mcp",
@@ -263,19 +265,19 @@
           "differentialReRunClaimed": false,
           "differentialHonesty": "Prior main_durable differential_green remains bound at 8fd7a45 (tick023). This packet does not invent a new differential_green case proof for 7e3d79c."
         },
-        "proofInputDigest": "ebc20a3796562e161be70f54ee32e397dc8b2ffcbfa7833bf4311f49618df157",
+        "proofInputDigest": "0ef508b7f9ac5c24b5f5db03348e5c9bff8c8f0ea0e99aee3cd73c2cf4f0d537",
         "proofInputDigestFields": {
           "tsClosure": "e99668b57f6915120dbd171a311eeacbd318443e9319c3dcdcfe9ff510da4b58",
           "rustClosure": null,
           "contracts": null,
           "config": null,
           "deps": "cf93e4eb20389be6b7fef3f9e3cc8d5d4d3009ab508180e72fbe22bc5312c726",
-          "fixtures": null,
+          "fixtures": "5d3ddb2611fb2543638e75c2f285051835426db22d488d04df21971df5e11650",
           "harness": "437d949e59e010f5f5160baac4a3f106091102f9f9326f0c8fb7dfb2462e1d27",
           "deploySpecs": "d2c88d34ad7740cbeb1bc1f2d0041a810b4ce78648a4bfba5d527df8a37e7629"
         },
         "proofInputDigestVersion": 1,
-        "proofInputDigestBoundSha": "760473646b2ae10b5c5388e70e28abe598f99d7d",
+        "proofInputDigestBoundSha": "0455a72950aeb12d0578f743245a3a4c90870fac",
         "tipDifferentialVerificationRef": "local:scripts/run-coderag-differential.sh@FINISH-LINE-CODERAG-TICK032",
         "tipDifferentialBoundSha": "760473646b2ae10b5c5388e70e28abe598f99d7d",
         "tipDifferential": {
@@ -289,7 +291,10 @@
           "packetId": "FINISH-LINE-CODERAG-TICK032",
           "durability": "local_main_tree_reconfirm",
           "honesty": "Re-run on worktree at origin/main tip; not a new merge_group CI admission claim. priorDifferentialBoundSha historical CI retained."
-        }
+        },
+        "fixtureCorpusHash": "5d3ddb2611fb2543638e75c2f285051835426db22d488d04df21971df5e11650",
+        "behaviorSpecHash": "5d3ddb2611fb2543638e75c2f285051835426db22d488d04df21971df5e11650",
+        "notes": "STALE-GREEN-PROOF-REBIND-TICK033: tip-rebind at live main after TICK032 finish-line merge; differential reconfirm green (cases=9 tool+stdio+http); lastCompared/mergeGroup/rustCandidate watermarked; proofInputDigest restamped; NO new ts_deleted/authority."
       },
       "promotionHold": {
         "active": false,
@@ -309,14 +314,14 @@
       "proof": {
         "status": "canary_green",
         "baselineTsSha": "d365ccf695afd933355db515a253944136e6ab14",
-        "rustCandidateSha": "7e3d79cb4dc187abf36da49431e479c745215e27",
-        "lastComparedMainSha": "760473646b2ae10b5c5388e70e28abe598f99d7d",
-        "mergeGroupSha": "760473646b2ae10b5c5388e70e28abe598f99d7d",
+        "rustCandidateSha": "0455a72950aeb12d0578f743245a3a4c90870fac",
+        "lastComparedMainSha": "0455a72950aeb12d0578f743245a3a4c90870fac",
+        "mergeGroupSha": "0455a72950aeb12d0578f743245a3a4c90870fac",
         "behaviorSpecHash": "5d3ddb2611fb2543638e75c2f285051835426db22d488d04df21971df5e11650",
         "fixtureCorpusHash": "5d3ddb2611fb2543638e75c2f285051835426db22d488d04df21971df5e11650",
         "imageDigest": "sha256:2bd259afb590a7a8af1d02eeb7c07e9502703d93778c259b530ab2ebca546e26",
-        "verifiedAt": "2026-07-11T21:22:04Z",
-        "verificationRef": "rust-first-fleet-control-plane/implementer/receipts/FINISH-LINE-CODERAG-TICK032/artifacts/mcp-tools-call.json",
+        "verifiedAt": "2026-07-11T23:16:15+01:00",
+        "verificationRef": "rust-first-fleet-control-plane/implementer/receipts/STALE-GREEN-PROOF-REBIND-TICK033/verification/coderag-tip-differential.json",
         "dependencyGlobs": [
           "fixtures/golden-retrieval-baseline.json",
           "fixtures/benchmark-corpus/**",
@@ -362,7 +367,7 @@
           "deploySpecs": "d2c88d34ad7740cbeb1bc1f2d0041a810b4ce78648a4bfba5d527df8a37e7629"
         },
         "proofInputDigestVersion": 1,
-        "proofInputDigestBoundSha": "760473646b2ae10b5c5388e70e28abe598f99d7d",
+        "proofInputDigestBoundSha": "0455a72950aeb12d0578f743245a3a4c90870fac",
         "tipDifferentialVerificationRef": "local:scripts/run-coderag-differential.sh@FINISH-LINE-CODERAG-TICK032",
         "tipDifferentialBoundSha": "760473646b2ae10b5c5388e70e28abe598f99d7d",
         "tipDifferential": {
@@ -376,7 +381,8 @@
           "packetId": "FINISH-LINE-CODERAG-TICK032",
           "durability": "local_main_tree_reconfirm",
           "honesty": "Re-run on worktree at origin/main tip; not a new merge_group CI admission claim. priorDifferentialBoundSha historical CI retained."
-        }
+        },
+        "notes": "STALE-GREEN-PROOF-REBIND-TICK033: tip-rebind at live main after TICK032 finish-line merge; differential reconfirm green (cases=9 tool+stdio+http); lastCompared/mergeGroup/rustCandidate watermarked; proofInputDigest restamped; NO new ts_deleted/authority."
       },
       "promotionHold": {
         "active": false,
@@ -600,6 +606,17 @@
         "rej-010",
         "rej-011",
         "rej-013"
+      ]
+    },
+    "lastProofRebind": {
+      "packet": "STALE-GREEN-PROOF-REBIND-TICK033",
+      "at": "2026-07-11T22:18:21Z",
+      "tip": "0455a72950aeb12d0578f743245a3a4c90870fac",
+      "greenRebound": [
+        "tool/codebase_search",
+        "transport/stdio-rust-rmcp",
+        "transport/stdio-ts-adapter",
+        "transport/web-mcp-http"
       ]
     }
   },

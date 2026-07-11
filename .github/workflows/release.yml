@@ -9,6 +9,30 @@ jobs:
     permissions:
       actions: write
       contents: write
+      id-token: write
       pull-requests: write
     uses: SylphxAI/.github/.github/workflows/release.yml@main
+    with:
+      # Rebuild TS packages + stage linux x86_64 Rust MCP natives for the published
+      # tarball (self-hosted release runner is sylphx linux/standard). Multi-arch
+      # optionalDependencies remain a follow-up residual.
+      build: |
+        set -euo pipefail
+        if ! command -v rustc >/dev/null 2>&1; then
+          if [ -f "$HOME/.cargo/env" ]; then
+            # shellcheck source=/dev/null
+            . "$HOME/.cargo/env"
+          fi
+        fi
+        if ! command -v rustc >/dev/null 2>&1; then
+          curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal
+          # shellcheck source=/dev/null
+          . "$HOME/.cargo/env"
+        fi
+        export PATH="${HOME}/.cargo/bin:${PATH}"
+        bun run build
+        bun run build:rust
+        test -x packages/mcp-server/bin/native/coderag-mcp-server
+        test -x packages/mcp-server/bin/coderag-mcp
+        file packages/mcp-server/bin/native/coderag-mcp-server
     secrets: inherit

@@ -123,11 +123,24 @@ jobs:
           fi
           echo "proof SHA binding OK: lastComparedMainSha=$LAST_COMPARED"
 
-      - name: Warn on stale capabilities without re-proof
-        if: needs.map-and-stale.outputs.stale_capabilities != '[]'
+      - name: Assert parity proof integrity (fail-closed TICK028)
+        env:
+          CANDIDATE_SHA: ${{ env.CANDIDATE_SHA }}
+          STALE_CAPABILITIES: ${{ needs.map-and-stale.outputs.stale_capabilities }}
         run: |
-          echo "::warning::Stale capabilities detected — differential must pass before merge"
-          echo "${{ needs.map-and-stale.outputs.stale_capabilities }}"
+          set -euo pipefail
+          ARTIFACT="${SCRATCH_DIR:-/tmp}/verification.json"
+          if [ ! -f "$ARTIFACT" ]; then
+            echo "::error::verification artifact missing at $ARTIFACT"
+            exit 1
+          fi
+          python3 scripts/assert-parity-proof-integrity.py \
+            --mode ci \
+            --verification "$ARTIFACT" \
+            --ledger "docs/specs/codebase-search-parity-slice.json" \
+            --candidate-sha "$CANDIDATE_SHA" \
+            --stale-capabilities "${STALE_CAPABILITIES:-[]}" \
+            --repo-root "${GITHUB_WORKSPACE}"
 
       - name: Upload verification artifact
         uses: actions/upload-artifact@v4

@@ -67,7 +67,9 @@ jobs:
     timeout-minutes: 30
     env:
       CANDIDATE_SHA: ${{ github.event.merge_group.head_sha || github.sha }}
-      SCRATCH_DIR: ${{ runner.temp }}/coderag-stdio-differential
+      # runner context is step-only — do NOT use runner.temp in job-level env
+      # (Invalid workflow / 0 jobs). Fixed path matches script default.
+      SCRATCH_DIR: /tmp/coderag-stdio-differential
       DIFFERENTIAL_SCRIPT: scripts/run-coderag-differential.sh
 
     steps:

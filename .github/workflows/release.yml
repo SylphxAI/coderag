@@ -32,7 +32,10 @@ jobs:
         export PATH="${HOME}/.cargo/bin:${PATH}"
         bun run build
         bun run build:rust
+        chmod +x packages/mcp-server/bin/coderag-mcp packages/mcp-server/bin/native/coderag-mcp-server packages/mcp-server/bin/native/coderag-cli
         test -x packages/mcp-server/bin/native/coderag-mcp-server
         test -x packages/mcp-server/bin/coderag-mcp
-        file packages/mcp-server/bin/native/coderag-mcp-server
+        test -s packages/mcp-server/bin/native/coderag-mcp-server
+        file packages/mcp-server/bin/native/coderag-mcp-server || true
+        head -n 5 packages/mcp-server/bin/coderag-mcp
     secrets: inherit

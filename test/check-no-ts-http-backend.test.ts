@@ -31,13 +31,17 @@ test('npm bin routes HTTP to Rust rmcp without TS stdio adapter', () => {
 	expect(httpTransport).toContain('health_check')
 })
 
-test('migration ledger marks transport/web-mcp-http as rust_impl (rej-010)', () => {
+test('migration ledger marks transport/web-mcp-http as ts_deleted (tick023 admission)', () => {
 	const ledger = JSON.parse(readText('docs/specs/coderag-migration-ledger.json')) as {
 		capabilities: Array<{ id: string; state: string; proof?: { status: string } }>
+		summary: { ts_deleted: number; completion_progress: number }
 	}
 
 	const http = ledger.capabilities.find((capability) => capability.id === 'transport/web-mcp-http')
 	const admittedProof = new Set(['missing', 'stale', 'differential_green', 'canary_green', 'caught_up'])
-	expect(http?.state).toBe('rust_impl')
+	expect(http?.state).toBe('ts_deleted')
 	expect(admittedProof.has(http?.proof?.status ?? '')).toBe(true)
+	expect(http?.proof?.status).toBe('canary_green')
+	expect(ledger.summary.ts_deleted).toBe(4)
+	expect(ledger.summary.completion_progress).toBe(1.0)
 })

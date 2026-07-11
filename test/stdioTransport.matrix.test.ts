@@ -23,7 +23,7 @@ describe('MCP stdio transport routing', () => {
 		expect(mainRs).toContain('http_transport::transport_from_env')
 	})
 
-	it('migration ledger marks transport/stdio-rust-rmcp as rust_impl (rej-010)', () => {
+	it('migration ledger marks transport/stdio-rust-rmcp as ts_deleted (tick023 admission)', () => {
 		const ledger = JSON.parse(
 			readFileSync(path.join(repoRoot, 'docs/specs/coderag-migration-ledger.json'), 'utf8')
 		) as {
@@ -31,8 +31,9 @@ describe('MCP stdio transport routing', () => {
 		}
 		const admittedProof = new Set(['missing', 'differential_green', 'canary_green', 'caught_up'])
 		const stdioRust = ledger.capabilities.find((cap) => cap.id === 'transport/stdio-rust-rmcp')
-		expect(stdioRust?.state).toBe('rust_impl')
+		expect(stdioRust?.state).toBe('ts_deleted')
 		expect(admittedProof.has(stdioRust?.proof?.status ?? '')).toBe(true)
+		expect(stdioRust?.proof?.status).toBe('canary_green')
 	})
 
 	it('stdio authority gate script exists', () => {

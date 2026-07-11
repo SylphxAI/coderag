@@ -97,19 +97,19 @@ entry = next((cap for cap in caps if cap.get("id") == "tool/codebase_search"), N
 if entry is None:
     print("[check-no-ts-codebase-search] missing capability tool/codebase_search", file=sys.stderr)
     sys.exit(1)
-rust_authority_states = {"rust_impl", "authority_rust"}
+rust_authority_states = {"rust_impl", "authority_rust", "ts_deleted"}
 if entry.get("state") not in rust_authority_states:
     print(
-        f"[check-no-ts-codebase-search] tool/codebase_search is {entry.get('state')}; expected rust_impl (rej-010) or authority_rust",
+        f"[check-no-ts-codebase-search] tool/codebase_search is {entry.get('state')}; expected rust_impl, authority_rust, or ts_deleted",
         file=sys.stderr,
     )
     sys.exit(1)
-allowed_rust_impl_proof = {"missing", "differential_green", "canary_green", "caught_up"}
+allowed_proof = {"missing", "differential_green", "canary_green", "caught_up"}
 proof_status = (entry.get("proof") or {}).get("status")
-if entry.get("state") == "rust_impl" and proof_status not in allowed_rust_impl_proof:
+if entry.get("state") in {"rust_impl", "ts_deleted"} and proof_status not in allowed_proof:
     print(
-        f"[check-no-ts-codebase-search] tool/codebase_search rust_impl proof.status={proof_status!r}; "
-        f"expected one of {sorted(allowed_rust_impl_proof)}",
+        f"[check-no-ts-codebase-search] tool/codebase_search state={entry.get('state')} proof.status={proof_status!r}; "
+        f"expected one of {sorted(allowed_proof)}",
         file=sys.stderr,
     )
     sys.exit(1)
@@ -123,7 +123,7 @@ http_transport = next((cap for cap in caps if cap.get("id") == "transport/web-mc
 if http_transport is None or http_transport.get("state") not in rust_authority_states:
     state = http_transport.get("state") if http_transport else "missing"
     print(
-        f"[check-no-ts-codebase-search] transport/web-mcp-http is {state}; expected rust_impl (rej-010) or authority_rust",
+        f"[check-no-ts-codebase-search] transport/web-mcp-http is {state}; expected rust_impl, authority_rust, or ts_deleted",
         file=sys.stderr,
     )
     sys.exit(1)

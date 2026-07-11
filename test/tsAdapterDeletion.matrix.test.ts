@@ -45,9 +45,9 @@ describe('TS stdio adapter deletion matrix', () => {
 		}
 		const tsAdapter = ledger.capabilities.find((cap) => cap.id === 'transport/stdio-ts-adapter')
 		expect(tsAdapter?.state).toBe('ts_deleted')
-		expect(ledger.summary.ts_deleted).toBe(1)
+		expect(ledger.summary.ts_deleted).toBe(4)
 		expect(ledger.summary.ts_only).toBe(0)
-		expect(ledger.summary.completion_progress).toBe(0)
+		expect(ledger.summary.completion_progress).toBe(1.0)
 	})
 
 	it('codebase_search authority gate blocks parallel TS MCP tool handlers', () => {
@@ -65,36 +65,48 @@ describe('TS stdio adapter deletion matrix', () => {
 		expect(script).toContain('transport::stdio')
 	})
 
-	it('ledger records transport/stdio-rust-rmcp as rust_impl (rej-010)', () => {
+	it('ledger records transport/stdio-rust-rmcp as ts_deleted (tick023 admission)', () => {
 		const ledger = JSON.parse(
 			readFileSync(path.join(repoRoot, 'docs/specs/coderag-migration-ledger.json'), 'utf8')
 		) as {
 			capabilities: Array<{ id: string; state: string; proof?: { status: string } }>
-			summary: { rust_impl: number; authority_rust: number; parity_proven: number; authority_progress: number }
+			summary: {
+				rust_impl: number
+				authority_rust: number
+				parity_proven: number
+				authority_progress: number
+				ts_deleted: number
+				completion_progress: number
+			}
 		}
 		const admittedProof = new Set(['missing', 'differential_green', 'canary_green', 'caught_up'])
 		const stdioRust = ledger.capabilities.find((cap) => cap.id === 'transport/stdio-rust-rmcp')
-		expect(stdioRust?.state).toBe('rust_impl')
+		expect(stdioRust?.state).toBe('ts_deleted')
 		expect(admittedProof.has(stdioRust?.proof?.status ?? '')).toBe(true)
-		expect(ledger.summary.rust_impl).toBe(3)
+		expect(stdioRust?.proof?.status).toBe('canary_green')
+		expect(ledger.summary.rust_impl).toBe(0)
 		expect(ledger.summary.authority_rust).toBe(0)
 		expect(ledger.summary.parity_proven).toBe(0)
-		expect(ledger.summary.authority_progress).toBe(0)
+		expect(ledger.summary.ts_deleted).toBe(4)
+		expect(ledger.summary.completion_progress).toBe(1.0)
+		expect(ledger.summary.authority_progress).toBe(1.0)
 	})
 
-	it('ledger records tool/codebase_search as rust_impl (rej-010)', () => {
+	it('ledger records tool/codebase_search as ts_deleted (tick023 admission)', () => {
 		const ledger = JSON.parse(
 			readFileSync(path.join(repoRoot, 'docs/specs/coderag-migration-ledger.json'), 'utf8')
 		) as {
 			capabilities: Array<{ id: string; state: string; proof?: { status: string } }>
-			summary: { rust_impl: number; authority_rust: number; parity_proven: number }
+			summary: { rust_impl: number; authority_rust: number; parity_proven: number; ts_deleted: number }
 		}
 		const admittedProof = new Set(['missing', 'differential_green', 'canary_green', 'caught_up'])
 		const codebaseSearch = ledger.capabilities.find((cap) => cap.id === 'tool/codebase_search')
-		expect(codebaseSearch?.state).toBe('rust_impl')
+		expect(codebaseSearch?.state).toBe('ts_deleted')
 		expect(admittedProof.has(codebaseSearch?.proof?.status ?? '')).toBe(true)
-		expect(ledger.summary.rust_impl).toBe(3)
+		expect(codebaseSearch?.proof?.status).toBe('canary_green')
+		expect(ledger.summary.rust_impl).toBe(0)
 		expect(ledger.summary.authority_rust).toBe(0)
 		expect(ledger.summary.parity_proven).toBe(0)
+		expect(ledger.summary.ts_deleted).toBe(4)
 	})
 })

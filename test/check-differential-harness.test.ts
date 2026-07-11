@@ -40,37 +40,50 @@ describe('coderag differential harness (rej-010)', () => {
 		expect(slice.capabilities.some((capability) => capability.id === 'transport/stdio-rust-rmcp')).toBe(true)
 	})
 
-	it('migration ledger records rej-010 proof holds without promotions', () => {
+	it('migration ledger records ts_deleted admission with canary_green proof (tick023)', () => {
 		const ledger = JSON.parse(readText('docs/specs/coderag-migration-ledger.json')) as {
 			reauditRef?: string
 			promotionFreeze?: { active: boolean; reason?: string }
 			capabilities: Array<{
 				id: string
 				state: string
-				promotionHold?: { rejectionRef?: string }
-				proof?: { status: string }
+				promotionHold?: { rejectionRef?: string; active?: boolean }
+				proof?: { status: string; imageDigest?: string }
 				differentialTest?: string
 			}>
-			summary: { rust_impl: number; authority_rust: number }
+			summary: {
+				rust_impl: number
+				authority_rust: number
+				ts_deleted: number
+				completion_progress: number
+			}
 		}
 
 		expect(ledger.reauditRef).toBe('rej-010')
+		// freeze policy marker remains; per-cap holds released evidence-bound
 		expect(ledger.promotionFreeze?.active).toBe(true)
 
 		const codebaseSearch = ledger.capabilities.find((entry) => entry.id === 'tool/codebase_search')
 		const stdioRust = ledger.capabilities.find((entry) => entry.id === 'transport/stdio-rust-rmcp')
 
 		const admittedProof = new Set(['missing', 'differential_green', 'canary_green', 'caught_up'])
-		expect(codebaseSearch?.state).toBe('rust_impl')
-		expect(stdioRust?.state).toBe('rust_impl')
+		expect(codebaseSearch?.state).toBe('ts_deleted')
+		expect(stdioRust?.state).toBe('ts_deleted')
 		expect(codebaseSearch?.promotionHold?.rejectionRef).toBe('rej-010')
 		expect(stdioRust?.promotionHold?.rejectionRef).toBe('rej-010')
+		expect(codebaseSearch?.promotionHold?.active).toBe(false)
+		expect(stdioRust?.promotionHold?.active).toBe(false)
 		expect(admittedProof.has(codebaseSearch?.proof?.status ?? '')).toBe(true)
 		expect(admittedProof.has(stdioRust?.proof?.status ?? '')).toBe(true)
+		expect(codebaseSearch?.proof?.status).toBe('canary_green')
+		expect(stdioRust?.proof?.status).toBe('canary_green')
+		expect(codebaseSearch?.proof?.imageDigest).toContain('sha256:')
 		expect(codebaseSearch?.differentialTest).toContain('run-coderag-differential.sh')
 		expect(stdioRust?.differentialTest).toContain('run-coderag-differential.sh')
-		expect(ledger.summary.rust_impl).toBe(3)
+		expect(ledger.summary.rust_impl).toBe(0)
 		expect(ledger.summary.authority_rust).toBe(0)
+		expect(ledger.summary.ts_deleted).toBe(4)
+		expect(ledger.summary.completion_progress).toBe(1.0)
 	})
 
 	it('native packaging stages multi-arch optionalDependencies for npm publish', () => {

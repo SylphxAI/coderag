@@ -3,8 +3,8 @@
  *
  * - Version-PR path: SKIP if main package version not on registry yet.
  * - Publish path: fail-closed if platform packages missing.
- * - Uses tarball HEAD + install-v1 packument (full application/json packument
- *   can lag several minutes after first publish of a new package name).
+ * - Uses version-specific tarball HEAD (full application/json packument can
+ *   lag several minutes after first publish of a new package name).
  */
 import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'
@@ -28,49 +28,49 @@ function sleep(ms: number): void {
 	spawnSync('sleep', [String(ms / 1000)], { stdio: 'ignore' })
 }
 
-function curlOk(url: string, accept?: string): boolean {
-	const args = ['-sS', '-o', '/dev/null', '-w', '%{http_code}', '-L']
-	if (accept) {
-		args.push('-H', `Accept: ${accept}`)
-	}
-	args.push(url)
-	const result = spawnSync('curl', args, { encoding: 'utf8' })
-	return result.status === 0 && (result.stdout || '').trim() === '200'
+function tarballUrl(name: string, ver: string): string {
+	const scopedPath = name.startsWith('@') ? name.replace('/', '%2f') : name
+	const shortName = name.includes('/') ? name.split('/')[1]! : name
+	return `https://registry.npmjs.org/${scopedPath}/-/${shortName}-${ver}.tgz`
 }
 
-function packageExists(name: string, ver: string): boolean {
-	// 1) Tarball is the durable published artifact (available immediately).
-	const bare = name.replace(/^@/, '').replace('/', '-')
-	const scopedPath = name.startsWith('@') ? name.replace('/', '%2f') : name
-	const tarball = `https://registry.npmjs.org/${name}/-/${bare}-${ver}.tgz`
-	// npm tarball path uses unscoped filename for scoped packages:
-	// @scope/name → @scope/name/-/name-ver.tgz (name without scope)
-	const shortName = name.includes('/') ? name.split('/')[1] : name
-	const tarballUrl = `https://registry.npmjs.org/${scopedPath}/-/${shortName}-${ver}.tgz`
-	if (curlOk(tarballUrl) || curlOk(tarball)) {
-		return true
-	}
+function tarballExists(name: string, ver: string): boolean {
+	const url = tarballUrl(name, ver)
+	const result = spawnSync(
+		'curl',
+		['-sS', '-o', '/dev/null', '-w', '%{http_code}', '-L', '-I', url],
+		{ encoding: 'utf8' }
+	)
+	return result.status === 0 && (result.stdout || '').trim().split('\n').pop() === '200'
+}
 
-	// 2) Abbreviated packument (faster than full application/json).
-	const packument = `https://registry.npmjs.org/${scopedPath}`
-	if (curlOk(packument, 'application/vnd.npm.install-v1+json')) {
-		return true
-	}
-
-	// 3) npm view as last resort.
+function npmViewVersion(name: string, ver: string): boolean {
 	const view = spawnSync('npm', ['view', `${name}@${ver}`, 'version', '--json'], {
 		encoding: 'utf8',
 	})
-	if (view.status === 0 && (view.stdout || '').includes(ver)) {
-		return true
+	if (view.status !== 0) return false
+	const raw = (view.stdout || '').trim()
+	try {
+		const parsed = JSON.parse(raw) as string | string[]
+		if (typeof parsed === 'string') return parsed === ver
+		if (Array.isArray(parsed)) return parsed.includes(ver)
+	} catch {
+		return raw.replace(/"/g, '') === ver
 	}
-	return false
+	return raw.includes(ver)
 }
 
-function packageExistsWithRetry(name: string, ver: string, attempts = 8): boolean {
+function packageExists(name: string, ver: string): boolean {
+	// Version-specific tarball is authoritative and available before full packument.
+	if (tarballExists(name, ver)) return true
+	// Fallback after packument replication.
+	return npmViewVersion(name, ver)
+}
+
+function packageExistsWithRetry(name: string, ver: string, attempts = 10): boolean {
 	for (let i = 0; i < attempts; i++) {
 		if (packageExists(name, ver)) return true
-		const waitMs = Math.min(15_000, 2000 * (i + 1))
+		const waitMs = Math.min(20_000, 2000 * (i + 1))
 		console.log(
 			`[verify-multiarch-readback] waiting for registry: ${name}@${ver} (attempt ${i + 1}/${attempts}, sleep ${waitMs}ms)`
 		)

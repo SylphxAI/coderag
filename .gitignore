@@ -20,3 +20,12 @@ coverage/
 # LanceDB
 *.lance
 :memory:
+
+# Staged / assembled native binaries (built in CI or via bun run build:rust)
+bin/native/coderag-mcp-server
+bin/native/coderag-cli
+packages/mcp-server/bin/native/coderag-mcp-server
+packages/mcp-server/bin/native/coderag-cli
+packages/mcp-server/npm/*/coderag-mcp-server
+packages/mcp-server/npm/*/coderag-cli
+artifacts/

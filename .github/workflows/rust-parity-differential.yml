@@ -34,14 +34,16 @@ jobs:
         env:
           MANIFEST: docs/specs/codebase-search-parity-slice.json
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || 'origin/main' }}
-          HEAD_SHA: ${{ github.event.merge_group.head_sha || github.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.sha }}
         run: |
           set -euo pipefail
-          CHANGED="$(git diff --name-only "${BASE_SHA}...${HEAD_SHA}" 2>/dev/null || git diff --name-only "${BASE_SHA}" "${HEAD_SHA}")"
-          python3 - <<'PY' "${MANIFEST}" <<<"${CHANGED}"
-          import json, sys, fnmatch
-          manifest, changed_raw = sys.argv[1], sys.stdin.read()
-          changed = [l.strip() for l in changed_raw.splitlines() if l.strip()]
+          CHANGED="$(git diff --name-only "${BASE_SHA}...${HEAD_SHA}" 2>/dev/null || git diff --name-only "${BASE_SHA}" "${HEAD_SHA}" || true)"
+          export CHANGED
+          # Heredoc is program stdin; pass CHANGED via env (<<< + << cannot share stdin).
+          python3 - "$MANIFEST" <<'PY'
+          import json, sys, fnmatch, os
+          manifest = sys.argv[1]
+          changed = [l.strip() for l in os.environ.get("CHANGED", "").splitlines() if l.strip()]
           data = json.load(open(manifest))
           caps = list(data.get("capabilities") or [])
           for d in data.get("domains") or []:
@@ -57,17 +59,24 @@ jobs:
                   if any(fnmatch.fnmatch(c, g) for c in changed):
                       stale.append(cap["id"])
                       break
-          print(f"stale={json.dumps(sorted(set(stale)))}")
+          stale_json = json.dumps(sorted(set(stale)))
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
+              fh.write(f"stale={stale_json}\n")
+          print(f"stale capabilities: {stale_json}")
           PY
 
   differential:
     name: rust-parity-drift-pass/differential
     needs: map-and-stale
-    runs-on: sylphx-linux-large
+    # Prefer standard: sylphx-linux-large has 0 online capacity; JIT admits standard.
+    runs-on: sylphx-linux-standard
     timeout-minutes: 30
     env:
-      CANDIDATE_SHA: ${{ github.event.merge_group.head_sha || github.sha }}
-      SCRATCH_DIR: ${{ runner.temp }}/coderag-stdio-differential
+      # PR head (not merge commit) so proof binds to candidate branch tip.
+      CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.sha }}
+      # runner context is step-only — do NOT use runner.temp in job-level env
+      # (Invalid workflow / 0 jobs). Fixed path matches script default.
+      SCRATCH_DIR: /tmp/coderag-stdio-differential
       DIFFERENTIAL_SCRIPT: scripts/run-coderag-differential.sh
 
     steps:

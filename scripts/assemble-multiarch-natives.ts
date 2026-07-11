@@ -3,11 +3,14 @@
  *
  * Expected artifact layout (from native matrix upload):
  *   artifacts/coderag-native-<rust-target>/coderag-mcp-server
+ *   artifacts/coderag-native-<rust-target>/coderag-cli
  *
  * Writes into:
  *   packages/mcp-server/npm/<platform-key>/coderag-mcp-server
+ *   packages/mcp-server/npm/<platform-key>/coderag-cli
  *
- * Fail-closed: requires all configured platforms unless CODERAG_MULTIARCH_PARTIAL=1.
+ * Fail-closed: requires all configured platforms + both binaries unless
+ * CODERAG_MULTIARCH_PARTIAL=1.
  */
 import fs from 'node:fs'
 import path from 'node:path'
@@ -37,14 +40,15 @@ const PLATFORMS = [
 	},
 ] as const
 
+const BINARY_NAMES = ['coderag-mcp-server', 'coderag-cli'] as const
+
 const artifactsRoot = process.env.CODERAG_ARTIFACTS_DIR
 	? path.resolve(process.env.CODERAG_ARTIFACTS_DIR)
 	: path.join(repoRoot, 'artifacts')
 
 const partial = process.env.CODERAG_MULTIARCH_PARTIAL === '1'
-const binaryName = 'coderag-mcp-server'
 
-function findBinary(artifactDirNames: readonly string[]): string | null {
+function findBinary(artifactDirNames: readonly string[], binaryName: string): string | null {
 	for (const name of artifactDirNames) {
 		const candidates = [
 			path.join(artifactsRoot, name, binaryName),
@@ -81,32 +85,40 @@ const missing: string[] = []
 let assembled = 0
 
 for (const platform of PLATFORMS) {
-	const source = findBinary(platform.artifactNames)
 	const destDir = path.join(repoRoot, 'packages/mcp-server/npm', platform.key)
-	const dest = path.join(destDir, binaryName)
+	let platformOk = true
 
-	if (!source) {
-		missing.push(`${platform.key} (${platform.target})`)
-		console.error(`[assemble-multiarch] MISSING binary for ${platform.key}`)
-		continue
+	for (const binaryName of BINARY_NAMES) {
+		const source = findBinary(platform.artifactNames, binaryName)
+		const dest = path.join(destDir, binaryName)
+
+		if (!source) {
+			missing.push(`${platform.key}/${binaryName} (${platform.target})`)
+			console.error(`[assemble-multiarch] MISSING ${binaryName} for ${platform.key}`)
+			platformOk = false
+			continue
+		}
+
+		fs.mkdirSync(destDir, { recursive: true })
+		fs.copyFileSync(source, dest)
+		fs.chmodSync(dest, 0o755)
+
+		const size = fs.statSync(dest).size
+		if (size < 1024 * 100) {
+			console.error(`[assemble-multiarch] FAIL: ${dest} is suspiciously small (${size} bytes)`)
+			process.exit(1)
+		}
+
+		console.log(`[assemble-multiarch] ${platform.key}: ${source} → ${dest} (${size} bytes)`)
 	}
 
-	fs.mkdirSync(destDir, { recursive: true })
-	fs.copyFileSync(source, dest)
-	fs.chmodSync(dest, 0o755)
-
-	const size = fs.statSync(dest).size
-	if (size < 1024 * 100) {
-		console.error(`[assemble-multiarch] FAIL: ${dest} is suspiciously small (${size} bytes)`)
-		process.exit(1)
+	if (platformOk) {
+		assembled++
 	}
-
-	console.log(`[assemble-multiarch] ${platform.key}: ${source} → ${dest} (${size} bytes)`)
-	assembled++
 }
 
 if (missing.length > 0) {
-	console.error(`[assemble-multiarch] Missing platforms: ${missing.join(', ')}`)
+	console.error(`[assemble-multiarch] Missing: ${missing.join(', ')}`)
 	console.error(`[assemble-multiarch] artifactsRoot=${artifactsRoot}`)
 	if (fs.existsSync(artifactsRoot)) {
 		console.error('[assemble-multiarch] artifacts listing:')
@@ -124,15 +136,17 @@ if (missing.length > 0) {
 	}
 	if (!partial) {
 		console.error(
-			'[assemble-multiarch] Fail-closed: all platforms required. Set CODERAG_MULTIARCH_PARTIAL=1 only for local debug.'
+			'[assemble-multiarch] Fail-closed: all platforms + both natives required. Set CODERAG_MULTIARCH_PARTIAL=1 only for local debug.'
 		)
 		process.exit(1)
 	}
 }
 
 if (assembled === 0) {
-	console.error('[assemble-multiarch] No platform binaries assembled')
+	console.error('[assemble-multiarch] No platform packages assembled')
 	process.exit(1)
 }
 
-console.log(`[assemble-multiarch] Assembled ${assembled}/${PLATFORMS.length} platform packages`)
+console.log(
+	`[assemble-multiarch] Assembled ${assembled}/${PLATFORMS.length} platform packages (${BINARY_NAMES.join(' + ')})`
+)

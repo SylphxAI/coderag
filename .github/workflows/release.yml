@@ -59,20 +59,23 @@ jobs:
         run: |
           set -euo pipefail
           cargo build --release -p coderag-mcp-server -p coderag-cli --target ${{ matrix.settings.target }}
-          BIN="target/${{ matrix.settings.target }}/release/coderag-mcp-server"
-          test -f "$BIN"
-          chmod +x "$BIN"
-          file "$BIN" || true
-          test "$(wc -c < "$BIN")" -gt 100000
           mkdir -p native-out
-          cp "$BIN" native-out/coderag-mcp-server
-          chmod +x native-out/coderag-mcp-server
+          for name in coderag-mcp-server coderag-cli; do
+            BIN="target/${{ matrix.settings.target }}/release/${name}"
+            test -f "$BIN"
+            chmod +x "$BIN"
+            file "$BIN" || true
+            test "$(wc -c < "$BIN")" -gt 100000
+            cp "$BIN" "native-out/${name}"
+            chmod +x "native-out/${name}"
+          done
+          ls -la native-out
 
       - name: Upload native artifact
         uses: actions/upload-artifact@v4
         with:
           name: coderag-native-${{ matrix.settings.target }}
-          path: native-out/coderag-mcp-server
+          path: native-out/
           if-no-files-found: error
           retention-days: 7
 
@@ -108,25 +111,30 @@ jobs:
         # Keep host-path staging for local-style layout inside the published
         # package (optional); primary consumer path is optionalDependencies.
         # Stage linux x64 into bin/native as a documented linux fallback when
-        # the optional dep package is present alongside.
+        # the optional dep package is present alongside. Both natives required
+        # so tools/call can resolve sibling coderag-cli without monorepo build.
         mkdir -p packages/mcp-server/bin/native bin/native
-        if [ -f packages/mcp-server/npm/linux-x64-gnu/coderag-mcp-server ]; then
-          cp packages/mcp-server/npm/linux-x64-gnu/coderag-mcp-server packages/mcp-server/bin/native/coderag-mcp-server
-          cp packages/mcp-server/npm/linux-x64-gnu/coderag-mcp-server bin/native/coderag-mcp-server
-          chmod +x packages/mcp-server/bin/native/coderag-mcp-server bin/native/coderag-mcp-server
-        fi
+        for name in coderag-mcp-server coderag-cli; do
+          if [ -f "packages/mcp-server/npm/linux-x64-gnu/${name}" ]; then
+            cp "packages/mcp-server/npm/linux-x64-gnu/${name}" "packages/mcp-server/bin/native/${name}"
+            cp "packages/mcp-server/npm/linux-x64-gnu/${name}" "bin/native/${name}"
+            chmod +x "packages/mcp-server/bin/native/${name}" "bin/native/${name}"
+          fi
+        done
 
         chmod +x packages/mcp-server/bin/coderag-mcp bin/coderag-mcp
         test -x packages/mcp-server/bin/coderag-mcp
         head -n 8 packages/mcp-server/bin/coderag-mcp
 
-        # Fail-closed: every platform package must contain a runnable binary
+        # Fail-closed: every platform package must contain both natives
         for dir in packages/mcp-server/npm/*/; do
           test -f "${dir}package.json"
-          test -x "${dir}coderag-mcp-server"
-          test "$(wc -c < "${dir}coderag-mcp-server")" -gt 100000
-          echo "OK $(basename "$dir") $(wc -c < "${dir}coderag-mcp-server") bytes"
-          file "${dir}coderag-mcp-server" || true
+          for name in coderag-mcp-server coderag-cli; do
+            test -x "${dir}${name}"
+            test "$(wc -c < "${dir}${name}")" -gt 100000
+            echo "OK $(basename "$dir") ${name} $(wc -c < "${dir}${name}") bytes"
+            file "${dir}${name}" || true
+          done
         done
 
         # Sync platform package versions to mcp-server (covers version-PR path

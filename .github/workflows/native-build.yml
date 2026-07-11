@@ -80,21 +80,24 @@ jobs:
         run: |
           set -euo pipefail
           cargo build --release -p coderag-mcp-server -p coderag-cli --target ${{ matrix.settings.target }}
-          BIN="target/${{ matrix.settings.target }}/release/coderag-mcp-server"
-          test -f "$BIN"
-          chmod +x "$BIN"
-          file "$BIN" || true
-          # Fail-closed: binary must be non-trivial
-          test "$(wc -c < "$BIN")" -gt 100000
           mkdir -p "native-out"
-          cp "$BIN" "native-out/coderag-mcp-server"
-          chmod +x "native-out/coderag-mcp-server"
+          for name in coderag-mcp-server coderag-cli; do
+            BIN="target/${{ matrix.settings.target }}/release/${name}"
+            test -f "$BIN"
+            chmod +x "$BIN"
+            file "$BIN" || true
+            # Fail-closed: binary must be non-trivial
+            test "$(wc -c < "$BIN")" -gt 100000
+            cp "$BIN" "native-out/${name}"
+            chmod +x "native-out/${name}"
+          done
+          ls -la native-out
 
       - name: Upload native artifact
         uses: actions/upload-artifact@v4
         with:
           name: coderag-native-${{ matrix.settings.target }}
-          path: native-out/coderag-mcp-server
+          path: native-out/
           if-no-files-found: error
           retention-days: 14
 
@@ -125,18 +128,23 @@ jobs:
           for dir in packages/mcp-server/npm/*/; do
             echo "== $dir =="
             ls -la "$dir"
-            test -x "${dir}coderag-mcp-server"
-            file "${dir}coderag-mcp-server" || true
+            for name in coderag-mcp-server coderag-cli; do
+              test -x "${dir}${name}"
+              file "${dir}${name}" || true
+            done
           done
 
       - name: Arch-aware wrapper smoke (host linux x64)
         run: |
           set -euo pipefail
           chmod +x bin/coderag-mcp packages/mcp-server/bin/coderag-mcp
-          # Stage host binary into bin/native from linux-x64 package for local path smoke
-          mkdir -p bin/native
-          cp packages/mcp-server/npm/linux-x64-gnu/coderag-mcp-server bin/native/
-          chmod +x bin/native/coderag-mcp-server
+          # Stage both host natives into bin/native from linux-x64 package
+          mkdir -p bin/native packages/mcp-server/bin/native
+          for name in coderag-mcp-server coderag-cli; do
+            cp "packages/mcp-server/npm/linux-x64-gnu/${name}" "bin/native/${name}"
+            cp "packages/mcp-server/npm/linux-x64-gnu/${name}" "packages/mcp-server/bin/native/${name}"
+            chmod +x "bin/native/${name}" "packages/mcp-server/bin/native/${name}"
+          done
           # Wrapper should resolve staged native and fail-closed without TS
           timeout 3s bin/coderag-mcp --help >/tmp/coderag-help.txt 2>&1 || true
           # Binary may not support --help; ensure we did not print TS fallback message
@@ -145,7 +153,18 @@ jobs:
             cat /tmp/coderag-help.txt
             exit 1
           fi
-          # Direct exec of assembled linux binary
+          # Direct exec of assembled linux binary + doctor must resolve sibling CLI
           timeout 2s packages/mcp-server/npm/linux-x64-gnu/coderag-mcp-server --help >/dev/null 2>&1 || true
           test -x packages/mcp-server/npm/linux-x64-gnu/coderag-mcp-server
-          echo "PASS: multi-arch assemble + wrapper smoke"
+          test -x packages/mcp-server/npm/linux-x64-gnu/coderag-cli
+          doctor_out="$(packages/mcp-server/npm/linux-x64-gnu/coderag-mcp-server doctor 2>&1 || true)"
+          echo "$doctor_out"
+          if ! printf '%s' "$doctor_out" | grep -q 'engine cli: .*/coderag-cli'; then
+            echo "FAIL: doctor did not resolve sibling coderag-cli from platform package"
+            exit 1
+          fi
+          if printf '%s' "$doctor_out" | grep -qi 'engine cli: unavailable'; then
+            echo "FAIL: engine cli unavailable after packaging both natives"
+            exit 1
+          fi
+          echo "PASS: multi-arch assemble + wrapper smoke + sibling CLI resolve"

@@ -22,9 +22,11 @@ jobs:
       fail-fast: false
       matrix:
         settings:
+          # Both Darwin targets on macos-latest; x86_64 is cross-compiled.
+          # macos-13 Intel runners often queue indefinitely.
           - host: macos-latest
             target: aarch64-apple-darwin
-          - host: macos-13
+          - host: macos-latest
             target: x86_64-apple-darwin
           - host: ubuntu-24.04
             target: x86_64-unknown-linux-gnu

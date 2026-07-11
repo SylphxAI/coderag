@@ -82,7 +82,20 @@
           ],
           "differentialReRunClaimed": false,
           "differentialHonesty": "Prior main_durable differential_green remains bound at 8fd7a45 (tick023). This packet does not invent a new differential_green case proof for 7e3d79c."
-        }
+        },
+        "proofInputDigest": "09cc95513ba6631c788284a5c1423b5f6c51632b356437934d471efdd265d50a",
+        "proofInputDigestFields": {
+          "tsClosure": null,
+          "rustClosure": "17cc41dffde0c29da227d544c337168d9f962ce92f938930bebe06d078c211e5",
+          "contracts": null,
+          "config": null,
+          "deps": "ee696b1081881a540a5e83e93d5387379a4ff593e0143aa57e87f124b48447ff",
+          "fixtures": "5d3ddb2611fb2543638e75c2f285051835426db22d488d04df21971df5e11650",
+          "harness": "bacdef114be0f471b4668181862953369c568a67cffa2671758769de1460673e",
+          "deploySpecs": "d2c88d34ad7740cbeb1bc1f2d0041a810b4ce78648a4bfba5d527df8a37e7629"
+        },
+        "proofInputDigestVersion": 1,
+        "proofInputDigestBoundSha": "0ef0ce514fae2e8b3378cb7022336410d63b7f99"
       },
       "promotionHold": {
         "active": false,
@@ -146,7 +159,20 @@
           ],
           "differentialReRunClaimed": false,
           "differentialHonesty": "Prior main_durable differential_green remains bound at 8fd7a45 (tick023). This packet does not invent a new differential_green case proof for 7e3d79c."
-        }
+        },
+        "proofInputDigest": "22f4d89be85f29e316d31f238ca2cfe511951c39528cbc45627aecb7fa1d2b77",
+        "proofInputDigestFields": {
+          "tsClosure": null,
+          "rustClosure": "be7856b730f65258a00be4de6edd4e26ebd1863f433819dc2bc396a3db47e87e",
+          "contracts": null,
+          "config": null,
+          "deps": "148017ae4f435ed01a01c3ed1666d3a75f4917a55f3877e3c98eb846f0aafec8",
+          "fixtures": "5d3ddb2611fb2543638e75c2f285051835426db22d488d04df21971df5e11650",
+          "harness": "a2c612d81f8d968685affe13afe05a9250226481ddce01cc5397e29088350c51",
+          "deploySpecs": "d2c88d34ad7740cbeb1bc1f2d0041a810b4ce78648a4bfba5d527df8a37e7629"
+        },
+        "proofInputDigestVersion": 1,
+        "proofInputDigestBoundSha": "0ef0ce514fae2e8b3378cb7022336410d63b7f99"
       },
       "promotionHold": {
         "active": false,
@@ -208,7 +234,20 @@
           ],
           "differentialReRunClaimed": false,
           "differentialHonesty": "Prior main_durable differential_green remains bound at 8fd7a45 (tick023). This packet does not invent a new differential_green case proof for 7e3d79c."
-        }
+        },
+        "proofInputDigest": "ebc20a3796562e161be70f54ee32e397dc8b2ffcbfa7833bf4311f49618df157",
+        "proofInputDigestFields": {
+          "tsClosure": "e99668b57f6915120dbd171a311eeacbd318443e9319c3dcdcfe9ff510da4b58",
+          "rustClosure": null,
+          "contracts": null,
+          "config": null,
+          "deps": "cf93e4eb20389be6b7fef3f9e3cc8d5d4d3009ab508180e72fbe22bc5312c726",
+          "fixtures": null,
+          "harness": "437d949e59e010f5f5160baac4a3f106091102f9f9326f0c8fb7dfb2462e1d27",
+          "deploySpecs": "d2c88d34ad7740cbeb1bc1f2d0041a810b4ce78648a4bfba5d527df8a37e7629"
+        },
+        "proofInputDigestVersion": 1,
+        "proofInputDigestBoundSha": "0ef0ce514fae2e8b3378cb7022336410d63b7f99"
       },
       "promotionHold": {
         "active": false,
@@ -268,7 +307,20 @@
           ],
           "differentialReRunClaimed": false,
           "differentialHonesty": "Prior main_durable differential_green remains bound at 8fd7a45 (tick023). This packet does not invent a new differential_green case proof for 7e3d79c."
-        }
+        },
+        "proofInputDigest": "5dd3854bdf241b0897f2862b2326f3f539629c568c5dcb935b112ef077b4abc8",
+        "proofInputDigestFields": {
+          "tsClosure": "1f961f4ac73bd51ca9d72d93bf2af469a549544f7ad3deb4f9dde657f070c6fb",
+          "rustClosure": "ed071b661fcc4f3a5c74bcb11ba784b404d740ecaae8f2e30d15064cfc784dc8",
+          "contracts": null,
+          "config": null,
+          "deps": "3549c3621d6f76a15c7d5306d81fa477df44871cd043ca73515bf953c2d6a30d",
+          "fixtures": "5d3ddb2611fb2543638e75c2f285051835426db22d488d04df21971df5e11650",
+          "harness": "a2c612d81f8d968685affe13afe05a9250226481ddce01cc5397e29088350c51",
+          "deploySpecs": "d2c88d34ad7740cbeb1bc1f2d0041a810b4ce78648a4bfba5d527df8a37e7629"
+        },
+        "proofInputDigestVersion": 1,
+        "proofInputDigestBoundSha": "0ef0ce514fae2e8b3378cb7022336410d63b7f99"
       },
       "promotionHold": {
         "active": false,

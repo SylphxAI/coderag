@@ -1,0 +1,151 @@
+name: Native multi-arch
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'crates/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'packages/mcp-server/**'
+      - 'bin/coderag-mcp'
+      - 'scripts/stage-rust-mcp.ts'
+      - 'scripts/assemble-multiarch-natives.ts'
+      - '.github/workflows/native-build.yml'
+      - '.github/workflows/release.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'crates/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'packages/mcp-server/**'
+      - 'bin/coderag-mcp'
+      - 'scripts/stage-rust-mcp.ts'
+      - 'scripts/assemble-multiarch-natives.ts'
+      - '.github/workflows/native-build.yml'
+      - '.github/workflows/release.yml'
+  merge_group:
+    types: [checks_requested]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.ref_name != 'main' }}
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        settings:
+          # Both Darwin targets on macos-latest (arm64 host); x86_64 is
+          # cross-compiled. macos-13 (Intel) runners queue for long periods.
+          - host: macos-latest
+            target: aarch64-apple-darwin
+            platform_key: darwin-arm64
+          - host: macos-latest
+            target: x86_64-apple-darwin
+            platform_key: darwin-x64
+          - host: ubuntu-24.04
+            target: x86_64-unknown-linux-gnu
+            platform_key: linux-x64-gnu
+          - host: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-gnu
+            platform_key: linux-arm64-gnu
+
+    name: Build ${{ matrix.settings.target }}
+    runs-on: ${{ matrix.settings.host }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.settings.target }}
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: native-${{ matrix.settings.target }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            native-${{ matrix.settings.target }}-
+
+      - name: Build release natives
+        run: |
+          set -euo pipefail
+          cargo build --release -p coderag-mcp-server -p coderag-cli --target ${{ matrix.settings.target }}
+          BIN="target/${{ matrix.settings.target }}/release/coderag-mcp-server"
+          test -f "$BIN"
+          chmod +x "$BIN"
+          file "$BIN" || true
+          # Fail-closed: binary must be non-trivial
+          test "$(wc -c < "$BIN")" -gt 100000
+          mkdir -p "native-out"
+          cp "$BIN" "native-out/coderag-mcp-server"
+          chmod +x "native-out/coderag-mcp-server"
+
+      - name: Upload native artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coderag-native-${{ matrix.settings.target }}
+          path: native-out/coderag-mcp-server
+          if-no-files-found: error
+          retention-days: 14
+
+  assemble-check:
+    name: Assemble multi-arch packages
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.12
+
+      - name: Download all native artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: coderag-native-*
+
+      - name: Assemble platform packages (fail-closed)
+        run: bun scripts/assemble-multiarch-natives.ts
+
+      - name: List assembled packages
+        run: |
+          set -euo pipefail
+          for dir in packages/mcp-server/npm/*/; do
+            echo "== $dir =="
+            ls -la "$dir"
+            test -x "${dir}coderag-mcp-server"
+            file "${dir}coderag-mcp-server" || true
+          done
+
+      - name: Arch-aware wrapper smoke (host linux x64)
+        run: |
+          set -euo pipefail
+          chmod +x bin/coderag-mcp packages/mcp-server/bin/coderag-mcp
+          # Stage host binary into bin/native from linux-x64 package for local path smoke
+          mkdir -p bin/native
+          cp packages/mcp-server/npm/linux-x64-gnu/coderag-mcp-server bin/native/
+          chmod +x bin/native/coderag-mcp-server
+          # Wrapper should resolve staged native and fail-closed without TS
+          timeout 3s bin/coderag-mcp --help >/tmp/coderag-help.txt 2>&1 || true
+          # Binary may not support --help; ensure we did not print TS fallback message
+          if grep -qi 'use_ts_transport\|dist/index.js' /tmp/coderag-help.txt; then
+            echo "FAIL: TS fallback path detected"
+            cat /tmp/coderag-help.txt
+            exit 1
+          fi
+          # Direct exec of assembled linux binary
+          timeout 2s packages/mcp-server/npm/linux-x64-gnu/coderag-mcp-server --help >/dev/null 2>&1 || true
+          test -x packages/mcp-server/npm/linux-x64-gnu/coderag-mcp-server
+          echo "PASS: multi-arch assemble + wrapper smoke"

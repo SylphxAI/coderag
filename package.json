@@ -4,7 +4,8 @@
 	"private": true,
 	"description": "Semantic code search with vector embeddings - RAG-ready for AI assistants",
 	"workspaces": [
-		"packages/*"
+		"packages/*",
+		"packages/mcp-server/npm/*"
 	],
 	"bin": {
 		"coderag-mcp": "./bin/coderag-mcp"
@@ -39,7 +40,10 @@
 		"test:http-transport-differential": "bash scripts/run-coderag-differential.sh --slice transport/web-mcp-http",
 		"test:coderag-differential": "bash scripts/run-coderag-differential.sh",
 		"changeset": "changeset",
-		"version": "changeset version",
+		"version": "changeset version && bun scripts/sync-platform-versions.ts",
+		"sync:platform-versions": "bun scripts/sync-platform-versions.ts",
+		"assemble:multiarch": "bun scripts/assemble-multiarch-natives.ts",
+		"verify:multiarch-readback": "bun scripts/verify-multiarch-readback.ts",
 		"release": "echo \"Direct changeset publish is unsafe for workspace packages; use the Sylphx release workflow.\" && exit 1",
 		"typecheck": "turbo typecheck"
 	},

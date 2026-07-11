@@ -22,6 +22,20 @@ Using [Claude Desktop](#with-claude-desktop), [VS Code](#with-vs-code), [Cursor]
 }
 ```
 
+The default `coderag-mcp` bin launches the **Rust rmcp** server only (no TypeScript
+fallback). Platform-native binaries ship as optionalDependencies:
+
+| Platform | Package |
+| --- | --- |
+| macOS Apple Silicon | `@sylphx/coderag-mcp-darwin-arm64` |
+| macOS Intel | `@sylphx/coderag-mcp-darwin-x64` |
+| Linux x64 (glibc) | `@sylphx/coderag-mcp-linux-x64-gnu` |
+| Linux arm64 (glibc) | `@sylphx/coderag-mcp-linux-arm64-gnu` |
+
+npm installs the matching package automatically. If the native is missing or the
+host platform is unsupported, the bin **exits non-zero** (fail-closed). Build
+from source with `bun run build:rust` in a clone, or set `CODERAG_MCP_RUST_BIN`.
+
 ### With Claude Desktop
 
 <details>

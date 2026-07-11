@@ -1,0 +1,30 @@
+{
+	"name": "@sylphx/coderag-mcp-linux-x64-gnu",
+	"version": "0.4.0",
+	"description": "CodeRAG MCP server native binary for linux-x64-gnu",
+	"os": [
+		"linux"
+	],
+	"cpu": [
+		"x64"
+	],
+	"libc": [
+		"glibc"
+	],
+	"files": [
+		"coderag-mcp-server"
+	],
+	"license": "MIT",
+	"publishConfig": {
+		"access": "public",
+		"registry": "https://registry.npmjs.org"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/SylphxAI/coderag.git",
+		"directory": "packages/mcp-server/npm/linux-x64-gnu"
+	},
+	"engines": {
+		"node": ">=18.0.0"
+	}
+}

@@ -2,7 +2,15 @@
 	"$schema": "https://unpkg.com/@changesets/config@3.1.1/schema.json",
 	"changelog": "@changesets/cli/changelog",
 	"commit": false,
-	"fixed": [],
+	"fixed": [
+		[
+			"@sylphx/coderag-mcp",
+			"@sylphx/coderag-mcp-darwin-arm64",
+			"@sylphx/coderag-mcp-darwin-x64",
+			"@sylphx/coderag-mcp-linux-x64-gnu",
+			"@sylphx/coderag-mcp-linux-arm64-gnu"
+		]
+	],
 	"linked": [],
 	"access": "public",
 	"baseBranch": "main",

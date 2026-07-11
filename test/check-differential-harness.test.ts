@@ -72,17 +72,56 @@ describe('coderag differential harness (rej-010)', () => {
 		expect(ledger.summary.authority_rust).toBe(0)
 	})
 
-	it('native packaging stages rmcp + cli binaries for npm publish', () => {
+	it('native packaging stages multi-arch optionalDependencies for npm publish', () => {
 		const stageScript = readText('scripts/stage-rust-mcp.ts')
+		const assembleScript = readText('scripts/assemble-multiarch-natives.ts')
 		const pkg = JSON.parse(readText('packages/mcp-server/package.json')) as {
 			files: string[]
+			optionalDependencies?: Record<string, string>
 		}
 		const pkgBin = readText('packages/mcp-server/bin/coderag-mcp')
+		const releaseWorkflow = readText('.github/workflows/release.yml')
+		const nativeWorkflow = readText('.github/workflows/native-build.yml')
 
+		// Local staging still targets bin/native for monorepo/dev path.
 		expect(stageScript).toContain('packages/mcp-server/bin/native/coderag-mcp-server')
 		expect(stageScript).toContain('packages/mcp-server/bin/native/coderag-cli')
-		expect(pkg.files).toContain('bin/native')
-		// Package-local bin resolves staged native relative to PACKAGE_ROOT (published layout).
+		expect(stageScript).toContain('packages/mcp-server/npm')
+
+		// Published layout: platform optionalDependencies (not a single-arch embedded ELF).
+		expect(pkg.files).toContain('bin')
+		expect(pkg.files).not.toContain('bin/native')
+		expect(pkg.optionalDependencies?.['@sylphx/coderag-mcp-darwin-arm64']).toBeTruthy()
+		expect(pkg.optionalDependencies?.['@sylphx/coderag-mcp-darwin-x64']).toBeTruthy()
+		expect(pkg.optionalDependencies?.['@sylphx/coderag-mcp-linux-x64-gnu']).toBeTruthy()
+		expect(pkg.optionalDependencies?.['@sylphx/coderag-mcp-linux-arm64-gnu']).toBeTruthy()
+
+		for (const platform of ['darwin-arm64', 'darwin-x64', 'linux-x64-gnu', 'linux-arm64-gnu']) {
+			const platformPkg = JSON.parse(readText(`packages/mcp-server/npm/${platform}/package.json`)) as {
+				name: string
+				os: string[]
+				cpu: string[]
+				files: string[]
+			}
+			expect(platformPkg.name).toBe(`@sylphx/coderag-mcp-${platform}`)
+			expect(platformPkg.files).toContain('coderag-mcp-server')
+			expect(platformPkg.os.length).toBeGreaterThan(0)
+			expect(platformPkg.cpu.length).toBeGreaterThan(0)
+		}
+
+		// Package-local bin is arch-aware: optionalDeps first, then staged native, fail-closed.
+		expect(pkgBin).toContain('resolve_rust_bin')
+		expect(pkgBin).toContain('is_runnable_native')
+		expect(pkgBin).toContain('@sylphx/coderag-mcp-darwin-arm64')
 		expect(pkgBin).toContain('bin/native/coderag-mcp-server')
+		expect(pkgBin).not.toContain('use_ts_transport')
+
+		expect(assembleScript).toContain('Fail-closed')
+		expect(assembleScript).toContain('darwin-arm64')
+		expect(assembleScript).toContain('linux-x64-gnu')
+		expect(releaseWorkflow).toContain('coderag-native-')
+		expect(releaseWorkflow).toContain('assemble-multiarch-natives')
+		expect(nativeWorkflow).toContain('aarch64-apple-darwin')
+		expect(nativeWorkflow).toContain('x86_64-unknown-linux-gnu')
 	})
 })

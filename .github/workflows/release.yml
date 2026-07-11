@@ -4,19 +4,87 @@ on:
   push:
     branches: [main]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  actions: write
+  contents: write
+  id-token: write
+  pull-requests: write
+
 jobs:
+  # Multi-arch native matrix (GitHub-hosted). Fail-closed: all targets required
+  # before the publish job can assemble optionalDependency packages.
+  build-natives:
+    strategy:
+      fail-fast: false
+      matrix:
+        settings:
+          # Both Darwin targets on macos-latest; x86_64 is cross-compiled.
+          # macos-13 Intel runners often queue indefinitely.
+          - host: macos-latest
+            target: aarch64-apple-darwin
+          - host: macos-latest
+            target: x86_64-apple-darwin
+          - host: ubuntu-24.04
+            target: x86_64-unknown-linux-gnu
+          - host: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-gnu
+
+    name: Native ${{ matrix.settings.target }}
+    runs-on: ${{ matrix.settings.host }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.settings.target }}
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: release-native-${{ matrix.settings.target }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            release-native-${{ matrix.settings.target }}-
+
+      - name: Build release natives
+        run: |
+          set -euo pipefail
+          cargo build --release -p coderag-mcp-server -p coderag-cli --target ${{ matrix.settings.target }}
+          BIN="target/${{ matrix.settings.target }}/release/coderag-mcp-server"
+          test -f "$BIN"
+          chmod +x "$BIN"
+          file "$BIN" || true
+          test "$(wc -c < "$BIN")" -gt 100000
+          mkdir -p native-out
+          cp "$BIN" native-out/coderag-mcp-server
+          chmod +x native-out/coderag-mcp-server
+
+      - name: Upload native artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coderag-native-${{ matrix.settings.target }}
+          path: native-out/coderag-mcp-server
+          if-no-files-found: error
+          retention-days: 7
+
   release:
-    permissions:
-      actions: write
-      contents: write
-      id-token: write
-      pull-requests: write
+    needs: build-natives
     uses: SylphxAI/.github/.github/workflows/release.yml@main
     with:
-      # Rebuild TS packages + stage linux x86_64 Rust MCP natives for the published
-      # tarball (self-hosted release runner is sylphx linux/standard). Multi-arch
-      # optionalDependencies remain a follow-up residual.
-      build: |
+      # When artifact is set, reusable workflow skips the default build step and
+      # downloads coderag-native-* into artifacts/. prepublish rebuilds TS,
+      # assembles platform packages (fail-closed all arches), and prepares bins.
+      artifact: 'coderag-native-*'
+      prepublish: |
         set -euo pipefail
         if ! command -v rustc >/dev/null 2>&1; then
           if [ -f "$HOME/.cargo/env" ]; then
@@ -30,12 +98,41 @@ jobs:
           . "$HOME/.cargo/env"
         fi
         export PATH="${HOME}/.cargo/bin:${PATH}"
+
+        echo "== multi-arch artifacts =="
+        ls -laR artifacts || true
+
         bun run build
-        bun run build:rust
-        chmod +x packages/mcp-server/bin/coderag-mcp packages/mcp-server/bin/native/coderag-mcp-server packages/mcp-server/bin/native/coderag-cli
-        test -x packages/mcp-server/bin/native/coderag-mcp-server
+        bun scripts/assemble-multiarch-natives.ts
+
+        # Keep host-path staging for local-style layout inside the published
+        # package (optional); primary consumer path is optionalDependencies.
+        # Stage linux x64 into bin/native as a documented linux fallback when
+        # the optional dep package is present alongside.
+        mkdir -p packages/mcp-server/bin/native bin/native
+        if [ -f packages/mcp-server/npm/linux-x64-gnu/coderag-mcp-server ]; then
+          cp packages/mcp-server/npm/linux-x64-gnu/coderag-mcp-server packages/mcp-server/bin/native/coderag-mcp-server
+          cp packages/mcp-server/npm/linux-x64-gnu/coderag-mcp-server bin/native/coderag-mcp-server
+          chmod +x packages/mcp-server/bin/native/coderag-mcp-server bin/native/coderag-mcp-server
+        fi
+
+        chmod +x packages/mcp-server/bin/coderag-mcp bin/coderag-mcp
         test -x packages/mcp-server/bin/coderag-mcp
-        test -s packages/mcp-server/bin/native/coderag-mcp-server
-        file packages/mcp-server/bin/native/coderag-mcp-server || true
-        head -n 5 packages/mcp-server/bin/coderag-mcp
+        head -n 8 packages/mcp-server/bin/coderag-mcp
+
+        # Fail-closed: every platform package must contain a runnable binary
+        for dir in packages/mcp-server/npm/*/; do
+          test -f "${dir}package.json"
+          test -x "${dir}coderag-mcp-server"
+          test "$(wc -c < "${dir}coderag-mcp-server")" -gt 100000
+          echo "OK $(basename "$dir") $(wc -c < "${dir}coderag-mcp-server") bytes"
+          file "${dir}coderag-mcp-server" || true
+        done
+
+        # Sync platform package versions to mcp-server (covers version-PR path
+        # when fixed group already aligned them).
+        bun scripts/sync-platform-versions.ts
+      postpublish: |
+        set -euo pipefail
+        bun scripts/verify-multiarch-readback.ts
     secrets: inherit

@@ -402,9 +402,11 @@
 	},
 	"adrRefs": [
 		{
-			"path": "docs/adr/ADR-PROPOSED-coderag-rust-mcp-north-star.md",
+			"path": "docs/adr/ADR-81-coderag-rust-mcp-north-star.md",
 			"status": "accepted",
-			"note": "CODERAG-TS-DELETED-ADMISSION-TICK023: North Star ADR introduce; renumber ADR#=PR# on merge (Doctrine)."
+			"adrPrNumber": 81,
+			"adrPrNumberValid": true,
+			"note": "CODERAG-TS-DELETED-ADMISSION-TICK023: North Star ADR-81 accepted via PR #81 (Doctrine ADR#=PR#)."
 		}
 	]
 }

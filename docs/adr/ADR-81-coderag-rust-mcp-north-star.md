@@ -1,8 +1,8 @@
-# ADR-PROPOSED — CodeRAG Rust MCP North Star + ts_deleted admission
+# ADR-81 — CodeRAG Rust MCP North Star + ts_deleted admission
 
 - **Status:** Accepted
 - **Date:** 2026-07-11
-- **Accepted via:** PR pending (Doctrine ADR# = introducing PR#; renumber after PR open)
+- **Accepted via:** PR #81 (Doctrine ADR#=introducing PR#)
 - **Packet:** `CODERAG-TS-DELETED-ADMISSION-TICK023`
 - **Relates to:** ADR-66 (MCP family SOTA roadmap), fleet COMPLETION-STANDARD, rej-010/011
 - **Change class:** `required` for CodeRAG MCP cutover ledger; `advisory` for fleet

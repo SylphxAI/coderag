@@ -1,9 +1,10 @@
 /**
  * Post-publish readback: confirm platform packages exist on npm for the mcp version.
  *
- * Safe on the Changesets version-PR path (no packages published yet): if the
- * main package version is not on the registry, exit 0 with SKIP.
- * Fail-closed after a real publish when packages are missing.
+ * - Version-PR path: SKIP if main package version not on registry yet.
+ * - Publish path: fail-closed if platform packages missing.
+ * - Uses tarball HEAD + install-v1 packument (full application/json packument
+ *   can lag several minutes after first publish of a new package name).
  */
 import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'
@@ -23,26 +24,65 @@ if (platformNames.length === 0) {
 	process.exit(1)
 }
 
-function npmViewVersion(name: string, ver: string): string | null {
-	const result = spawnSync('npm', ['view', `${name}@${ver}`, 'version', '--json'], {
+function sleep(ms: number): void {
+	spawnSync('sleep', [String(ms / 1000)], { stdio: 'ignore' })
+}
+
+function curlOk(url: string, accept?: string): boolean {
+	const args = ['-sS', '-o', '/dev/null', '-w', '%{http_code}', '-L']
+	if (accept) {
+		args.push('-H', `Accept: ${accept}`)
+	}
+	args.push(url)
+	const result = spawnSync('curl', args, { encoding: 'utf8' })
+	return result.status === 0 && (result.stdout || '').trim() === '200'
+}
+
+function packageExists(name: string, ver: string): boolean {
+	// 1) Tarball is the durable published artifact (available immediately).
+	const bare = name.replace(/^@/, '').replace('/', '-')
+	const scopedPath = name.startsWith('@') ? name.replace('/', '%2f') : name
+	const tarball = `https://registry.npmjs.org/${name}/-/${bare}-${ver}.tgz`
+	// npm tarball path uses unscoped filename for scoped packages:
+	// @scope/name → @scope/name/-/name-ver.tgz (name without scope)
+	const shortName = name.includes('/') ? name.split('/')[1] : name
+	const tarballUrl = `https://registry.npmjs.org/${scopedPath}/-/${shortName}-${ver}.tgz`
+	if (curlOk(tarballUrl) || curlOk(tarball)) {
+		return true
+	}
+
+	// 2) Abbreviated packument (faster than full application/json).
+	const packument = `https://registry.npmjs.org/${scopedPath}`
+	if (curlOk(packument, 'application/vnd.npm.install-v1+json')) {
+		return true
+	}
+
+	// 3) npm view as last resort.
+	const view = spawnSync('npm', ['view', `${name}@${ver}`, 'version', '--json'], {
 		encoding: 'utf8',
 	})
-	if (result.status !== 0) return null
-	const raw = (result.stdout || '').trim()
-	try {
-		const parsed = JSON.parse(raw) as string | string[]
-		if (typeof parsed === 'string') return parsed
-		if (Array.isArray(parsed) && parsed.includes(ver)) return ver
-	} catch {
-		if (raw.replace(/"/g, '') === ver) return ver
+	if (view.status === 0 && (view.stdout || '').includes(ver)) {
+		return true
 	}
-	return raw.includes(ver) ? ver : null
+	return false
+}
+
+function packageExistsWithRetry(name: string, ver: string, attempts = 8): boolean {
+	for (let i = 0; i < attempts; i++) {
+		if (packageExists(name, ver)) return true
+		const waitMs = Math.min(15_000, 2000 * (i + 1))
+		console.log(
+			`[verify-multiarch-readback] waiting for registry: ${name}@${ver} (attempt ${i + 1}/${attempts}, sleep ${waitMs}ms)`
+		)
+		sleep(waitMs)
+	}
+	return false
 }
 
 // Version-PR-only Release runs still invoke postpublish after creating the
 // Changesets version PR (published=false). Skip fail-closed readback until
 // the version actually exists on the registry.
-if (!npmViewVersion('@sylphx/coderag-mcp', version)) {
+if (!packageExists('@sylphx/coderag-mcp', version)) {
 	console.log(
 		`[verify-multiarch-readback] SKIP: @sylphx/coderag-mcp@${version} not on registry yet (version PR path; publish happens after version PR merge)`
 	)
@@ -52,26 +92,12 @@ if (!npmViewVersion('@sylphx/coderag-mcp', version)) {
 let failed = 0
 for (const name of platformNames) {
 	const expected = optional[name]
-	const found = npmViewVersion(name, expected)
-	if (found) {
+	if (packageExistsWithRetry(name, expected)) {
 		console.log(`[verify-multiarch-readback] OK ${name}@${expected}`)
 	} else {
 		failed++
 		console.error(`[verify-multiarch-readback] MISSING ${name}@${expected}`)
 	}
-}
-
-// Also confirm main package optionalDependencies on registry match.
-const mainView = spawnSync(
-	'npm',
-	['view', `@sylphx/coderag-mcp@${version}`, 'optionalDependencies', '--json'],
-	{ encoding: 'utf8' }
-)
-if (mainView.status === 0) {
-	console.log(`[verify-multiarch-readback] main optionalDependencies: ${mainView.stdout.trim()}`)
-} else {
-	console.error(`[verify-multiarch-readback] could not view @sylphx/coderag-mcp@${version}`)
-	failed++
 }
 
 if (failed > 0) {

@@ -1,5 +1,16 @@
 # @sylphx/codebase-search-mcp
 
+## 0.4.0
+
+### Minor Changes
+
+- 4a6973c: Ship Rust-default MCP consumer packaging: fail-closed `coderag-mcp` launcher, staged `bin/native` rmcp server, and restore the Release workflow so npm can publish a SHA-bound artifact from main.
+
+### Patch Changes
+
+- Updated dependencies [4a6973c]
+  - @sylphx/coderag@0.1.25
+
 ## 0.3.33 (2025-12-18)
 
 ### 🐛 Bug Fixes
@@ -200,7 +211,7 @@
 
 ### 🐛 Bug Fixes
 
-- **mcp-server:** use ^0.1.5 for @sylphx/coderag to fix workspace:* resolution ([9ba44b7](https://github.com/SylphxAI/coderag/commit/9ba44b713c76ee54775752d447a5683b9368f72e))
+- **mcp-server:** use ^0.1.5 for @sylphx/coderag to fix workspace:\* resolution ([9ba44b7](https://github.com/SylphxAI/coderag/commit/9ba44b713c76ee54775752d447a5683b9368f72e))
 - simplify prepack to just build own package ([87a7e95](https://github.com/SylphxAI/coderag/commit/87a7e951219554b8a42ee7c6b61965fe264c0fa8))
 
 ## 0.3.2 (2025-11-27)
@@ -215,7 +226,7 @@
 ### 🐛 Bug Fixes
 
 - remove prepack scripts - let bump handle builds ([cfeebc7](https://github.com/SylphxAI/coderag/commit/cfeebc78d09903d8a920c002ad00c4177f45e537))
-- **mcp-server:** revert to workspace:* for co-release with core ([1b3f62b](https://github.com/SylphxAI/coderag/commit/1b3f62b71d911171bb22922887743162b2a075ee))
+- **mcp-server:** revert to workspace:\* for co-release with core ([1b3f62b](https://github.com/SylphxAI/coderag/commit/1b3f62b71d911171bb22922887743162b2a075ee))
 - **mcp-server:** build core package before mcp-server in prepack ([7ea0c64](https://github.com/SylphxAI/coderag/commit/7ea0c64a16a41ca35a010f0d73911bb5791d2326))
 - **mcp-server:** use workspace:^ for @sylphx/coderag dependency ([cb73c7b](https://github.com/SylphxAI/coderag/commit/cb73c7baeb682e856c3463f05a25f7bdb5836b9e))
 - **mcp-server:** require @sylphx/coderag@^0.1.3 for LanceDB support (#5) ([2983c4e](https://github.com/SylphxAI/coderag/commit/2983c4e0d039359d13ba59d7777a22eec25cdda6))
@@ -274,42 +285,50 @@
   ## Core Features
 
   ### Hybrid Search Engine
+
   - **TF-IDF Search**: Fast keyword-based search with relevance scoring
   - **Vector Search**: Semantic search using embeddings (HNSW algorithm)
   - **Hybrid Ranking**: Weighted combination for best results
 
   ### Performance
+
   - **2.7x faster** initial indexing vs traditional approaches
   - **166x faster** incremental updates
   - **100x faster** cached queries
 
   ### Code Tokenization
+
   - StarCoder2-based tokenizer for code understanding
   - Handles camelCase, snake_case, code identifiers
   - Lightweight fallback tokenizer (no model download required)
 
   ### Embedding Provider Support
+
   - OpenAI (official)
   - OpenAI-compatible (OpenRouter, Together AI, Fireworks AI, Ollama)
   - Extensible provider registry for custom implementations
   - Mock provider for testing
 
   ### Persistent Storage
+
   - SQLite-based metadata and index storage
   - Atomic batch operations
   - Incremental update engine
 
   ### MCP Server
+
   - Model Context Protocol integration
   - RAG-ready for AI assistants
   - Search tools and index management
 
   ## Architecture
+
   - Pure functional design
   - Registry Pattern for extensibility
   - Comprehensive test coverage (396 tests passing)
 
   ## Packages
+
   - **@sylphx/coderag**: Core search library
   - **@sylphx/coderag-mcp**: MCP server for AI integration
 
@@ -328,53 +347,63 @@
   ## Core Features
 
   ### TF-IDF Search Engine
+
   - Pure functional TF-IDF implementation
   - Incremental updates (166x faster than full rebuild)
   - Keyword-based search with relevance scoring
 
   ### Vector Search (Semantic)
+
   - HNSW algorithm for approximate nearest neighbor search
   - OpenAI embeddings integration via Vercel AI SDK
   - Persistent vector index storage
 
   ### Hybrid Search
+
   - Weighted combination of TF-IDF + Vector search
   - Configurable search strategies (keyword/semantic/hybrid)
   - LRU cache for query optimization (100x faster cached queries)
 
   ### Code Tokenization
+
   - StarCoder2-based tokenizer for improved code understanding
   - Handles camelCase, snake_case, and code identifiers
   - Lightweight fallback tokenizer (no model download required)
 
   ### Embedding Provider Support
+
   - OpenAI (official)
   - OpenAI-compatible (OpenRouter, Together AI, Fireworks AI, Ollama)
   - Extensible provider registry for custom implementations
   - Mock provider for testing
 
   ### Persistent Storage
+
   - SQLite-based file metadata and index storage
   - Atomic batch operations
   - Migration system for schema updates
 
   ### MCP Server
+
   - Model Context Protocol integration
   - Search tools for AI assistants
   - Index management commands
 
   ## Performance
+
   - **2.7x faster** initial indexing vs Flow
   - **166x faster** incremental updates vs Flow
   - **100x faster** cached queries vs Flow
 
   ## Architecture
+
   - Pure functional design
   - Registry Pattern for extensibility
   - Zero external dependencies for core TF-IDF
   - Comprehensive test coverage (396 tests passing)
 
   ## Documentation
+
   - Architecture guides (ARCHITECTURE_EMBEDDINGS.md)
   - Custom provider examples (CUSTOM_PROVIDER_EXAMPLE.md)
   - Provider configuration guide (EMBEDDING_PROVIDERS.md)

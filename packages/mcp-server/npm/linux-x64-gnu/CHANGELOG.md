@@ -1,5 +1,11 @@
 # @sylphx/coderag-mcp-linux-x64-gnu
 
+## 0.4.2
+
+### Patch Changes
+
+- 1d37704: Ship `coderag-cli` alongside `coderag-mcp-server` in multi-arch platform optionalDependency packages so clean npm install can complete `tools/call codebase_search` without a monorepo Rust build. cli_bridge resolves sibling CLI next to the MCP native binary.
+
 ## 0.4.1
 
 ### Patch Changes

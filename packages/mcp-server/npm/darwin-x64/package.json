@@ -1,6 +1,6 @@
 {
 	"name": "@sylphx/coderag-mcp-darwin-x64",
-	"version": "0.4.1",
+	"version": "0.4.2",
 	"description": "CodeRAG MCP server + CLI native binaries for darwin-x64",
 	"os": [
 		"darwin"

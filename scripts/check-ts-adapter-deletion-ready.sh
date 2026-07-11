@@ -48,11 +48,11 @@ http = next(
     (cap for cap in ledger.get("capabilities", []) if cap.get("id") == "transport/web-mcp-http"),
     None,
 )
-rust_authority_states = {"rust_impl", "authority_rust"}
+rust_authority_states = {"rust_impl", "authority_rust", "ts_deleted"}
 if http is None or http.get("state") not in rust_authority_states:
     state = http.get("state") if http else "missing"
     print(
-        f"[check-ts-adapter-deleted] transport/web-mcp-http is {state}; expected rust_impl or authority_rust",
+        f"[check-ts-adapter-deleted] transport/web-mcp-http is {state}; expected rust_impl, authority_rust, or ts_deleted",
         file=sys.stderr,
     )
     sys.exit(1)

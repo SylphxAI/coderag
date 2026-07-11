@@ -43,7 +43,7 @@ describe('check-no-ts-codebase-search gate', () => {
 		expect(existsSync(path.join(repoRoot, 'packages/mcp-server/src/index.ts'))).toBe(false)
 	})
 
-	it('migration ledger records tool/codebase_search rust_impl with hard gate evidence (rej-010)', () => {
+	it('migration ledger records tool/codebase_search as ts_deleted with hard gate evidence (tick023)', () => {
 		const ledger = JSON.parse(readText('docs/specs/coderag-migration-ledger.json')) as {
 			capabilities: Array<{
 				id: string
@@ -53,22 +53,31 @@ describe('check-no-ts-codebase-search gate', () => {
 				proof?: { status: string }
 				differentialTest?: string
 			}>
-			summary: { rust_impl: number; authority_rust: number; parity_proven: number }
+			summary: {
+				rust_impl: number
+				authority_rust: number
+				parity_proven: number
+				ts_deleted: number
+				completion_progress: number
+			}
 			slices: Record<string, { status: string }>
 		}
 
 		const codebaseSearch = ledger.capabilities.find((cap) => cap.id === 'tool/codebase_search')
 		const admittedProof = new Set(['missing', 'differential_green', 'canary_green', 'caught_up'])
-		expect(codebaseSearch?.state).toBe('rust_impl')
+		expect(codebaseSearch?.state).toBe('ts_deleted')
 		expect(admittedProof.has(codebaseSearch?.proof?.status ?? '')).toBe(true)
+		expect(codebaseSearch?.proof?.status).toBe('canary_green')
 		expect(codebaseSearch?.parityTest).toContain('scripts/check-no-ts-codebase-search.sh')
 		expect(codebaseSearch?.parityTest).toContain('test/check-no-ts-codebase-search.test.ts')
 		expect(codebaseSearch?.differentialTest).toContain('tool_codebase_search_differential_matches_ts_oracle')
-		expect(codebaseSearch?.notes).toContain('Cycle29')
-		expect(ledger.summary.rust_impl).toBe(3)
+		expect(codebaseSearch?.notes).toContain('S4')
+		expect(ledger.summary.rust_impl).toBe(0)
 		expect(ledger.summary.authority_rust).toBe(0)
 		expect(ledger.summary.parity_proven).toBe(0)
-		expect(['harness_landed', 'canary_green_admitted']).toContain(ledger.slices.S4?.status)
+		expect(ledger.summary.ts_deleted).toBe(4)
+		expect(ledger.summary.completion_progress).toBe(1.0)
+		expect(['harness_landed', 'canary_green_admitted', 'ts_deleted_admitted']).toContain(ledger.slices.S4?.status)
 	})
 
 	it('golden parity harnesses prove codebase_search baseline over stdio and HTTP', () => {

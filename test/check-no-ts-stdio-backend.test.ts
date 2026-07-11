@@ -43,7 +43,7 @@ describe('check-no-ts-stdio-backend gate', () => {
 		expect(existsSync(path.join(repoRoot, 'packages/mcp-server/dist/index.js'))).toBe(false)
 	})
 
-	it('migration ledger marks transport/stdio-rust-rmcp as rust_impl (rej-010)', () => {
+	it('migration ledger marks transport/stdio-rust-rmcp as ts_deleted (tick023 admission)', () => {
 		const ledger = JSON.parse(readText('docs/specs/coderag-migration-ledger.json')) as {
 			reauditRef?: string
 			capabilities: Array<{
@@ -52,7 +52,14 @@ describe('check-no-ts-stdio-backend gate', () => {
 				notes?: string
 				proof?: { status: string }
 			}>
-			summary: { rust_impl: number; authority_rust: number; parity_proven: number; authority_progress: number }
+			summary: {
+				rust_impl: number
+				authority_rust: number
+				parity_proven: number
+				authority_progress: number
+				ts_deleted: number
+				completion_progress: number
+			}
 			slices: Record<string, { status: string }>
 		}
 
@@ -60,15 +67,18 @@ describe('check-no-ts-stdio-backend gate', () => {
 		const tsAdapter = ledger.capabilities.find((cap) => cap.id === 'transport/stdio-ts-adapter')
 		const admittedProof = new Set(['missing', 'differential_green', 'canary_green', 'caught_up'])
 		expect(ledger.reauditRef).toBe('rej-010')
-		expect(stdioRust?.state).toBe('rust_impl')
+		expect(stdioRust?.state).toBe('ts_deleted')
 		expect(admittedProof.has(stdioRust?.proof?.status ?? '')).toBe(true)
-		expect(stdioRust?.notes).toContain('Cycle29')
+		expect(stdioRust?.proof?.status).toBe('canary_green')
+		expect(stdioRust?.notes).toContain('S5')
 		expect(tsAdapter?.state).toBe('ts_deleted')
-		expect(ledger.summary.rust_impl).toBe(3)
+		expect(ledger.summary.rust_impl).toBe(0)
 		expect(ledger.summary.authority_rust).toBe(0)
 		expect(ledger.summary.parity_proven).toBe(0)
-		expect(ledger.summary.authority_progress).toBe(0)
-		expect(['harness_landed', 'canary_green_admitted']).toContain(ledger.slices.S5?.status)
+		expect(ledger.summary.ts_deleted).toBe(4)
+		expect(ledger.summary.completion_progress).toBe(1.0)
+		expect(ledger.summary.authority_progress).toBe(1.0)
+		expect(['harness_landed', 'canary_green_admitted', 'ts_deleted_admitted']).toContain(ledger.slices.S5?.status)
 	})
 
 	it('golden parity harness proves codebase_search baseline over rmcp stdio', () => {

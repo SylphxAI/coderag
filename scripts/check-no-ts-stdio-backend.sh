@@ -89,19 +89,19 @@ if stdio_rust is None:
 if ts_adapter is None:
     print("[check-no-ts-stdio-backend] missing capability transport/stdio-ts-adapter", file=sys.stderr)
     sys.exit(1)
-rust_authority_states = {"rust_impl", "authority_rust"}
+rust_authority_states = {"rust_impl", "authority_rust", "ts_deleted"}
 if stdio_rust.get("state") not in rust_authority_states:
     print(
-        f"[check-no-ts-stdio-backend] transport/stdio-rust-rmcp is {stdio_rust.get('state')}; expected rust_impl (rej-010) or authority_rust",
+        f"[check-no-ts-stdio-backend] transport/stdio-rust-rmcp is {stdio_rust.get('state')}; expected rust_impl, authority_rust, or ts_deleted",
         file=sys.stderr,
     )
     sys.exit(1)
-allowed_rust_impl_proof = {"missing", "differential_green", "canary_green", "caught_up"}
+allowed_proof = {"missing", "differential_green", "canary_green", "caught_up"}
 proof_status = (stdio_rust.get("proof") or {}).get("status")
-if stdio_rust.get("state") == "rust_impl" and proof_status not in allowed_rust_impl_proof:
+if stdio_rust.get("state") in {"rust_impl", "ts_deleted"} and proof_status not in allowed_proof:
     print(
-        f"[check-no-ts-stdio-backend] transport/stdio-rust-rmcp rust_impl proof.status={proof_status!r}; "
-        f"expected one of {sorted(allowed_rust_impl_proof)}",
+        f"[check-no-ts-stdio-backend] transport/stdio-rust-rmcp state={stdio_rust.get('state')} proof.status={proof_status!r}; "
+        f"expected one of {sorted(allowed_proof)}",
         file=sys.stderr,
     )
     sys.exit(1)

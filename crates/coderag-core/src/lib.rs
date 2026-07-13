@@ -127,3 +127,5 @@ mod tests {
         });
     }
 }
+
+pub mod doctor_status;

@@ -181,13 +181,12 @@ pub async fn serve_http(config: HttpConfig) -> anyhow::Result<()> {
     let shared_config = Arc::new(config);
     let cancellation = tokio_util::sync::CancellationToken::new();
 
+    let mut http_config = StreamableHttpServerConfig::default();
+    http_config.cancellation_token = cancellation.child_token();
     let mcp_service = StreamableHttpService::new(
         || Ok(CoderagMcp::new()),
         LocalSessionManager::default().into(),
-        StreamableHttpServerConfig {
-            cancellation_token: cancellation.child_token(),
-            ..Default::default()
-        },
+        http_config,
     );
 
     let mcp_router = Router::new()

@@ -2,6 +2,11 @@
 
 # CodeRAG
 
+<p align="center">
+  <img src="docs/banner.png" alt="coderag banner" width="100%" />
+</p>
+
+
 ### Your agent searched the codebase. **Did it find the right code?**
 
 Local-first hybrid code search for AI assistants. One MCP call indexes your repo

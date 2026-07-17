@@ -3,9 +3,8 @@
 # CodeRAG
 
 <p align="center">
-  <img src="docs/banner.png" alt="coderag banner" width="100%" />
+  <img src="https://mark.sylphx.com/api/v1/banner?type=glass&theme=tokyonight&text=coderag&desc=Lightning-fast+semantic+code+search+with+AST+chunking+%2815%2B+languages%29+-+Hybrid+T&height=200&animation=rise&credit=0" alt="coderag — Sylphx Mark banner" width="100%" />
 </p>
-
 
 ### Your agent searched the codebase. **Did it find the right code?**
 

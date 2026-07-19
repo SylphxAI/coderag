@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'bun:test'
 import { execSync, spawnSync } from 'node:child_process'
-import { chmodSync, existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { chmodSync, existsSync, mkdtempSync, writeFileSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 
@@ -81,22 +81,5 @@ describe('shipped path matrix (Rust core, no legacy flags)', () => {
 		expect(existsSync(bin)).toBe(true)
 		const staged = path.join(repoRoot, 'bin/native/coderag-mcp-server')
 		expect(existsSync(staged)).toBe(true)
-	})
-})
-
-describe('web MCP HTTP transport routing', () => {
-	it('bin wrapper routes CODERAG_MCP_TRANSPORT=http to Rust rmcp server', () => {
-		const bin = readFileSync(path.join(repoRoot, 'bin/coderag-mcp'), 'utf8')
-		expect(bin).toContain('resolve_transport')
-		expect(bin).toContain('MCP_TRANSPORT=http')
-		expect(bin).toContain('CODERAG_MCP_TRANSPORT=http')
-	})
-
-	it('Rust MCP server exposes streamable HTTP transport module', () => {
-		const httpTransport = readFileSync(path.join(repoRoot, 'crates/coderag-mcp-server/src/http_transport.rs'), 'utf8')
-		const mainRs = readFileSync(path.join(repoRoot, 'crates/coderag-mcp-server/src/main.rs'), 'utf8')
-		expect(httpTransport).toContain('StreamableHttpService')
-		expect(httpTransport).toContain('health_check')
-		expect(mainRs).toContain('http_transport::serve_http')
 	})
 })

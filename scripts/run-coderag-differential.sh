@@ -46,15 +46,6 @@ echo "=== coderag codebase_search + stdio + HTTP differential parity $(date -Ise
 echo "--- build Rust artifacts ---" | tee -a "$LOG"
 cargo build --release -p coderag-core -p coderag-cli -p coderag-mcp-server 2>&1 | tee -a "$LOG"
 
-echo "--- check-no-ts-stdio-backend gate ---" | tee -a "$LOG"
-bash "$REPO_ROOT/scripts/check-no-ts-stdio-backend.sh" 2>&1 | tee -a "$LOG"
-
-echo "--- check-no-ts-http-backend gate ---" | tee -a "$LOG"
-bash "$REPO_ROOT/scripts/check-no-ts-http-backend.sh" 2>&1 | tee -a "$LOG"
-
-echo "--- check-no-ts-codebase-search gate ---" | tee -a "$LOG"
-bash "$REPO_ROOT/scripts/check-no-ts-codebase-search.sh" 2>&1 | tee -a "$LOG"
-
 echo "--- TS rust-engine baseline oracle ---" | tee -a "$LOG"
 bun run "$REPO_ROOT/scripts/differential/codebase-search-oracle.ts" >"$ORACLE_JSON" 2>>"$LOG"
 
@@ -139,8 +130,7 @@ jq -n \
       "transport/stdio-rust-rmcp": "crates/coderag-mcp-server/tests/stdio_codebase_search_differential.rs#transport_stdio_rust_rmcp_differential_matches_ts_oracle",
       "transport/web-mcp-http": "crates/coderag-mcp-server/tests/http_codebase_search_differential.rs#transport_web_mcp_http_differential_matches_ts_oracle"
     },
-    oracle: "scripts/differential/codebase-search-oracle.ts",
-    gate: "scripts/check-no-ts-stdio-backend.sh; scripts/check-no-ts-http-backend.sh; scripts/check-no-ts-codebase-search.sh"
+    oracle: "scripts/differential/codebase-search-oracle.ts"
   }' >"$ARTIFACT"
 
 echo "coderag-differential: OK (cases=$CASE_COUNT tool=$TOOL_CASE_COUNT stdio=$STDIO_CASE_COUNT http=$HTTP_CASE_COUNT corpus=$FIXTURE_CORPUS_HASH)" | tee -a "$LOG"

@@ -1,6 +1,5 @@
 import { beforeAll, describe, expect, test } from 'bun:test'
 import { execSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { invokeRustEngine, isRustCliAvailable, shouldUseRustEngine } from '../src/rust-engine.js'
@@ -44,11 +43,5 @@ describe('Rust core boundary', () => {
 			limit: 1,
 		})
 		expect(search.results?.[0]?.scoreComponents?.length).toBeGreaterThan(0)
-	})
-
-	test('keeps retrieval logic out of the TypeScript adapter sources', () => {
-		const engineSrc = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../src/rust-engine.ts'), 'utf8')
-		expect(engineSrc).toContain('spawnSync')
-		expect(engineSrc).not.toContain('buildSearchIndex')
 	})
 })

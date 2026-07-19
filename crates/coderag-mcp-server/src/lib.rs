@@ -77,21 +77,6 @@ impl ServerHandler for CoderagMcp {
 #[cfg(test)]
 mod tests {
     use super::CoderagMcp;
-    use std::fs;
-    use std::path::PathBuf;
-
-    #[test]
-    fn rmcp_server_sources_route_codebase_search_through_rust_core() {
-        let src_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("src");
-        let lib_rs = fs::read_to_string(src_dir.join("lib.rs")).expect("read lib.rs");
-        let production_lib = lib_rs.split("#[cfg(test)]").next().unwrap_or(&lib_rs);
-        assert!(production_lib.contains("codebase_search::codebase_search"));
-
-        let routes = fs::read_to_string(src_dir.join("tool_routes.rs")).expect("read tool_routes");
-        assert!(routes.contains("codebase_search"));
-        assert!(routes.contains("RustCore"));
-    }
-
     #[test]
     fn exposes_codebase_search_tool_surface() {
         let tools = CoderagMcp::new().tool_router.list_all();

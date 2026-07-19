@@ -314,4 +314,4 @@ MIT
 
 **Powered by [Sylphx](https://github.com/SylphxAI)**
 
-Built with [@sylphx/coderag](https://github.com/SylphxAI/coderag) · [@sylphx/mcp-server-sdk](https://github.com/SylphxAI/mcp-server-sdk)
+Built with [@sylphx/coderag](https://github.com/SylphxAI/coderag) and [rmcp](https://crates.io/crates/rmcp).

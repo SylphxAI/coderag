@@ -1,7 +1,7 @@
 //! Streamable HTTP Web MCP transport for coderag (rmcp).
 //!
-//! Mirrors the mcp-server-sdk streamable HTTP contract: `/mcp`, `/mcp/health`,
-//! optional `X-API-Key`, CORS.
+//! Implements CodeRAG's streamable HTTP contract: `/mcp`, `/mcp/health`,
+//! optional `X-API-Key`, and CORS.
 
 use std::net::SocketAddr;
 use std::sync::Arc;

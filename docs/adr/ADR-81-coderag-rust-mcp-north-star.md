@@ -88,7 +88,8 @@ evidence-bound. **Fleet FCP is not claimed** by this ADR.
 
 ## Consequences
 
-- Product SSOT `docs/specs/coderag-migration-ledger.json` reports full denominator
+- The completed migration ledger remains available in Git history; current
+  authority is the Rust workspace and its public contract tests
   `ts_deleted`.
 - Gate scripts accept `ts_deleted` as a terminal Rust-authority ledger state
   alongside `rust_impl` / `authority_rust`.

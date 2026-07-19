@@ -45,8 +45,7 @@
 					"crates/coderag-core/**",
 					"packages/mcp-server/src/rust-engine.ts",
 					"scripts/differential/**",
-					"scripts/run-coderag-differential.sh",
-					"scripts/check-no-ts-codebase-search.sh"
+					"scripts/run-coderag-differential.sh"
 				],
 				"staleReason": "rej-010: differential harness landed — awaiting differential_green at bound SHAs",
 				"verificationRef": "verification/coderag-2026-07-10T2130-codebase-search-stdio-differential.json"
@@ -62,7 +61,6 @@
 			"dependencyGlobs": [
 				"crates/coderag-mcp-server/src/main.rs",
 				"bin/coderag-mcp",
-				"scripts/check-no-ts-stdio-backend.sh",
 				"scripts/differential/**"
 			],
 			"proof": {
@@ -70,7 +68,6 @@
 				"dependencyGlobs": [
 					"crates/coderag-mcp-server/src/main.rs",
 					"bin/coderag-mcp",
-					"scripts/check-no-ts-stdio-backend.sh",
 					"scripts/differential/**",
 					"scripts/run-coderag-differential.sh"
 				],
@@ -89,7 +86,6 @@
 				"crates/coderag-mcp-server/src/http_transport.rs",
 				"crates/coderag-mcp-server/tests/http_codebase_search_differential.rs",
 				"fixtures/golden-retrieval-baseline.json",
-				"scripts/check-no-ts-http-backend.sh",
 				"scripts/differential/**"
 			],
 			"proof": {
@@ -99,8 +95,7 @@
 					"crates/coderag-mcp-server/tests/http_codebase_search_differential.rs",
 					"fixtures/golden-retrieval-baseline.json",
 					"scripts/differential/**",
-					"scripts/run-coderag-differential.sh",
-					"scripts/check-no-ts-http-backend.sh"
+					"scripts/run-coderag-differential.sh"
 				],
 				"staleReason": "rej-010 cycle37: HTTP differential harness landed — awaiting differential_green at bound SHAs",
 				"verificationRef": "scripts/run-coderag-differential.sh --slice transport/web-mcp-http"

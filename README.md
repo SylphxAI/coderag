@@ -236,7 +236,6 @@ bun run lint
 bun run typecheck
 bun run docs:build
 bun run benchmark:public-proof
-bun test test/readmeDiscovery.test.ts
 ```
 
 ---

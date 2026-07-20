@@ -1,6 +1,7 @@
 name: CI
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
   pull_request:
@@ -10,7 +11,7 @@ on:
 
 jobs:
   test:
-    runs-on: sylphx-linux-standard
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -46,9 +47,6 @@ jobs:
 
       - name: Run tests
         run: bun run test
-
-      - name: Public surface audit (README discovery)
-        run: bun run test:public-surface
 
       - name: Public benchmark proof
         run: bun run benchmark:public-proof

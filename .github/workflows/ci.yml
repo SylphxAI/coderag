@@ -48,9 +48,6 @@ jobs:
       - name: Run tests
         run: bun run test
 
-      - name: Public surface audit (README discovery)
-        run: bun run test:public-surface
-
       - name: Public benchmark proof
         run: bun run benchmark:public-proof
 

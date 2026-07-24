@@ -39,12 +39,13 @@ jobs:
       fail-fast: false
       matrix:
         settings:
-          # Both Darwin targets on macos-latest (arm64 host); x86_64 is
-          # cross-compiled. macos-13 (Intel) runners queue for long periods.
-          - host: macos-latest
+          # Product Darwin: Sylphx self-hosted only (no GitHub-hosted macos-*).
+          # QEMU amd64 fleet: x86_64 native; aarch64 cross-compiled on same host.
+          
+          - host: [self-hosted, sylphx, macos, standard]
             target: aarch64-apple-darwin
             platform_key: darwin-arm64
-          - host: macos-latest
+          - host: [self-hosted, sylphx, macos, standard]
             target: x86_64-apple-darwin
             platform_key: darwin-x64
           - host: ubuntu-24.04

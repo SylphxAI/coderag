@@ -9,7 +9,11 @@ const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '../../..')
 
 describe('Rust core boundary', () => {
 	beforeAll(() => {
-		execSync('cargo build -q --release', { cwd: repoRoot, stdio: 'pipe', timeout: 180_000 })
+		execSync('cargo +stable build -q --release', {
+			cwd: repoRoot,
+			stdio: 'pipe',
+			timeout: 180_000,
+		})
 	}, 180_000)
 	test('defaults to the Rust CLI when it is built', () => {
 		expect(isRustCliAvailable()).toBe(true)

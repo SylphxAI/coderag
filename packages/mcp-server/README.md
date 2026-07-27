@@ -33,7 +33,7 @@ monorepo Rust build.
 | macOS Apple Silicon | `@sylphx/coderag-mcp-darwin-arm64` |
 | macOS Intel | `@sylphx/coderag-mcp-darwin-x64` |
 | Linux x64 (glibc) | `@sylphx/coderag-mcp-linux-x64-gnu` |
-| Linux arm64 (glibc) | `@sylphx/coderag-mcp-linux-arm64-gnu` |
+| Linux arm64 (glibc >= 2.17) | `@sylphx/coderag-mcp-linux-arm64-gnu` |
 
 npm installs the matching package automatically. If the native is missing or the
 host platform is unsupported, the bin **exits non-zero** (fail-closed). Build

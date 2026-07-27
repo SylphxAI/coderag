@@ -30,6 +30,7 @@
 		"benchmark:public-proof": "bun run scripts/benchmark-public-proof.ts",
 		"doctor": "bun run packages/mcp-server/src/doctor.ts",
 		"benchmark:release-gate": "bun run build:rust && bun run scripts/release-gate.ts",
+		"check:owned-runner-profiles": "bash scripts/check-owned-runner-profiles.sh",
 		"changeset": "changeset",
 		"version": "changeset version && bun scripts/sync-platform-versions.ts",
 		"sync:platform-versions": "bun scripts/sync-platform-versions.ts",

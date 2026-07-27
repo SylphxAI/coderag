@@ -15,27 +15,18 @@ permissions:
   pull-requests: write
 
 jobs:
-  # Multi-arch native matrix (GitHub-hosted). Fail-closed: all targets required
-  # before the publish job can assemble optionalDependency packages.
-  build-natives:
+  # Every native build selects one literal owned profile. Linux arm64 is
+  # cross-compiled with Zig on the standard owned Linux profile.
+  build-darwin:
     strategy:
       fail-fast: false
       matrix:
-        settings:
-          # Product Darwin: Sylphx self-hosted only (no GitHub-hosted macos-*).
-          # QEMU amd64 fleet: x86_64 native; aarch64 cross-compiled on same host.
-          
-          - host: [self-hosted, sylphx, macos, standard]
-            target: aarch64-apple-darwin
-          - host: [self-hosted, sylphx, macos, standard]
-            target: x86_64-apple-darwin
-          - host: ubuntu-24.04
-            target: x86_64-unknown-linux-gnu
-          - host: ubuntu-24.04-arm
-            target: aarch64-unknown-linux-gnu
+        include:
+          - target: aarch64-apple-darwin
+          - target: x86_64-apple-darwin
 
-    name: Native ${{ matrix.settings.target }}
-    runs-on: ${{ matrix.settings.host }}
+    name: Native ${{ matrix.target }}
+    runs-on: [self-hosted, sylphx, macos, standard]
 
     steps:
       - uses: actions/checkout@v4
@@ -43,7 +34,7 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.settings.target }}
+          targets: ${{ matrix.target }}
 
       - name: Cache cargo
         uses: actions/cache@v4
@@ -52,36 +43,137 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: release-native-${{ matrix.settings.target }}-${{ hashFiles('**/Cargo.lock') }}
+          key: release-native-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            release-native-${{ matrix.settings.target }}-
+            release-native-${{ matrix.target }}-
 
       - name: Build release natives
         run: |
           set -euo pipefail
-          cargo build --release -p coderag-mcp-server -p coderag-cli --target ${{ matrix.settings.target }}
+          cargo build --release -p coderag-mcp-server -p coderag-cli --target ${{ matrix.target }}
           mkdir -p native-out
           for name in coderag-mcp-server coderag-cli; do
-            BIN="target/${{ matrix.settings.target }}/release/${name}"
-            test -f "$BIN"
-            chmod +x "$BIN"
-            file "$BIN" || true
-            test "$(wc -c < "$BIN")" -gt 100000
-            cp "$BIN" "native-out/${name}"
+            bin="target/${{ matrix.target }}/release/${name}"
+            test -f "$bin"
+            chmod +x "$bin"
+            file "$bin" || true
+            test "$(wc -c < "$bin")" -gt 100000
+            cp "$bin" "native-out/${name}"
             chmod +x "native-out/${name}"
           done
-          ls -la native-out
 
       - name: Upload native artifact
         uses: actions/upload-artifact@v4
         with:
-          name: coderag-native-${{ matrix.settings.target }}
+          name: coderag-native-${{ matrix.target }}
+          path: native-out/
+          if-no-files-found: error
+          retention-days: 7
+
+  build-linux-x64:
+    name: Native x86_64-unknown-linux-gnu
+    runs-on: sylphx-linux-standard
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-gnu
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: release-native-x86_64-unknown-linux-gnu-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            release-native-x86_64-unknown-linux-gnu-
+
+      - name: Build release natives
+        run: |
+          set -euo pipefail
+          target=x86_64-unknown-linux-gnu
+          cargo build --release -p coderag-mcp-server -p coderag-cli --target "$target"
+          mkdir -p native-out
+          for name in coderag-mcp-server coderag-cli; do
+            bin="target/${target}/release/${name}"
+            test -f "$bin"
+            chmod +x "$bin"
+            file "$bin" || true
+            test "$(wc -c < "$bin")" -gt 100000
+            cp "$bin" "native-out/${name}"
+            chmod +x "native-out/${name}"
+          done
+
+      - name: Upload native artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coderag-native-x86_64-unknown-linux-gnu
+          path: native-out/
+          if-no-files-found: error
+          retention-days: 7
+
+  build-linux-arm64:
+    name: Native aarch64-unknown-linux-gnu
+    runs-on: sylphx-linux-standard
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-unknown-linux-gnu
+
+      - name: Install Zig toolchain
+        uses: mlugg/setup-zig@v2
+        with:
+          version: 0.14.1
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: release-native-aarch64-unknown-linux-gnu-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            release-native-aarch64-unknown-linux-gnu-
+
+      - name: Install cargo-zigbuild
+        run: cargo install cargo-zigbuild --version 0.23.0 --locked
+
+      - name: Cross-compile release natives
+        run: |
+          set -euo pipefail
+          target=aarch64-unknown-linux-gnu
+          # The package promise is glibc >= 2.17, the oldest arm64 glibc ABI.
+          cargo zigbuild --release -p coderag-mcp-server -p coderag-cli --target "${target}.2.17"
+          mkdir -p native-out
+          for name in coderag-mcp-server coderag-cli; do
+            bin="target/${target}/release/${name}"
+            test -f "$bin"
+            chmod +x "$bin"
+            bash scripts/verify-linux-arm64-artifact.sh "$bin"
+            cp "$bin" "native-out/${name}"
+            chmod +x "native-out/${name}"
+          done
+
+      - name: Upload native artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coderag-native-aarch64-unknown-linux-gnu
           path: native-out/
           if-no-files-found: error
           retention-days: 7
 
   release:
-    needs: build-natives
+    needs: [build-darwin, build-linux-x64, build-linux-arm64]
     uses: SylphxAI/.github/.github/workflows/release.yml@main
     with:
       # When artifact is set, reusable workflow skips the default build step and

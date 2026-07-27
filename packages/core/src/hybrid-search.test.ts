@@ -3,6 +3,7 @@
  */
 
 import fs from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { createMockProvider } from './embeddings.js'
@@ -17,8 +18,7 @@ describe('Hybrid Search', () => {
 
 	beforeEach(async () => {
 		// Create temporary test directory
-		tempDir = `/tmp/hybrid-search-test-${Date.now()}`
-		fs.mkdirSync(tempDir, { recursive: true })
+		tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'hybrid-search-test-'))
 
 		// Create test files
 		const testFiles = [

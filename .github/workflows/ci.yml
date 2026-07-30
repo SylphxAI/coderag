@@ -9,6 +9,11 @@ on:
   merge_group:
     types: [checks_requested]
 
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: sylphx-linux-standard

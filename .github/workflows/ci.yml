@@ -35,9 +35,8 @@ jobs:
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Build Rust retrieval core
-        run: cargo build --release
-
+      # Source verification only — no disposable release packaging in ordinary CI.
+      # cargo test compiles the retrieval core under the test profile.
       - name: Rust core tests
         run: cargo test
 

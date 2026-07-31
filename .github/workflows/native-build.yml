@@ -27,8 +27,6 @@ on:
       - 'scripts/verify-linux-arm64-artifact.sh'
       - '.github/workflows/native-build.yml'
       - '.github/workflows/release.yml'
-  merge_group:
-    types: [checks_requested]
   workflow_dispatch:
 
 concurrency:

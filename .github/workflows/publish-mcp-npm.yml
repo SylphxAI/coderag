@@ -38,32 +38,43 @@ jobs:
           unset npm_config_workspace || true
           unset npm_config_workspaces || true
           npm whoami
+          # restore workspace dep for monorepo build
+          node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('packages/mcp-server/package.json','utf8'));p.dependencies['@sylphx/coderag']='workspace:*';fs.writeFileSync('packages/mcp-server/package.json',JSON.stringify(p,null,2));"
           bun install --frozen-lockfile || bun install
-          # publish linux native first
           PLAT=packages/mcp-server/npm/linux-x64-gnu
           PNAME=$(node -p "require('./$PLAT/package.json').name")
           PVER=$(node -p "require('./$PLAT/package.json').version")
           if ! npm view "$PNAME@$PVER" version >/dev/null 2>&1; then
             test -x "$PLAT/coderag-mcp-server"
-            (cd "$PLAT" && npm publish --access public) 2>&1 | tee /tmp/plat.log
+            (cd "$PLAT" && npm publish --access public) 2>&1 | tee /tmp/plat.log || true
             for i in $(seq 1 24); do npm view "$PNAME@$PVER" version >/dev/null 2>&1 && break; sleep 5; done
           else
             echo already "$PNAME@$PVER"
           fi
-          # build mcp package dist
-          bun run --filter @sylphx/coderag-mcp build || (cd packages/mcp-server && bun run build)
-          # ensure dependency is registry version not workspace
-          node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('packages/mcp-server/package.json','utf8'));p.dependencies['@sylphx/coderag']='0.1.26';fs.writeFileSync('packages/mcp-server/package.json',JSON.stringify(p,null,2));"
-          cd packages/mcp-server
+          bun run --filter @sylphx/coderag build
+          bun run --filter @sylphx/coderag-mcp build
+          # stage publish dir with registry dep
+          STAGE=$(mktemp -d)
+          cp -a packages/mcp-server/. "$STAGE/"
+          node -e "
+            const fs=require('fs');
+            const p=JSON.parse(fs.readFileSync(process.argv[1],'utf8'));
+            p.dependencies={'@sylphx/coderag':'0.1.26'};
+            p.private=false;
+            p.publishConfig={access:'public'};
+            delete p.scripts;
+            fs.writeFileSync(process.argv[1], JSON.stringify(p,null,2));
+          " "$STAGE/package.json"
+          cd "$STAGE"
           NAME=$(node -p "require('./package.json').name")
           VER=$(node -p "require('./package.json').version")
           if npm view "$NAME@$VER" version >/dev/null 2>&1; then
-            echo already "$NAME@$VER"; exit 0
+            echo already "$NAME@$VER"; npm view "$NAME" version dist-tags bin; exit 0
           fi
           npm publish --access public 2>&1 | tee /tmp/mcp.log
           for i in $(seq 1 24); do
             if npm view "$NAME@$VER" version >/dev/null 2>&1; then
-              npm view "$NAME" version dist-tags bin
+              npm view "$NAME" version dist-tags bin dependencies
               exit 0
             fi
             sleep 5

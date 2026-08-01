@@ -35,7 +35,7 @@
 		"lint:fix": "biome check --write ."
 	},
 	"dependencies": {
-		"@sylphx/coderag": "0.1.26"
+		"@sylphx/coderag": "workspace:*"
 	},
 	"optionalDependencies": {
 		"@sylphx/coderag-mcp-darwin-arm64": "0.4.4",

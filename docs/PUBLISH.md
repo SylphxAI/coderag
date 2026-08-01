@@ -4,21 +4,27 @@
 | --- | --- |
 | Brand | Locus |
 | Brand npm | `@sylphx/locus` |
+| Brand version (live) | `0.4.3` |
 | Transitional MCP npm | `@sylphx/coderag-mcp` |
+| Transitional MCP version (live) | `0.4.2` |
 | Transitional core npm | `@sylphx/coderag` |
-| MCP transitional version | `0.4.2` (re-check with `npm view`) |
-| Brand npm version | may lead during expand if a version is burned (see dual-publish `brand_version`) |
-| Core version | `0.1.25` (re-check with `npm view`) |
-| Registry | transitional **live**; brand via `publish-brand-alias.yml` |
+| Core version (live) | `0.1.25` |
+| Registry | **live** (expand–contract) |
 | Auth | GitHub org `NPM_TOKEN` via publish workflows |
 
 ## Install
 
 ```bash
-# preferred brand (after dual-publish)
+# preferred brand
 npx -y @sylphx/locus --root=/abs/path
 # transitional still valid during expand
 npx -y @sylphx/coderag-mcp --root=/abs/path
 ```
+
+## Expand note
+
+Brand `0.4.3` was dual-published from transitional artifacts `0.4.2` after npm reserved
+(but did not publicly serve) `@sylphx/locus@0.4.2`. Next MCP release should align versions
+on both ids (same X.Y.Z). Workflow supports optional `brand_version` for burned versions.
 
 Workflows: `release.yml` / native release train, `publish-brand-alias.yml`.

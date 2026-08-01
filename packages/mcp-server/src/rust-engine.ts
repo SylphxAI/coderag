@@ -36,9 +36,47 @@ export type RustSearchEnvelope = {
 	message?: string
 }
 
+function hostPlatformKey(): string {
+	const os =
+		process.platform === 'darwin'
+			? 'darwin'
+			: process.platform === 'linux'
+				? 'linux'
+				: process.platform
+	const arch = process.arch === 'x64' ? 'x64' : process.arch === 'arm64' ? 'arm64' : process.arch
+	return `${os}-${arch}`
+}
+
+function platformPackageDir(): string | null {
+	switch (hostPlatformKey()) {
+		case 'darwin-arm64':
+			return 'darwin-arm64'
+		case 'darwin-x64':
+			return 'darwin-x64'
+		case 'linux-x64':
+			return 'linux-x64-gnu'
+		case 'linux-arm64':
+			return 'linux-arm64-gnu'
+		default:
+			return null
+	}
+}
+
 export function resolveRustCliBinary(): string {
 	const env = process.env.CODERAG_RUST_CLI
 	if (env && existsSync(env)) return env
+
+	// Prefer host-matched platform package (dev monorepo layout).
+	const plat = platformPackageDir()
+	if (plat) {
+		const hostMatched = [
+			join(here, '../npm', plat, 'coderag-cli'),
+			join(here, '../../mcp-server/npm', plat, 'coderag-cli'),
+		]
+		for (const candidate of hostMatched) {
+			if (existsSync(candidate)) return candidate
+		}
+	}
 
 	// Staged natives next to the published package (bin/native layout).
 	const staged = [
@@ -46,17 +84,6 @@ export function resolveRustCliBinary(): string {
 		join(here, '../../../bin/native/coderag-cli'),
 	]
 	for (const candidate of staged) {
-		if (existsSync(candidate)) return candidate
-	}
-
-	// Platform optionalDependency packages ship mcp-server + cli together.
-	const platformCandidates = [
-		join(here, '../npm/darwin-arm64/coderag-cli'),
-		join(here, '../npm/darwin-x64/coderag-cli'),
-		join(here, '../npm/linux-x64-gnu/coderag-cli'),
-		join(here, '../npm/linux-arm64-gnu/coderag-cli'),
-	]
-	for (const candidate of platformCandidates) {
 		if (existsSync(candidate)) return candidate
 	}
 
@@ -86,7 +113,7 @@ export function invokeRustEngine(tool: string, input: Record<string, unknown>): 
 		return {
 			status: 'error',
 			code: 'ENGINE_UNAVAILABLE',
-			message: result.error.message,
+			message: `${result.error.message} (resolved=${binary})`,
 		}
 	}
 

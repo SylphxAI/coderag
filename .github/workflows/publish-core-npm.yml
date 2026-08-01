@@ -46,5 +46,16 @@ jobs:
             npm view "$NAME" version dist-tags
             exit 0
           fi
-          npm publish --access public
-          npm view "$NAME@$VER" version
+          npm publish --access public 2>&1 | tee /tmp/core-pub.log
+          for i in $(seq 1 24); do
+            if npm view "$NAME@$VER" version >/dev/null 2>&1; then
+              npm view "$NAME" version dist-tags
+              exit 0
+            fi
+            sleep 5
+          done
+          if grep -q "+ $NAME@$VER" /tmp/core-pub.log; then
+            echo "publish log success; delayed readback acceptable"
+            exit 0
+          fi
+          exit 1

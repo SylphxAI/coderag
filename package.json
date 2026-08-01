@@ -2,13 +2,14 @@
 	"name": "coderag",
 	"version": "0.0.0",
 	"private": true,
-	"description": "Semantic code search with vector embeddings - RAG-ready for AI assistants",
+	"description": "Locus — local-first hybrid code search (CodeRAG monorepo; brand @sylphx/locus)",
 	"workspaces": [
 		"packages/*",
 		"packages/mcp-server/npm/*"
 	],
 	"bin": {
-		"coderag-mcp": "./bin/coderag-mcp"
+		"coderag-mcp": "./bin/coderag-mcp",
+		"locus": "./bin/coderag-mcp"
 	},
 	"scripts": {
 		"build": "turbo run build",
@@ -62,7 +63,10 @@
 		"semantic-search",
 		"mcp",
 		"model-context-protocol",
-		"codebase-indexing"
+		"codebase-indexing",
+		"locus",
+		"local-first",
+		"sylphx"
 	],
 	"author": "SylphxAI",
 	"license": "MIT",

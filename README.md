@@ -1,31 +1,58 @@
 <div align="center">
 
-# CodeRAG
+# Locus
 
 <p align="center">
-  <img src="https://mark.sylphx.com/api/v1/banner?type=glass&theme=tokyonight&text=coderag&desc=Lightning-fast+semantic+code+search+with+AST+chunking+%2815%2B+languages%29+-+Hybrid+T&height=200&animation=rise&credit=0" alt="coderag — Sylphx Mark banner" width="100%" />
+  <img src="https://mark.sylphx.com/api/v1/banner?type=glass&theme=tokyonight&text=locus&desc=Local-first+hybrid+code+search+for+agents+%E2%80%94+AST+chunks%2C+TF-IDF%2C+optional+vectors&height=200&animation=rise&credit=0" alt="Locus — Sylphx Mark banner" width="100%" />
 </p>
 
 ### Your agent searched the codebase. **Did it find the right code?**
 
-Local-first hybrid code search for AI assistants. One MCP call indexes your repo
-and returns **semantic chunks** — functions, classes, and methods — not noisy
-grep dumps or slow cloud pipelines.
+**Locus** (repository `coderag`, transitional packages `@sylphx/coderag` / `@sylphx/coderag-mcp`) —
+local-first hybrid code search for AI assistants. One MCP call indexes your repo and returns
+**semantic AST chunks** — functions, classes, and methods — not noisy grep dumps or slow cloud pipelines.
 
-[![npm version](https://img.shields.io/npm/v/@sylphx/coderag?style=flat-square&label=core)](https://www.npmjs.com/package/@sylphx/coderag)
-[![npm version](https://img.shields.io/npm/v/@sylphx/coderag-mcp?style=flat-square&label=mcp)](https://www.npmjs.com/package/@sylphx/coderag-mcp)
+[![npm brand](https://img.shields.io/npm/v/@sylphx/locus?style=flat-square&label=locus)](https://www.npmjs.com/package/@sylphx/locus)
+[![npm mcp](https://img.shields.io/npm/v/@sylphx/coderag-mcp?style=flat-square&label=coderag-mcp)](https://www.npmjs.com/package/@sylphx/coderag-mcp)
+[![npm core](https://img.shields.io/npm/v/@sylphx/coderag?style=flat-square&label=core)](https://www.npmjs.com/package/@sylphx/coderag)
 [![CI](https://img.shields.io/github/actions/workflow/status/SylphxAI/coderag/ci.yml?style=flat-square)](https://github.com/SylphxAI/coderag/actions)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
 
-**Local-first** · **MCP-first** · **Hybrid TF-IDF + Vector** · **~200 tests** · **Reproducible benchmark**
+**Local-first** · **MCP + CLI + SDK** · **Hybrid TF-IDF + Vector** · **Rust rmcp** · **Evidence locators**
 
 [⭐ Star this repo](https://github.com/SylphxAI/coderag) if agents should find code with evidence, not guess from keyword hits.
 · [Quick start](#quick-start) · [See it work](#see-it-work) · [Why not grep alone?](#why-not-grep-alone)
-· [Roadmap](docs/roadmap/sota-family-roadmap.md)
+· [Product docs](#product-docs) · [Roadmap](docs/roadmap/sota-family-roadmap.md)
+
+This repository is product SSOT. Sibling agent tools live in separate repos
+(Citra · Iris · Cue · Prism · Spine · Lookout).
 
 </div>
 
 ---
+
+## Product docs
+
+| Doc | Purpose |
+| --- | --- |
+| [docs/POSITIONING.md](docs/POSITIONING.md) | Strategic positioning (Locus vs Spine) |
+| [docs/COMPETITIVE.md](docs/COMPETITIVE.md) | Peer anchors and wedge |
+| [docs/EVIDENCE_CONTRACT.md](docs/EVIDENCE_CONTRACT.md) | Evidence = result contract (not a tool name) |
+| [docs/TOOL_SURFACE.md](docs/TOOL_SURFACE.md) | Few clear tools policy |
+| [docs/LOCAL_FIRST_FRONTIER.md](docs/LOCAL_FIRST_FRONTIER.md) | Local-first / zero-config / Rust-first |
+| [docs/PRODUCT_INDEPENDENCE.md](docs/PRODUCT_INDEPENDENCE.md) | This repo is SSOT |
+| [docs/BRAND_PUBLISH.md](docs/BRAND_PUBLISH.md) | Expand–contract brand npm ids |
+| [docs/IPPB.md](docs/IPPB.md) | Independent public product bar |
+| [docs/PUBLISH.md](docs/PUBLISH.md) | npm/git publish status |
+
+## Locus vs Spine
+
+| | **Locus** | **Spine** |
+| --- | --- | --- |
+| Job | Find the right **code chunk** | Map **architecture** (path / trace / impact) |
+| Repo | [coderag](https://github.com/SylphxAI/coderag) | [architecture-reader-mcp](https://github.com/SylphxAI/architecture-reader-mcp) |
+| Primary tool | `codebase_search` | `architecture_*` |
+| Brand npm | `@sylphx/locus` | `@sylphx/spine` |
 
 ## The problem
 
@@ -40,18 +67,18 @@ of two bad outcomes:
 The model still guesses which snippet matters. Wrong chunk → wrong patch → wasted
 context.
 
-**CodeRAG is built for the moment your agent needs the right code block, not a
+**Locus is built for the moment your agent needs the right code block, not a
 directory of keyword hits.**
 
 ## Why not grep alone?
 
-| | grep/ripgrep | Cloud RAG | CodeRAG |
+| | grep/ripgrep | Cloud RAG | Locus |
 | --- | --- | --- | --- |
 | **Semantic understanding** | ❌ Literal match | ✅ Embeddings | ✅ TF-IDF + optional vectors |
 | **Zero external deps** | ✅ | ❌ Vector DB + embed API | ✅ Local by default |
 | **Offline support** | ✅ | ❌ | ✅ |
 | **Result shape** | Whole files / lines | Often whole files | AST chunks (functions, classes) |
-| **Agent setup** | Shell tool | Docker + services | `npx @sylphx/coderag-mcp` |
+| **Agent setup** | Shell tool | Docker + services | `npx @sylphx/locus` |
 
 Search latency and indexing throughput: reproduce with
 [`bun run benchmark:public-proof`](#benchmark-proof) — do not trust hand-waved
@@ -64,7 +91,9 @@ Full comparison: [how search works](docs/guide/how-search-works.md).
 **Install once. Point at your repo.**
 
 ```bash
-claude mcp add coderag -- npx @sylphx/coderag-mcp --root=/absolute/path/to/project
+claude mcp add locus -- npx @sylphx/locus --root=/absolute/path/to/project
+# transitional (expand–contract still valid):
+# claude mcp add coderag -- npx @sylphx/coderag-mcp --root=/absolute/path/to/project
 ```
 
 Search with the `codebase_search` tool:
@@ -107,7 +136,9 @@ export async function authenticate(username: string, password: string) {
 ### Claude Code (recommended)
 
 ```bash
-claude mcp add coderag -- npx @sylphx/coderag-mcp --root=/absolute/path/to/project
+claude mcp add locus -- npx @sylphx/locus --root=/absolute/path/to/project
+# transitional (expand–contract still valid):
+# claude mcp add coderag -- npx @sylphx/coderag-mcp --root=/absolute/path/to/project
 ```
 
 ### Claude Desktop

@@ -1,7 +1,7 @@
 {
 	"name": "@sylphx/coderag",
 	"version": "0.1.25",
-	"description": "Semantic code search with vector embeddings - RAG-ready for AI assistants",
+	"description": "Locus core — local-first hybrid code search library (AST chunks, TF-IDF, optional vectors; package id @sylphx/coderag)",
 	"type": "module",
 	"main": "./dist/index.js",
 	"types": "./dist/index.d.ts",
@@ -91,7 +91,10 @@
 		"tfidf",
 		"semantic-search",
 		"code-indexing",
-		"mcp"
+		"mcp",
+		"locus",
+		"local-first",
+		"sylphx"
 	],
 	"author": "SylphxAI",
 	"license": "MIT",

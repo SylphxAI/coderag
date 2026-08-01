@@ -2,20 +2,33 @@
 	"schemaVersion": 1,
 	"project": {
 		"repo": "SylphxAI/coderag",
-		"name": "SylphxAI CodeRAG",
+		"name": "Locus (CodeRAG)",
 		"lifecycle": "active",
 		"layer": "tooling",
 		"policyPool": "agent-tool",
-		"summary": "TypeScript/Bun monorepo for hybrid code search and an MCP server for AI assistant code retrieval.",
+		"summary": "Locus \u2014 local-first hybrid code search for AI agents (AST chunks, TF-IDF, optional vectors) via SDK (@sylphx/coderag), CLI, and MCP (@sylphx/locus / transitional @sylphx/coderag-mcp).",
 		"goals": [
+			"Ship Locus brand surfaces (docs, bin locus, server.json title, dual-publish @sylphx/locus).",
 			"Provide the @sylphx/coderag core package for hybrid TF-IDF, vector, AST chunking, indexing, and persistent search.",
-			"Provide the @sylphx/coderag-mcp package as an MCP server surface for AI assistants and IDEs.",
-			"Maintain docs, examples, tests, and package release workflows for the CodeRAG ecosystem."
+			"Provide the @sylphx/coderag-mcp / @sylphx/locus MCP server surface for AI assistants and IDEs.",
+			"Maintain docs, examples, tests, and package release workflows for the Locus (CodeRAG) product."
 		],
 		"nonGoals": [
 			"Own IDE products, AI assistant runtime policy, or downstream coding-agent behavior.",
 			"Own embedding provider accounts, external vector services, or customer-specific codebase indexes.",
 			"Own enterprise engineering doctrine, standards, or project manifest schema."
+		],
+		"links": [
+			{
+				"type": "npm",
+				"url": "https://www.npmjs.com/package/@sylphx/coderag-mcp",
+				"title": "npm MCP (transitional)"
+			},
+			{
+				"type": "npm",
+				"url": "https://www.npmjs.com/package/@sylphx/locus",
+				"title": "npm brand (Locus)"
+			}
 		]
 	},
 	"boundaries": {
@@ -74,6 +87,11 @@
 				"type": "workflow",
 				"name": "CI and release workflows",
 				"location": ".github/workflows/"
+			},
+			{
+				"type": "manifest",
+				"name": "server.json (Locus marketplace title)",
+				"location": "server.json"
 			}
 		],
 		"allowedDependencies": [

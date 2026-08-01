@@ -1,0 +1,22 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.SylphxAI/coderag",
+  "title": "Locus",
+  "description": "Locus — local-first hybrid code search for agents (AST chunks, TF-IDF, optional vectors). SDK · CLI · MCP. by Sylphx.",
+  "repository": {
+    "url": "https://github.com/SylphxAI/coderag",
+    "source": "github"
+  },
+  "version": "0.4.2",
+  "websiteUrl": "https://github.com/SylphxAI/coderag#readme",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@sylphx/coderag-mcp",
+      "version": "0.4.2",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

@@ -1,6 +1,8 @@
-# @sylphx/coderag-mcp
+# Locus (`@sylphx/coderag-mcp` → brand `@sylphx/locus`)
 
 MCP server for hybrid codebase search — **Did it find the right code?**
+
+Brand install: `npx -y @sylphx/locus` (expand–contract dual-publish). Transitional id remains `@sylphx/coderag-mcp`.
 
 Monorepo README, benchmark proof, and Discovery status:
 [github.com/SylphxAI/coderag](https://github.com/SylphxAI/coderag).
@@ -14,9 +16,9 @@ Using [Claude Desktop](#with-claude-desktop), [VS Code](#with-vs-code), [Cursor]
 ```json
 {
   "mcpServers": {
-    "coderag": {
+    "locus": {
       "command": "npx",
-      "args": ["-y", "@sylphx/coderag-mcp", "--root=/path/to/project"]
+      "args": ["-y", "@sylphx/locus", "--root=/path/to/project"]
     }
   }
 }
@@ -53,9 +55,9 @@ Add to your `claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
-    "coderag": {
+    "locus": {
       "command": "npx",
-      "args": ["-y", "@sylphx/coderag-mcp", "--root=/path/to/project"]
+      "args": ["-y", "@sylphx/locus", "--root=/path/to/project"]
     }
   }
 }
@@ -111,9 +113,9 @@ Add to your Cursor MCP config:
 ```json
 {
   "mcpServers": {
-    "coderag": {
+    "locus": {
       "command": "npx",
-      "args": ["-y", "@sylphx/coderag-mcp", "--root=/path/to/project"]
+      "args": ["-y", "@sylphx/locus", "--root=/path/to/project"]
     }
   }
 }
@@ -134,9 +136,9 @@ Add to your Windsurf MCP config:
 ```json
 {
   "mcpServers": {
-    "coderag": {
+    "locus": {
       "command": "npx",
-      "args": ["-y", "@sylphx/coderag-mcp", "--root=/path/to/project"]
+      "args": ["-y", "@sylphx/locus", "--root=/path/to/project"]
     }
   }
 }
@@ -165,9 +167,9 @@ Use the [standard config](#standard-config) format. All MCP-compatible clients s
 ```json
 {
   "mcpServers": {
-    "coderag": {
+    "locus": {
       "command": "npx",
-      "args": ["-y", "@sylphx/coderag-mcp", "--root=/path/to/project"]
+      "args": ["-y", "@sylphx/locus", "--root=/path/to/project"]
     }
   }
 }

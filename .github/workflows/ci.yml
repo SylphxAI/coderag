@@ -36,7 +36,11 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       # Source verification only — no disposable release packaging in ordinary CI.
-      # cargo test compiles the retrieval core under the test profile.
+      # Build debug coderag-cli so MCP golden_parity can invoke the CLI bridge
+      # (cargo test alone may not place target/debug/coderag-cli).
+      - name: Rust debug CLI (for golden parity)
+        run: cargo build -p coderag-cli
+
       - name: Rust core tests
         run: cargo test
 

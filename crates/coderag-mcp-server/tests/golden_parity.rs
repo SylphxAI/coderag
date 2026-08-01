@@ -16,7 +16,7 @@ fn resolve_cli_binary() -> PathBuf {
             return candidate;
         }
     }
-    panic!("coderag-cli is not built; run `cargo build --release -p coderag-cli`");
+    panic!("coderag-cli is not built; run `cargo build -p coderag-cli` (debug is enough for CI)");
 }
 
 fn fixture_root() -> PathBuf {

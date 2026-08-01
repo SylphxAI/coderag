@@ -9,8 +9,7 @@
  * - Config from environment variables
  */
 
-import { createOpenAI } from '@ai-sdk/openai'
-import { embed, embedMany } from 'ai'
+// OpenAI / Vercel AI SDK are optionalDependencies — loaded only when configured.
 
 /**
  * Embedding Provider Config
@@ -110,66 +109,78 @@ export const createDefaultConfig = (): EmbeddingConfig => {
 	}
 }
 
-/**
- * Create OpenAI embedding model instance
- * Supports both official OpenAI and OpenAI-compatible endpoints
- */
-const createEmbeddingModel = (config: EmbeddingConfig) => {
-	const provider = createOpenAI({
-		apiKey: config.apiKey || process.env.OPENAI_API_KEY,
-		baseURL: config.baseURL, // Support custom endpoints (OpenRouter, Together AI, etc.)
-	})
-
-	return provider.embedding(config.model)
+type OpenAISdk = {
+	createOpenAI: (opts: { apiKey?: string; baseURL?: string }) => {
+		embedding: (model: string) => unknown
+	}
 }
 
-/**
- * Generate single embedding (OpenAI)
- */
-const generateOpenAIEmbedding = async (
-	model: ReturnType<typeof createEmbeddingModel>,
-	text: string,
-	dimensions: number
-): Promise<number[]> => {
+type AiSdk = {
+	embed: (args: { model: unknown; value: string }) => Promise<{ embedding: number[] }>
+	embedMany: (args: { model: unknown; values: string[] }) => Promise<{ embeddings: number[][] }>
+}
+
+async function loadOptionalOpenAIStack(): Promise<{ openai: OpenAISdk; ai: AiSdk }> {
 	try {
-		const { embedding } = await embed({ model, value: text })
-		return embedding
-	} catch (error) {
-		console.error('[WARN] OpenAI embedding failed, falling back to mock:', error)
-		return generateMockEmbedding(text, dimensions)
+		const openai = (await import('@ai-sdk/openai')) as OpenAISdk
+		const ai = (await import('ai')) as AiSdk
+		return { openai, ai }
+	} catch {
+		throw new Error(
+			'Optional OpenAI embedding stack is not installed. Install `@ai-sdk/openai` and `ai`, or use mock embeddings (default without OPENAI_API_KEY).'
+		)
 	}
 }
 
 /**
- * Generate multiple embeddings (OpenAI)
- */
-const generateOpenAIEmbeddings = async (
-	model: ReturnType<typeof createEmbeddingModel>,
-	texts: string[],
-	dimensions: number
-): Promise<number[][]> => {
-	try {
-		const { embeddings } = await embedMany({ model, values: texts })
-		return embeddings
-	} catch (error) {
-		console.error('[WARN] OpenAI embeddings failed, falling back to mock:', error)
-		return texts.map((text) => generateMockEmbedding(text, dimensions))
-	}
-}
-
-/**
- * Create OpenAI Embedding Provider (pure function)
+ * Create OpenAI Embedding Provider (optional cloud path).
+ * Requires optionalDependencies `@ai-sdk/openai` + `ai` at call time.
  */
 export const createOpenAIProvider = (config: EmbeddingConfig): EmbeddingProvider => {
-	const model = createEmbeddingModel(config)
+	let modelPromise: Promise<unknown> | null = null
+	let aiPromise: Promise<AiSdk> | null = null
+
+	const ensure = async () => {
+		if (!modelPromise || !aiPromise) {
+			const stack = await loadOptionalOpenAIStack()
+			aiPromise = Promise.resolve(stack.ai)
+			const provider = stack.openai.createOpenAI({
+				apiKey: config.apiKey || process.env.OPENAI_API_KEY,
+				baseURL: config.baseURL,
+			})
+			modelPromise = Promise.resolve(provider.embedding(config.model))
+		}
+		const ai = await aiPromise
+		if (!ai) {
+			throw new Error('OpenAI embedding stack failed to initialize')
+		}
+		return { model: await modelPromise, ai }
+	}
 
 	return {
 		name: 'openai',
 		model: config.model,
 		dimensions: config.dimensions,
-		generateEmbedding: (text: string) => generateOpenAIEmbedding(model, text, config.dimensions),
-		generateEmbeddings: (texts: string[]) =>
-			generateOpenAIEmbeddings(model, texts, config.dimensions),
+		generateEmbedding: async (text: string) => {
+			try {
+				const { model, ai } = await ensure()
+				const { embedding } = await ai.embed({ model, value: text })
+				return embedding
+			} catch (error) {
+				console.error('[WARN] OpenAI embedding failed, falling back to mock:', error)
+				return generateMockEmbedding(text, config.dimensions)
+			}
+		},
+		generateEmbeddings: async (texts: string[]) => {
+			try {
+				const { model, ai } = await ensure()
+				const { embeddings } = await ai.embedMany({ model, values: texts })
+				return embeddings
+			} catch (error) {
+				console.error('[WARN] OpenAI embeddings failed, falling back to mock:', error)
+				return texts.map((text) => generateMockEmbedding(text, config.dimensions))
+			}
+		},
 	}
 }
 

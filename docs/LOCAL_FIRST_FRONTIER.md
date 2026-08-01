@@ -54,8 +54,10 @@ npx -y @sylphx/locus --root=/absolute/path/to/project
 # tool: codebase_search { "query": "auth login", "limit": 5 }
 ```
 
-## Honest residual (as of 2026-08-01)
+## Honest residual / progress
 
-- MCP path is local-first.  
-- **TS SDK dependency graph is not yet “less dependency” gold** — slimming is P0 product work, not marketing.  
+- MCP path is local-first (Rust).  
+- **SDK hard deps slimmed (2026-08-01):** `@huggingface/transformers`, `@ai-sdk/openai`, and `ai` are **optionalDependencies**; default tokenizer is pure local simple code tokenizer.  
+- OpenAI embeddings / LanceDB / HF StarCoder2 remain **opt-in** when packages are installed and configured.  
+- Remaining hard deps: local SQLite path (`@libsql/client`, `drizzle-orm`), watcher, `ignore`, `@sylphx/synth` (+ optional language packs).  
 - Brand/transitional version skew may exist during expand–contract; see PUBLISH.md.

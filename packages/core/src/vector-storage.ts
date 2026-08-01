@@ -3,7 +3,21 @@
  * High-performance embedded vector database
  */
 
-import * as lancedb from '@lancedb/lancedb'
+// optionalDependency — loaded on first connect only
+type LanceModule = typeof import('@lancedb/lancedb')
+let lancedbModule: LanceModule | null = null
+
+async function loadLance(): Promise<LanceModule> {
+	if (lancedbModule) return lancedbModule
+	try {
+		lancedbModule = await import('@lancedb/lancedb')
+		return lancedbModule
+	} catch {
+		throw new Error(
+			'Optional vector store `@lancedb/lancedb` is not installed. Install it for vector search, or use TF-IDF-only search (default local path).'
+		)
+	}
+}
 
 /**
  * Vector Document
@@ -65,8 +79,11 @@ interface VectorRecord {
  * Vector Storage with LanceDB
  */
 export class VectorStorage {
-	private db: lancedb.Connection | null = null
-	private table: lancedb.Table | null = null
+	// Optional LanceDB connection — vendor API is loosely typed on purpose.
+	// biome-ignore lint/suspicious/noExplicitAny: LanceDB optional surface
+	private db: any = null
+	// biome-ignore lint/suspicious/noExplicitAny: LanceDB optional surface
+	private table: any = null
 	private dimensions: number
 	private dbPath: string
 	private tableName: string
@@ -84,7 +101,7 @@ export class VectorStorage {
 	private async ensureInitialized(): Promise<void> {
 		if (this.initialized) return
 
-		this.db = await lancedb.connect(this.dbPath)
+		this.db = await (await loadLance()).connect(this.dbPath)
 
 		// Check if table exists
 		const tables = await this.db.tableNames()
@@ -116,7 +133,10 @@ export class VectorStorage {
 			metadata_json: '{}',
 		}
 
-		this.table = await this.db?.createTable(this.tableName, [initialRecord])
+		if (!this.db) {
+			throw new Error('Vector database is not initialized')
+		}
+		this.table = await this.db.createTable(this.tableName, [initialRecord])
 
 		// Delete the schema record
 		await this.table.delete('id = "__schema__"')

@@ -1,0 +1,72 @@
+name: Publish MCP npm
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type PUBLISH'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    if: ${{ inputs.confirm == 'PUBLISH' }}
+    runs-on: sylphx-linux-standard
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+          always-auth: true
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.3.12'
+      - name: Publish platform linux-x64 then mcp-server
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -euo pipefail
+          TOKEN="${NODE_AUTH_TOKEN:-$NPM_TOKEN}"
+          test -n "$TOKEN"
+          printf '//registry.npmjs.org/:_authToken=%s\nalways-auth=true\n' "$TOKEN" > "$HOME/.npmrc"
+          export NPM_CONFIG_USERCONFIG="$HOME/.npmrc"
+          unset npm_config_workspace || true
+          unset npm_config_workspaces || true
+          npm whoami
+          bun install --frozen-lockfile || bun install
+          # publish linux native first
+          PLAT=packages/mcp-server/npm/linux-x64-gnu
+          PNAME=$(node -p "require('./$PLAT/package.json').name")
+          PVER=$(node -p "require('./$PLAT/package.json').version")
+          if ! npm view "$PNAME@$PVER" version >/dev/null 2>&1; then
+            test -x "$PLAT/coderag-mcp-server"
+            (cd "$PLAT" && npm publish --access public) 2>&1 | tee /tmp/plat.log
+            for i in $(seq 1 24); do npm view "$PNAME@$PVER" version >/dev/null 2>&1 && break; sleep 5; done
+          else
+            echo already "$PNAME@$PVER"
+          fi
+          # build mcp package dist
+          bun run --filter @sylphx/coderag-mcp build || (cd packages/mcp-server && bun run build)
+          # ensure dependency is registry version not workspace
+          node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('packages/mcp-server/package.json','utf8'));p.dependencies['@sylphx/coderag']='0.1.26';fs.writeFileSync('packages/mcp-server/package.json',JSON.stringify(p,null,2));"
+          cd packages/mcp-server
+          NAME=$(node -p "require('./package.json').name")
+          VER=$(node -p "require('./package.json').version")
+          if npm view "$NAME@$VER" version >/dev/null 2>&1; then
+            echo already "$NAME@$VER"; exit 0
+          fi
+          npm publish --access public 2>&1 | tee /tmp/mcp.log
+          for i in $(seq 1 24); do
+            if npm view "$NAME@$VER" version >/dev/null 2>&1; then
+              npm view "$NAME" version dist-tags bin
+              exit 0
+            fi
+            sleep 5
+          done
+          grep -q "+ $NAME@$VER" /tmp/mcp.log && exit 0
+          exit 1

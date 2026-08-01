@@ -1,0 +1,168 @@
+name: Publish Locus MCP multi-arch
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: Type PUBLISH
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build-darwin:
+    if: ${{ inputs.confirm == 'PUBLISH' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: aarch64-apple-darwin
+            key: darwin-arm64
+          - target: x86_64-apple-darwin
+            key: darwin-x64
+    runs-on: [self-hosted, sylphx, macos, standard]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - name: Build
+        run: |
+          set -euo pipefail
+          cargo build --release -p coderag-mcp-server -p coderag-cli --target ${{ matrix.target }}
+          mkdir -p native-out
+          cp target/${{ matrix.target }}/release/coderag-mcp-server native-out/
+          cp target/${{ matrix.target }}/release/coderag-cli native-out/
+          chmod +x native-out/*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-${{ matrix.key }}
+          path: native-out/
+
+  build-linux-x64:
+    if: ${{ inputs.confirm == 'PUBLISH' }}
+    runs-on: sylphx-linux-standard
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-gnu
+      - name: Build
+        run: |
+          set -euo pipefail
+          cargo build --release -p coderag-mcp-server -p coderag-cli --target x86_64-unknown-linux-gnu
+          mkdir -p native-out
+          cp target/x86_64-unknown-linux-gnu/release/coderag-mcp-server native-out/
+          cp target/x86_64-unknown-linux-gnu/release/coderag-cli native-out/
+          chmod +x native-out/*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-linux-x64-gnu
+          path: native-out/
+
+  build-linux-arm64:
+    if: ${{ inputs.confirm == 'PUBLISH' }}
+    runs-on: sylphx-linux-standard
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-unknown-linux-gnu
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: 0.14.1
+      - name: Build zig cross
+        run: |
+          set -euo pipefail
+          cargo install cargo-zigbuild --version 0.23.0 --locked
+          cargo zigbuild --release -p coderag-mcp-server -p coderag-cli --target aarch64-unknown-linux-gnu.2.17
+          mkdir -p native-out
+          cp target/aarch64-unknown-linux-gnu/release/coderag-mcp-server native-out/
+          cp target/aarch64-unknown-linux-gnu/release/coderag-cli native-out/
+          chmod +x native-out/*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-linux-arm64-gnu
+          path: native-out/
+
+  publish:
+    needs: [build-darwin, build-linux-x64, build-linux-arm64]
+    runs-on: sylphx-linux-standard
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          registry-url: https://registry.npmjs.org
+          always-auth: true
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.12"
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Stage platforms, publish natives + mcp + brand
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -euo pipefail
+          TOKEN="${NODE_AUTH_TOKEN:-$NPM_TOKEN}"
+          test -n "$TOKEN"
+          printf '//registry.npmjs.org/:_authToken=%s\nalways-auth=true\n' "$TOKEN" > "$HOME/.npmrc"
+          export NPM_CONFIG_USERCONFIG="$HOME/.npmrc"
+          unset npm_config_workspace || true
+          unset npm_config_workspaces || true
+          npm whoami
+          VER=$(node -p "require('./packages/mcp-server/package.json').version")
+          echo "MCP version $VER"
+          ls -laR artifacts
+          for key in darwin-arm64 darwin-x64 linux-x64-gnu linux-arm64-gnu; do
+            srcdir=$(find artifacts -type d -name "native-$key" | head -1)
+            test -n "$srcdir"
+            dest=packages/mcp-server/npm/$key
+            mkdir -p "$dest"
+            cp "$srcdir/coderag-mcp-server" "$dest/"
+            cp "$srcdir/coderag-cli" "$dest/"
+            chmod +x "$dest"/*
+            node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync(process.argv[1],'utf8'));p.version=process.argv[2];fs.writeFileSync(process.argv[1],JSON.stringify(p,null,2)+'\n')" "$dest/package.json" "$VER"
+            name=$(node -p "require('./'+process.argv[1]+'/package.json').name" "$dest")
+            if npm view "$name@$VER" version >/dev/null 2>&1; then
+              echo already "$name@$VER"
+            else
+              (cd "$dest" && npm publish --access public)
+              for i in $(seq 1 24); do npm view "$name@$VER" version >/dev/null 2>&1 && break; sleep 5; done
+              npm view "$name@$VER" version
+            fi
+          done
+          node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('packages/mcp-server/package.json','utf8'));p.dependencies={'@sylphx/coderag':'workspace:*'};fs.writeFileSync('packages/mcp-server/package.json',JSON.stringify(p,null,2));"
+          bun install --frozen-lockfile || bun install
+          bun run --filter @sylphx/coderag build
+          bun run --filter @sylphx/coderag-mcp build
+          STAGE=$(mktemp -d)
+          cp -a packages/mcp-server/. "$STAGE/"
+          node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync(process.argv[1],'utf8'));p.dependencies={'@sylphx/coderag':'0.1.26'};p.private=false;p.publishConfig={access:'public'};delete p.scripts;fs.writeFileSync(process.argv[1],JSON.stringify(p,null,2));" "$STAGE/package.json"
+          cd "$STAGE"
+          NAME=$(node -p "require('./package.json').name")
+          if npm view "$NAME@$VER" version >/dev/null 2>&1; then
+            echo already "$NAME@$VER"
+          else
+            npm publish --access public
+            for i in $(seq 1 24); do npm view "$NAME@$VER" version >/dev/null 2>&1 && break; sleep 5; done
+          fi
+          npm view "$NAME@$VER" version bin dependencies
+          if npm view "@sylphx/locus@$VER" version >/dev/null 2>&1; then
+            echo already brand
+          else
+            WORK=$(mktemp -d)
+            cd "$WORK"
+            npm pack "$NAME@$VER"
+            tar -xzf *.tgz
+            cd package
+            node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf8'));p.name='@sylphx/locus';p.description='Locus brand alias of @sylphx/coderag-mcp';const b=p.bin&&(p.bin['coderag-mcp']||Object.values(p.bin)[0]);p.bin={locus:b,'coderag-mcp':b};delete p.scripts;fs.writeFileSync('package.json',JSON.stringify(p,null,2));"
+            npm publish --access public --ignore-scripts
+            for i in $(seq 1 24); do npm view "@sylphx/locus@$VER" version >/dev/null 2>&1 && break; sleep 5; done
+          fi
+          npm view @sylphx/locus@$VER version bin

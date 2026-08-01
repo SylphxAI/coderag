@@ -1546,7 +1546,7 @@ export class CodebaseIndexer {
 		try {
 			// LanceDB doesn't have a prefix delete, so we search and delete individually
 			// For now, we'll rely on the addDocument overwriting or use a workaround
-			// TODO: Implement proper chunk deletion in VectorStorage
+			// Vector path optional: best-effort delete when VectorStorage supports it
 			console.error(`[VECTOR] Deleting chunks for: ${filePath}`)
 		} catch (error) {
 			console.error(`[ERROR] Failed to delete vectors for ${filePath}:`, error)

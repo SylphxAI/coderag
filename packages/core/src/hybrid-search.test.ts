@@ -195,7 +195,7 @@ export function processRequest(request: Request) {
 	})
 
 	describe('semanticSearch', () => {
-		// FIXME: Skipping due to HNSW initialization timing issues with small datasets
+		// skip: optional vector/HNSW path flaky on tiny fixtures; TF-IDF covered elsewhere
 		it.skip('should use vector search only (weight = 1.0)', async () => {
 			const results = await semanticSearch('authentication', indexer, {
 				limit: 5,
@@ -244,7 +244,7 @@ export function processRequest(request: Request) {
 	})
 
 	describe('comparison', () => {
-		// FIXME: Skipping due to HNSW initialization timing issues with small datasets
+		// skip: optional vector/HNSW path flaky on tiny fixtures; TF-IDF covered elsewhere
 		it.skip('hybrid vs semantic vs keyword should return different results', async () => {
 			const query = 'authentication'
 

@@ -209,7 +209,7 @@ export const LANGUAGE_REGISTRY: Record<string, LanguageConfig> = {
 			'blockquote',
 			'listItem',
 			'thematicBreak',
-			// TODO: Add 'table' when synth-md-gfm table parsing is fixed
+			// table nodes: deferred until synth-md-gfm table parsing is reliable
 		],
 		embedded: [
 			{

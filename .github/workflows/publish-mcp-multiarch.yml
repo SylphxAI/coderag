@@ -64,20 +64,16 @@ jobs:
 
   build-linux-arm64:
     if: ${{ inputs.confirm == 'PUBLISH' }}
-    runs-on: sylphx-linux-standard
+    runs-on: ubuntu-24.04-arm
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-unknown-linux-gnu
-      - uses: mlugg/setup-zig@v2
-        with:
-          version: 0.14.1
-      - name: Build zig cross
+      - name: Build native arm64
         run: |
           set -euo pipefail
-          cargo install cargo-zigbuild --version 0.23.0 --locked
-          cargo zigbuild --release -p coderag-mcp-server -p coderag-cli --target aarch64-unknown-linux-gnu.2.17
+          cargo build --release -p coderag-mcp-server -p coderag-cli --target aarch64-unknown-linux-gnu
           mkdir -p native-out
           cp target/aarch64-unknown-linux-gnu/release/coderag-mcp-server native-out/
           cp target/aarch64-unknown-linux-gnu/release/coderag-cli native-out/

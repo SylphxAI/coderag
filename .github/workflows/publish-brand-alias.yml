@@ -85,17 +85,41 @@ jobs:
             fs.writeFileSync("package.json", JSON.stringify(pkg,null,2));
             console.log("publishing", pkg.name, pkg.version, "bins", pkg.bin, "unpacked from", process.env.TRANSITIONAL);
           '
-          npm publish --access public --ignore-scripts
-          for i in $(seq 1 12); do
+          # drop devDependencies from alias (not needed for consumers)
+          node -e '
+            const fs=require("fs");
+            const pkg=JSON.parse(fs.readFileSync("package.json","utf8"));
+            delete pkg.devDependencies;
+            if (pkg.repository && typeof pkg.repository==="object") {
+              let u=pkg.repository.url||"";
+              if (u && !u.startsWith("git+")) pkg.repository.url="git+"+u.replace(/^git\+/,"");
+            }
+            fs.writeFileSync("package.json", JSON.stringify(pkg,null,2));
+          '
+          npm publish --access public --ignore-scripts --json | tee /tmp/publish.json || {
+            echo "publish failed; json:"; cat /tmp/publish.json || true
+            exit 1
+          }
+          echo "publish json:"; cat /tmp/publish.json || true
+          # long CDN/index wait (new package names can lag)
+          for i in $(seq 1 36); do
             if OUT=$(npm view "$BRAND@$VER" version 2>/dev/null); then
               echo "readback $OUT"
-              npm view "$BRAND" version dist-tags
+              npm view "$BRAND" version dist-tags bin description
               exit 0
             fi
+            echo "wait readback $i"
             sleep 5
           done
-          echo "view delayed; verifying via registry API"
-          code=$(curl -s -o /tmp/b.json -w '%{http_code}' "https://registry.npmjs.org/$(node -p 'encodeURIComponent(process.env.BRAND)')")
+          echo "view delayed; verifying via registry API + search"
+          code=$(curl -sS -o /tmp/b.json -w '%{http_code}' "https://registry.npmjs.org/$(node -p 'encodeURIComponent(process.env.BRAND)')")
           echo "http $code"
-          head -c 200 /tmp/b.json; echo
-          test "$code" = "200"
+          head -c 400 /tmp/b.json; echo
+          curl -sS "https://registry.npmjs.org/-/v1/search?text=$(node -p 'encodeURIComponent(process.env.BRAND)')&size=5" | head -c 500; echo
+          npm ping || true
+          npm view "$BRAND" --json 2>&1 | head -c 500 || true
+          # If publish said success but registry has no package, fail with clear residual
+          if [ "$code" != "200" ]; then
+            echo "RESIDUAL: npm publish reported success but registry still missing $BRAND@$VER" >&2
+            exit 1
+          fi

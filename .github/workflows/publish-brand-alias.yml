@@ -8,7 +8,11 @@ on:
         required: true
         type: string
       version:
-        description: 'Version to dual-publish (default: read from npm latest of transitional)'
+        description: 'Transitional version to pack (default: npm latest of transitional)'
+        required: false
+        type: string
+      brand_version:
+        description: 'Optional brand package version if transitional version is burned/unpublished on brand id'
         required: false
         type: string
 
@@ -32,6 +36,7 @@ jobs:
           BRAND: '@sylphx/locus'
           TRANSITIONAL: '@sylphx/coderag-mcp'
           VERSION_INPUT: ${{ inputs.version }}
+          BRAND_VERSION_INPUT: ${{ inputs.brand_version }}
         run: |
           set -euo pipefail
           TOKEN="${NODE_AUTH_TOKEN:-$NPM_TOKEN}"
@@ -43,9 +48,10 @@ jobs:
           if [ -z "$VER" ]; then
             VER=$(npm view "$TRANSITIONAL" version)
           fi
-          echo "Alias $BRAND@$VER <= $TRANSITIONAL@$VER"
-          if npm view "$BRAND@$VER" version >/dev/null 2>&1; then
-            echo already "$BRAND@$VER"
+          BRAND_VER="${BRAND_VERSION_INPUT:-$VER}"
+          echo "Alias $BRAND@$BRAND_VER <= $TRANSITIONAL@$VER"
+          if npm view "$BRAND@$BRAND_VER" version >/dev/null 2>&1; then
+            echo already "$BRAND@$BRAND_VER"
             npm view "$BRAND" version dist-tags
             exit 0
           fi
@@ -53,6 +59,7 @@ jobs:
             echo "Transitional $TRANSITIONAL@$VER missing on registry" >&2
             exit 1
           fi
+          export BRAND_VER
           WORK=$(mktemp -d)
           cd "$WORK"
           npm pack "$TRANSITIONAL@$VER"
@@ -63,6 +70,7 @@ jobs:
             const fs=require("fs");
             const pkg=JSON.parse(fs.readFileSync("package.json","utf8"));
             pkg.name=process.env.BRAND;
+            if (process.env.BRAND_VER) pkg.version=process.env.BRAND_VER;
             pkg.private=false;
             pkg.publishConfig=Object.assign({}, pkg.publishConfig||{}, {access:"public"});
             // brand-facing description
@@ -103,7 +111,7 @@ jobs:
           echo "publish json:"; cat /tmp/publish.json || true
           # long CDN/index wait (new package names can lag)
           for i in $(seq 1 36); do
-            if OUT=$(npm view "$BRAND@$VER" version 2>/dev/null); then
+            if OUT=$(npm view "$BRAND@$BRAND_VER" version 2>/dev/null); then
               echo "readback $OUT"
               npm view "$BRAND" version dist-tags bin description
               exit 0
@@ -120,6 +128,6 @@ jobs:
           npm view "$BRAND" --json 2>&1 | head -c 500 || true
           # If publish said success but registry has no package, fail with clear residual
           if [ "$code" != "200" ]; then
-            echo "RESIDUAL: npm publish reported success but registry still missing $BRAND@$VER" >&2
+            echo "RESIDUAL: npm publish reported success but registry still missing $BRAND@$BRAND_VER" >&2
             exit 1
           fi

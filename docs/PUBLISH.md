@@ -6,7 +6,8 @@
 | Brand npm | `@sylphx/locus` |
 | Transitional MCP npm | `@sylphx/coderag-mcp` |
 | Transitional core npm | `@sylphx/coderag` |
-| MCP version (tip of expand) | `0.4.2` (re-check with `npm view`) |
+| MCP transitional version | `0.4.2` (re-check with `npm view`) |
+| Brand npm version | may lead during expand if a version is burned (see dual-publish `brand_version`) |
 | Core version | `0.1.25` (re-check with `npm view`) |
 | Registry | transitional **live**; brand via `publish-brand-alias.yml` |
 | Auth | GitHub org `NPM_TOKEN` via publish workflows |

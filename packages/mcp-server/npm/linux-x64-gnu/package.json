@@ -1,6 +1,6 @@
 {
 	"name": "@sylphx/coderag-mcp-linux-x64-gnu",
-	"version": "0.4.6",
+	"version": "0.4.7",
 	"description": "CodeRAG MCP server + CLI native binaries for linux-x64-gnu",
 	"os": [
 		"linux"

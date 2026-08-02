@@ -1,7 +1,7 @@
 {
 	"name": "@sylphx/coderag-mcp",
-	"version": "0.4.6",
-	"description": "Locus — local-first hybrid code search MCP (transitional id @sylphx/coderag-mcp; brand @sylphx/locus)",
+	"version": "0.4.7",
+	"description": "Locus \u2014 local-first hybrid code search MCP (transitional id @sylphx/coderag-mcp; brand @sylphx/locus)",
 	"type": "module",
 	"main": "./dist/rust-engine.js",
 	"bin": {
@@ -38,10 +38,10 @@
 		"@sylphx/coderag": "workspace:*"
 	},
 	"optionalDependencies": {
-		"@sylphx/coderag-mcp-darwin-arm64": "0.4.6",
-		"@sylphx/coderag-mcp-darwin-x64": "0.4.6",
-		"@sylphx/coderag-mcp-linux-x64-gnu": "0.4.6",
-		"@sylphx/coderag-mcp-linux-arm64-gnu": "0.4.6"
+		"@sylphx/coderag-mcp-darwin-arm64": "0.4.7",
+		"@sylphx/coderag-mcp-darwin-x64": "0.4.7",
+		"@sylphx/coderag-mcp-linux-x64-gnu": "0.4.7",
+		"@sylphx/coderag-mcp-linux-arm64-gnu": "0.4.7"
 	},
 	"devDependencies": {
 		"@types/bun": "^1.3.3",

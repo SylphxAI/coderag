@@ -143,7 +143,7 @@ jobs:
           bun run --filter @sylphx/coderag-mcp build
           STAGE=$(mktemp -d)
           cp -a packages/mcp-server/. "$STAGE/"
-          node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync(process.argv[1],'utf8'));p.dependencies={'@sylphx/coderag':'0.1.26'};p.private=false;p.publishConfig={access:'public'};delete p.scripts;fs.writeFileSync(process.argv[1],JSON.stringify(p,null,2));" "$STAGE/package.json"
+          node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync(process.argv[1],'utf8'));p.dependencies={'@sylphx/coderag':'0.1.27'};p.private=false;p.publishConfig={access:'public'};delete p.scripts;fs.writeFileSync(process.argv[1],JSON.stringify(p,null,2));" "$STAGE/package.json"
           cd "$STAGE"
           NAME=$(node -p "require('./package.json').name")
           if npm view "$NAME@$VER" version >/dev/null 2>&1; then

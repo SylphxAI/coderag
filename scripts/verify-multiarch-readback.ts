@@ -82,9 +82,9 @@ function packageExistsWithRetry(name: string, ver: string, attempts = 10): boole
 // Version-PR-only Release runs still invoke postpublish after creating the
 // Changesets version PR (published=false). Skip fail-closed readback until
 // the version actually exists on the registry.
-if (!packageExists('@sylphx/coderag-mcp', version)) {
+if (!packageExists('@sylphx/locus', version) || packageExists('@sylphx/coderag-mcp', version)) {
 	console.log(
-		`[verify-multiarch-readback] SKIP: @sylphx/coderag-mcp@${version} not on registry yet (version PR path; publish happens after version PR merge)`
+		`[verify-multiarch-readback] SKIP: @sylphx/locus@${version} not on registry yet (version PR path; publish happens after version PR merge)`
 	)
 	process.exit(0)
 }

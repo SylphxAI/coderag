@@ -70,7 +70,7 @@ pub fn resolve_cli_binary() -> Option<PathBuf> {
 pub fn invoke_cli_tool(tool: &str, arguments: Value) -> Result<CallToolResult, rmcp::ErrorData> {
     let cli = resolve_cli_binary().ok_or_else(|| {
         rmcp::ErrorData::invalid_request(
-            "coderag-cli is unavailable. Install @sylphx/coderag-mcp (platform optionalDependency includes coderag-cli) or run `bun run build:rust`.",
+            "coderag-cli is unavailable. Install @sylphx/locus (platform optionalDependency includes coderag-cli) or run `bun run build:rust`.",
             None,
         )
     })?;

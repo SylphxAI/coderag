@@ -49,7 +49,7 @@
 		},
 		{
 			"title": "MCP Server",
-			"code": "npx @sylphx/coderag-mcp --root=/path/to/project"
+			"code": "npx @sylphx/locus --root=/path/to/project"
 		}
 	]
 }

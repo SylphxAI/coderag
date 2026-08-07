@@ -3,11 +3,11 @@
  * Proves codebase_search golden baseline parity over streamable HTTP.
  */
 
+import { afterAll, beforeAll, describe, expect, it } from 'bun:test'
 import { type ChildProcess, execSync, spawn } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import net from 'node:net'
 import path from 'node:path'
-import { afterAll, beforeAll, describe, expect, it } from 'bun:test'
 
 const repoRoot = path.resolve(import.meta.dirname, '../..')
 const binWrapper = path.join(repoRoot, 'bin/coderag-mcp')
@@ -190,7 +190,7 @@ describe('MCP Server HTTP Transport Integration (Rust rmcp)', () => {
 
 		expect(response.id).toBe(1)
 		const serverInfo = (response.result as { serverInfo?: { name?: string } })?.serverInfo
-		expect(serverInfo?.name).toBe('coderag-mcp')
+		expect(serverInfo?.name).toBe('locus')
 	})
 
 	it('should list codebase_search tool over HTTP', async () => {
@@ -319,7 +319,7 @@ describe('MCP Server HTTP Transport Authentication (Rust rmcp)', () => {
 		expect(response.status).toBe(200)
 		const data = await parseMcpResponse(response)
 		const serverInfo = (data.result as { serverInfo?: { name?: string } })?.serverInfo
-		expect(serverInfo?.name).toBe('coderag-mcp')
+		expect(serverInfo?.name).toBe('locus')
 	})
 
 	it('keeps the health endpoint open without a key', async () => {

@@ -2,18 +2,20 @@
 
 # Locus
 
+Canonical package: **`@sylphx/locus`** · bin **`locus`**
+
 <p align="center">
   <img src="https://mark.sylphx.com/api/v1/banner?type=glass&theme=tokyonight&text=locus&desc=Local-first+hybrid+code+search+for+agents+%E2%80%94+AST+chunks%2C+TF-IDF%2C+optional+vectors&height=200&animation=rise&credit=0" alt="Locus — Sylphx Mark banner" width="100%" />
 </p>
 
 ### Your agent searched the codebase. **Did it find the right code?**
 
-**Locus** (repository `coderag`, transitional packages `@sylphx/coderag` / `@sylphx/coderag-mcp`) —
+**Locus** (repository `coderag`, transitional packages `@sylphx/coderag` / `@sylphx/locus`) —
 local-first hybrid code search for AI assistants. One MCP call indexes your repo and returns
 **semantic AST chunks** — functions, classes, and methods — not noisy grep dumps or slow cloud pipelines.
 
 [![npm brand](https://img.shields.io/npm/v/@sylphx/locus?style=flat-square&label=locus)](https://www.npmjs.com/package/@sylphx/locus)
-[![npm mcp](https://img.shields.io/npm/v/@sylphx/coderag-mcp?style=flat-square&label=coderag-mcp)](https://www.npmjs.com/package/@sylphx/coderag-mcp)
+[![npm mcp](https://img.shields.io/npm/v/@sylphx/locus?style=flat-square&label=coderag-mcp)](https://www.npmjs.com/package/@sylphx/locus)
 [![npm core](https://img.shields.io/npm/v/@sylphx/coderag?style=flat-square&label=core)](https://www.npmjs.com/package/@sylphx/coderag)
 [![CI](https://img.shields.io/github/actions/workflow/status/SylphxAI/coderag/ci.yml?style=flat-square)](https://github.com/SylphxAI/coderag/actions)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
@@ -93,7 +95,7 @@ Full comparison: [how search works](docs/guide/how-search-works.md).
 ```bash
 claude mcp add locus -- npx @sylphx/locus --root=/absolute/path/to/project
 # transitional (expand–contract still valid):
-# claude mcp add coderag -- npx @sylphx/coderag-mcp --root=/absolute/path/to/project
+# claude mcp add coderag -- npx @sylphx/locus --root=/absolute/path/to/project
 ```
 
 Search with the `codebase_search` tool:
@@ -138,7 +140,7 @@ export async function authenticate(username: string, password: string) {
 ```bash
 claude mcp add locus -- npx @sylphx/locus --root=/absolute/path/to/project
 # transitional (expand–contract still valid):
-# claude mcp add coderag -- npx @sylphx/coderag-mcp --root=/absolute/path/to/project
+# claude mcp add coderag -- npx @sylphx/locus --root=/absolute/path/to/project
 ```
 
 ### Claude Desktop
@@ -150,7 +152,7 @@ Add to `claude_desktop_config.json`:
   "mcpServers": {
     "coderag": {
       "command": "npx",
-      "args": ["-y", "@sylphx/coderag-mcp", "--root=/absolute/path/to/project"]
+      "args": ["-y", "@sylphx/locus", "--root=/absolute/path/to/project"]
     }
   }
 }
@@ -159,7 +161,7 @@ Add to `claude_desktop_config.json`:
 ### Any MCP Client
 
 ```bash
-npx @sylphx/coderag-mcp --root=/absolute/path/to/project
+npx @sylphx/locus --root=/absolute/path/to/project
 ```
 
 Need Cursor, VS Code, Windsurf, or library usage? See the
@@ -221,7 +223,7 @@ results.
 | Package | Description | Install |
 | --- | --- | --- |
 | [@sylphx/coderag](packages/core) | Core search library | `npm i @sylphx/coderag` |
-| [@sylphx/coderag-mcp](packages/mcp-server) | MCP server for AI assistants | `npx @sylphx/coderag-mcp` |
+| [@sylphx/locus](packages/mcp-server) | MCP server for AI assistants | `npx @sylphx/locus` |
 
 ---
 

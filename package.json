@@ -2,14 +2,14 @@
 	"name": "coderag",
 	"version": "0.0.0",
 	"private": true,
-	"description": "Locus — local-first hybrid code search (CodeRAG monorepo; brand @sylphx/locus)",
+	"description": "Locus — local-first hybrid code search monorepo (brand @sylphx/locus)",
 	"workspaces": [
 		"packages/*",
 		"packages/mcp-server/npm/*"
 	],
 	"bin": {
-		"coderag-mcp": "./bin/coderag-mcp",
-		"locus": "./bin/coderag-mcp"
+		"locus": "./bin/coderag-mcp",
+		"coderag-mcp": "./bin/coderag-mcp"
 	},
 	"scripts": {
 		"build": "turbo run build",

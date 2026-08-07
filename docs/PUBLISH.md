@@ -4,7 +4,7 @@
 | --- | --- |
 | Brand | Locus |
 | Canonical npm | `@sylphx/locus` |
-| Source tip version | `0.5.0` |
+| Source tip version | `0.5.1` |
 | Live npm (main package) | check `npm view @sylphx/locus version` — may lag source tip |
 | Core library | `@sylphx/coderag` |
 | Natives | `@sylphx/locus-<platform>` |

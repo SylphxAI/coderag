@@ -22,9 +22,9 @@ pub struct CodebaseSearchRequest {
 }
 
 pub const SERVER_NAME: &str = "locus";
-pub const SERVER_VERSION: &str = "0.5.0";
+pub const SERVER_VERSION: &str = "0.5.1";
 pub const SERVER_INSTRUCTIONS: &str =
-    "CodeRAG MCP server (Rust rmcp transport). Use codebase_search for deterministic Rust TF-IDF retrieval with score explainability.";
+    "Locus MCP server (Rust rmcp transport). Use codebase_search for deterministic Rust TF-IDF retrieval with score explainability.";
 
 #[derive(Clone)]
 pub struct CoderagMcp {
@@ -67,7 +67,7 @@ impl ServerHandler for CoderagMcp {
             .with_server_info(
                 Implementation::new(SERVER_NAME, SERVER_VERSION)
                     .with_description(
-                        "Rust-native MCP server for coderag (modelcontextprotocol/rust-sdk rmcp)",
+                        "Locus — local-first hybrid code search MCP (Rust rmcp transport)",
                     )
                     .with_website_url("https://github.com/SylphxAI/coderag"),
             )
@@ -83,6 +83,20 @@ mod tests {
         let names: Vec<_> = tools.iter().map(|tool| tool.name.to_string()).collect();
         assert!(names.contains(&"codebase_search".to_string()));
     }
+
+    #[test]
+    fn server_info_is_brand_sole_locus() {
+        use rmcp::ServerHandler;
+        use crate::{SERVER_NAME, SERVER_VERSION};
+        let info = CoderagMcp::new().get_info();
+        let name = info.server_info.name.to_string();
+        let version = info.server_info.version.to_string();
+        assert_eq!(name, SERVER_NAME);
+        assert_eq!(version, SERVER_VERSION);
+        assert_eq!(SERVER_NAME, "locus");
+        assert!(!name.contains("coderag"));
+    }
+
 
     #[test]
     fn codebase_search_request_schema_is_generated_for_rmcp_tool() {

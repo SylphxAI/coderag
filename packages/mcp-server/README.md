@@ -8,6 +8,6 @@ Deprecated transitional id: `@sylphx/coderag-mcp` (do not use as install CTA).
 npx -y @sylphx/locus --root=/absolute/path/to/project
 ```
 
-Native optionalDependencies still use historical `@sylphx/coderag-mcp-<platform>` names until the native rename train; versions match `@sylphx/locus`.
+Native optionalDependencies: `@sylphx/locus-<platform>` version-locked to the product version.
 
 Family law: SylphxAI/skills `apply-instrument-family`.

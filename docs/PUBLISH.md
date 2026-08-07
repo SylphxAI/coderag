@@ -3,28 +3,37 @@
 | Field | Value |
 | --- | --- |
 | Brand | Locus |
-| Brand npm | `@sylphx/locus` |
-| Brand version (live) | `0.4.4` |
-| Transitional MCP npm | `@sylphx/locus` |
-| Transitional MCP version (live) | `0.4.4` |
-| Transitional core npm | `@sylphx/coderag` |
-| Core version (live) | `0.1.26` |
-| Registry | **live** (expand–contract) |
+| Canonical npm | `@sylphx/locus` |
+| Source tip version | `0.5.0` |
+| Live npm (main package) | check `npm view @sylphx/locus version` — may lag source tip |
+| Core library | `@sylphx/coderag` |
+| Natives | `@sylphx/locus-<platform>` |
 | Auth | GitHub org `NPM_TOKEN` via publish workflows |
 
-## Install
+## Install (brand-sole)
 
 ```bash
-# preferred brand
-npx -y @sylphx/locus --root=/abs/path
-# transitional still valid during expand
 npx -y @sylphx/locus --root=/abs/path
 ```
 
-## Expand note
+Do **not** install `@sylphx/coderag-mcp` — transitional id is retired as a public CTA.
 
-Brand `0.4.4` was dual-published from transitional artifacts `0.4.4` after npm reserved
-(but did not publicly serve) `@sylphx/locus@0.4.2`. Next MCP release should align versions
-on both ids (same X.Y.Z). Workflow supports optional `brand_version` for burned versions.
+## Publish
 
-Workflows: `release.yml` / native release train, `publish-brand-alias.yml`.
+1. Ensure main tip is brand-sole (`@sylphx/locus` package name, `locus` bin only).
+2. Prefer multi-arch for full native coverage:
+   ```bash
+   gh workflow run 'Publish Locus MCP multi-arch' --repo SylphxAI/coderag -f confirm=PUBLISH
+   ```
+3. Or linux-x64 + main package only:
+   ```bash
+   gh workflow run 'Publish MCP npm' --repo SylphxAI/coderag -f confirm=PUBLISH
+   ```
+4. Prove registry plane separately from source merge:
+   ```bash
+   npm view @sylphx/locus version bin optionalDependencies
+   npm view @sylphx/locus-linux-x64-gnu version
+   ```
+
+Dual-publish brand-alias workflow is retired.
+

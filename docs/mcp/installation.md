@@ -30,7 +30,7 @@ npm install -g @sylphx/locus
 Then run:
 
 ```bash
-coderag-mcp --root=/path/to/your/project
+locus --root=/path/to/your/project
 ```
 
 **When to use global install:**

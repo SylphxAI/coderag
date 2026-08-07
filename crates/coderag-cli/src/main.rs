@@ -12,7 +12,7 @@ struct CliRequest {
 fn main() {
     let mut raw = String::new();
     if io::stdin().read_to_string(&mut raw).is_err() || raw.trim().is_empty() {
-        eprintln!("coderag-cli expects JSON on stdin: {{\"tool\":\"...\",\"input\":{{...}}}}");
+        eprintln!("locus-cli expects JSON on stdin: {{\"tool\":\"...\",\"input\":{{...}}}}");
         std::process::exit(2);
     }
 

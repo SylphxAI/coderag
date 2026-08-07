@@ -493,7 +493,7 @@ Development and production environments:
       }
     },
     "coderag-prod": {
-      "command": "/usr/local/bin/coderag-mcp",
+      "command": "/usr/local/bin/locus",
       "args": ["--root=/var/www/project", "--max-size=5242880"],
       "env": {
         "OPENAI_API_KEY": "sk-prod-..."

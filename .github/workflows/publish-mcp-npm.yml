@@ -45,7 +45,7 @@ jobs:
           PNAME=$(node -p "require('./$PLAT/package.json').name")
           PVER=$(node -p "require('./$PLAT/package.json').version")
           if ! npm view "$PNAME@$PVER" version >/dev/null 2>&1; then
-            test -x "$PLAT/coderag-mcp-server"
+            test -x "$PLAT/locus-mcp-server"
             (cd "$PLAT" && npm publish --access public) 2>&1 | tee /tmp/plat.log || true
             for i in $(seq 1 24); do npm view "$PNAME@$PVER" version >/dev/null 2>&1 && break; sleep 5; done
           else

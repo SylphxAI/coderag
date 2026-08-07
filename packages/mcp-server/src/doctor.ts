@@ -39,7 +39,7 @@ const probeRustCore = (): DoctorCheck => {
 
 const probeCliBinary = (): DoctorCheck => {
 	const binary = resolveRustCliBinary()
-	if (binary !== 'coderag-cli' && existsSync(binary)) {
+	if (binary !== 'locus-cli' && existsSync(binary)) {
 		return {
 			id: 'cli_binary',
 			status: 'ok',
@@ -90,7 +90,7 @@ const probeRustEngineFlag = (): DoctorCheck => {
 	}
 
 	const binary = resolveRustCliBinary()
-	if (binary !== 'coderag-cli' && existsSync(binary)) {
+	if (binary !== 'locus-cli' && existsSync(binary)) {
 		return {
 			id: 'rust_engine_flag',
 			status: 'ok',

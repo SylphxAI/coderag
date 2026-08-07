@@ -5,10 +5,10 @@
 	"fixed": [
 		[
 			"@sylphx/coderag-mcp",
-			"@sylphx/coderag-mcp-darwin-arm64",
-			"@sylphx/coderag-mcp-darwin-x64",
-			"@sylphx/coderag-mcp-linux-x64-gnu",
-			"@sylphx/coderag-mcp-linux-arm64-gnu"
+			"@sylphx/locus-darwin-arm64",
+			"@sylphx/locus-darwin-x64",
+			"@sylphx/locus-linux-x64-gnu",
+			"@sylphx/locus-linux-arm64-gnu"
 		]
 	],
 	"linked": [],

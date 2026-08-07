@@ -2,12 +2,12 @@
  * Assemble multi-arch platform packages from CI artifacts (or local staging).
  *
  * Expected artifact layout (from native matrix upload):
- *   artifacts/coderag-native-<rust-target>/coderag-mcp-server
- *   artifacts/coderag-native-<rust-target>/coderag-cli
+ *   artifacts/coderag-native-<rust-target>/locus-mcp-server
+ *   artifacts/coderag-native-<rust-target>/locus-cli
  *
  * Writes into:
- *   packages/mcp-server/npm/<platform-key>/coderag-mcp-server
- *   packages/mcp-server/npm/<platform-key>/coderag-cli
+ *   packages/mcp-server/npm/<platform-key>/locus-mcp-server
+ *   packages/mcp-server/npm/<platform-key>/locus-cli
  *
  * Fail-closed: requires all configured platforms + both binaries unless
  * CODERAG_MULTIARCH_PARTIAL=1.
@@ -40,7 +40,7 @@ const PLATFORMS = [
 	},
 ] as const
 
-const BINARY_NAMES = ['coderag-mcp-server', 'coderag-cli'] as const
+const BINARY_NAMES = ['locus-mcp-server', 'locus-cli'] as const
 
 const artifactsRoot = process.env.CODERAG_ARTIFACTS_DIR
 	? path.resolve(process.env.CODERAG_ARTIFACTS_DIR)

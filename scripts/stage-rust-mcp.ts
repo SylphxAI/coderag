@@ -22,19 +22,19 @@ function hostPlatformDir(): string | null {
 
 const binaries: readonly StagedBinary[] = [
 	{
-		name: 'coderag-mcp-server',
-		source: path.join(repoRoot, 'target/release/coderag-mcp-server'),
+		name: 'locus-mcp-server',
+		source: path.join(repoRoot, 'target/release/locus-mcp-server'),
 		targets: [
-			path.join(repoRoot, 'bin/native/coderag-mcp-server'),
-			path.join(repoRoot, 'packages/mcp-server/bin/native/coderag-mcp-server'),
+			path.join(repoRoot, 'bin/native/locus-mcp-server'),
+			path.join(repoRoot, 'packages/mcp-server/bin/native/locus-mcp-server'),
 		],
 	},
 	{
-		name: 'coderag-cli',
-		source: path.join(repoRoot, 'target/release/coderag-cli'),
+		name: 'locus-cli',
+		source: path.join(repoRoot, 'target/release/locus-cli'),
 		targets: [
-			path.join(repoRoot, 'bin/native/coderag-cli'),
-			path.join(repoRoot, 'packages/mcp-server/bin/native/coderag-cli'),
+			path.join(repoRoot, 'bin/native/locus-cli'),
+			path.join(repoRoot, 'packages/mcp-server/bin/native/locus-cli'),
 		],
 	},
 ]

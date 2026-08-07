@@ -13,16 +13,16 @@
 
 | Layer | Status | Evidence |
 | --- | --- | --- |
-| MCP default | **Rust-first** | `bin/coderag-mcp` launches native `coderag-mcp-server`; no TS stdio fallback |
+| MCP default | **Rust-first** | `bin/locus` launches native `locus-mcp-server`; no TS stdio fallback |
 | Zero-config search | **Yes** | Local TF-IDF / AST chunk path; no API key |
-| Package size (MCP) | **~10 MB unpacked** | primarily staged native `coderag-cli` + `coderag-mcp-server` |
+| Package size (MCP) | **~10 MB unpacked** | primarily staged native `locus-cli` + `locus-mcp-server` |
 | TS core `@sylphx/coderag` | **Overweight vs principle** | hard deps include `@huggingface/transformers`, `@ai-sdk/openai`, `ai`, `drizzle-orm`, `@libsql/client`, plus many `@sylphx/synth-*` optionalDeps |
 | Cloud optional | **Partial** | OpenAI / HF present as *library* deps even when MCP path does not need them |
 
 ## Target architecture (Final Decision direction)
 
 ```
-Agent ──MCP──► locus (native rmcp) ──► coderag-cli (Rust TF-IDF/AST)
+Agent ──MCP──► locus (native rmcp) ──► locus-cli (Rust TF-IDF/AST)
                                               │
 SDK (optional thin) ──► same Rust engine OR pure-Rust crate bindings
                                               │

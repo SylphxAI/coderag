@@ -1,8 +1,15 @@
-# Locus — brand-sole publish (hard cut)
+# Locus — brand-sole publish
 
-Canonical npm: `@sylphx/locus`  
-Deprecated transitional: `@sylphx/coderag-mcp`  
-bin: `locus`  
-MCP: `io.github.SylphxAI/locus`
+| Field | Value |
+| --- | --- |
+| Canonical npm | `@sylphx/locus` |
+| bin | `locus` |
+| MCP | `io.github.SylphxAI/locus` |
+| Deprecated transitional | `@sylphx/coderag-mcp` |
+| Core library | `@sylphx/coderag` (not MCP install CTA) |
 
-Internal crate names may remain `coderag-*`. Product identity is Locus.
+```bash
+npx -y @sylphx/locus --root=/absolute/path/to/project
+```
+
+Native optionalDependencies may still use `@sylphx/coderag-mcp-<platform>` names version-locked to product version.

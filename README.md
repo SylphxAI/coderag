@@ -10,12 +10,12 @@ Canonical package: **`@sylphx/locus`** · bin **`locus`**
 
 ### Your agent searched the codebase. **Did it find the right code?**
 
-**Locus** (repository `coderag`, transitional packages `@sylphx/coderag` / `@sylphx/locus`) —
+**Locus** (repository `coderag`, canonical package `@sylphx/locus`; core library `@sylphx/coderag`) —
 local-first hybrid code search for AI assistants. One MCP call indexes your repo and returns
 **semantic AST chunks** — functions, classes, and methods — not noisy grep dumps or slow cloud pipelines.
 
 [![npm brand](https://img.shields.io/npm/v/@sylphx/locus?style=flat-square&label=locus)](https://www.npmjs.com/package/@sylphx/locus)
-[![npm mcp](https://img.shields.io/npm/v/@sylphx/locus?style=flat-square&label=coderag-mcp)](https://www.npmjs.com/package/@sylphx/locus)
+[![npm mcp](https://img.shields.io/npm/v/@sylphx/locus?style=flat-square&label=locus)](https://www.npmjs.com/package/@sylphx/locus)
 [![npm core](https://img.shields.io/npm/v/@sylphx/coderag?style=flat-square&label=core)](https://www.npmjs.com/package/@sylphx/coderag)
 [![CI](https://img.shields.io/github/actions/workflow/status/SylphxAI/coderag/ci.yml?style=flat-square)](https://github.com/SylphxAI/coderag/actions)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
@@ -27,7 +27,7 @@ local-first hybrid code search for AI assistants. One MCP call indexes your repo
 · [Product docs](#product-docs) · [Roadmap](docs/roadmap/sota-family-roadmap.md)
 
 This repository is product SSOT. Sibling agent tools live in separate repos
-(Citra · Iris · Cue · Prism · Spine · Lookout).
+(Citra · Iris · Cue · Spine · Lookout · Locus).
 
 </div>
 
@@ -43,7 +43,7 @@ This repository is product SSOT. Sibling agent tools live in separate repos
 | [docs/TOOL_SURFACE.md](docs/TOOL_SURFACE.md) | Few clear tools policy |
 | [docs/LOCAL_FIRST_FRONTIER.md](docs/LOCAL_FIRST_FRONTIER.md) | Local-first / zero-config / Rust-first |
 | [docs/PRODUCT_INDEPENDENCE.md](docs/PRODUCT_INDEPENDENCE.md) | This repo is SSOT |
-| [docs/BRAND_PUBLISH.md](docs/BRAND_PUBLISH.md) | Expand–contract brand npm ids |
+| [docs/BRAND_PUBLISH.md](docs/BRAND_PUBLISH.md) | Brand-sole npm ids |
 | [docs/IPPB.md](docs/IPPB.md) | Independent public product bar |
 | [docs/PUBLISH.md](docs/PUBLISH.md) | npm/git publish status |
 
@@ -95,7 +95,6 @@ Full comparison: [how search works](docs/guide/how-search-works.md).
 ```bash
 claude mcp add locus -- npx @sylphx/locus --root=/absolute/path/to/project
 # transitional (expand–contract still valid):
-# claude mcp add coderag -- npx @sylphx/locus --root=/absolute/path/to/project
 ```
 
 Search with the `codebase_search` tool:
@@ -140,7 +139,6 @@ export async function authenticate(username: string, password: string) {
 ```bash
 claude mcp add locus -- npx @sylphx/locus --root=/absolute/path/to/project
 # transitional (expand–contract still valid):
-# claude mcp add coderag -- npx @sylphx/locus --root=/absolute/path/to/project
 ```
 
 ### Claude Desktop

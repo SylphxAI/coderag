@@ -11,7 +11,7 @@ MCP uses a client-server architecture where:
 
 ## What is CodeRAG MCP?
 
-CodeRAG MCP (`@sylphx/coderag-mcp`) is an MCP server that provides intelligent codebase search capabilities to AI assistants. It enables AI to search and understand your codebase using hybrid TF-IDF and optional vector embeddings.
+CodeRAG MCP (`@sylphx/locus`) is an MCP server that provides intelligent codebase search capabilities to AI assistants. It enables AI to search and understand your codebase using hybrid TF-IDF and optional vector embeddings.
 
 **Key Benefits:**
 

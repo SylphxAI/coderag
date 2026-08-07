@@ -5,7 +5,7 @@
 The fastest way to run CodeRAG MCP is using `npx`:
 
 ```bash
-npx @sylphx/coderag-mcp --root=/path/to/your/project
+npx @sylphx/locus --root=/path/to/your/project
 ```
 
 This command:
@@ -24,7 +24,7 @@ This command:
 Install CodeRAG MCP globally for faster startup:
 
 ```bash
-npm install -g @sylphx/coderag-mcp
+npm install -g @sylphx/locus
 ```
 
 Then run:
@@ -45,7 +45,7 @@ coderag-mcp --root=/path/to/your/project
 Specify the codebase root directory to index.
 
 ```bash
-npx @sylphx/coderag-mcp --root=/Users/you/projects/my-app
+npx @sylphx/locus --root=/Users/you/projects/my-app
 ```
 
 **Default:** Current working directory
@@ -60,7 +60,7 @@ npx @sylphx/coderag-mcp --root=/Users/you/projects/my-app
 Maximum file size to index (in bytes).
 
 ```bash
-npx @sylphx/coderag-mcp --root=/path/to/project --max-size=2097152
+npx @sylphx/locus --root=/path/to/project --max-size=2097152
 ```
 
 **Default:** `1048576` (1 MB)
@@ -81,7 +81,7 @@ npx @sylphx/coderag-mcp --root=/path/to/project --max-size=2097152
 Disable automatic indexing on startup.
 
 ```bash
-npx @sylphx/coderag-mcp --root=/path/to/project --no-auto-index
+npx @sylphx/locus --root=/path/to/project --no-auto-index
 ```
 
 **Default:** Auto-indexing enabled
@@ -103,7 +103,7 @@ Enable semantic search with OpenAI embeddings.
 
 ```bash
 export OPENAI_API_KEY=sk-...
-npx @sylphx/coderag-mcp --root=/path/to/project
+npx @sylphx/locus --root=/path/to/project
 ```
 
 **Effect:**
@@ -123,7 +123,7 @@ Use OpenAI-compatible embedding endpoints (OpenRouter, Together AI, etc.).
 ```bash
 export OPENAI_API_KEY=your-api-key
 export OPENAI_BASE_URL=https://openrouter.ai/api/v1
-npx @sylphx/coderag-mcp --root=/path/to/project
+npx @sylphx/locus --root=/path/to/project
 ```
 
 **Use Cases:**
@@ -139,7 +139,7 @@ Specify custom embedding model.
 ```bash
 export OPENAI_API_KEY=sk-...
 export EMBEDDING_MODEL=text-embedding-3-large
-npx @sylphx/coderag-mcp --root=/path/to/project
+npx @sylphx/locus --root=/path/to/project
 ```
 
 **Default:** `text-embedding-3-small`
@@ -162,7 +162,7 @@ export OPENAI_API_KEY=your-key
 export OPENAI_BASE_URL=https://api.together.xyz/v1
 export EMBEDDING_MODEL=togethercomputer/m2-bert-80M-8k-retrieval
 export EMBEDDING_DIMENSIONS=768
-npx @sylphx/coderag-mcp --root=/path/to/project
+npx @sylphx/locus --root=/path/to/project
 ```
 
 **When to use:**
@@ -178,7 +178,7 @@ npx @sylphx/coderag-mcp --root=/path/to/project
   "mcpServers": {
     "coderag": {
       "command": "npx",
-      "args": ["-y", "@sylphx/coderag-mcp", "--root=/path/to/project"]
+      "args": ["-y", "@sylphx/locus", "--root=/path/to/project"]
     }
   }
 }
@@ -191,7 +191,7 @@ npx @sylphx/coderag-mcp --root=/path/to/project
   "mcpServers": {
     "coderag": {
       "command": "npx",
-      "args": ["-y", "@sylphx/coderag-mcp", "--root=/path/to/project"],
+      "args": ["-y", "@sylphx/locus", "--root=/path/to/project"],
       "env": {
         "OPENAI_API_KEY": "sk-..."
       }
@@ -207,11 +207,11 @@ npx @sylphx/coderag-mcp --root=/path/to/project
   "mcpServers": {
     "coderag-frontend": {
       "command": "npx",
-      "args": ["-y", "@sylphx/coderag-mcp", "--root=/path/to/frontend"]
+      "args": ["-y", "@sylphx/locus", "--root=/path/to/frontend"]
     },
     "coderag-backend": {
       "command": "npx",
-      "args": ["-y", "@sylphx/coderag-mcp", "--root=/path/to/backend"]
+      "args": ["-y", "@sylphx/locus", "--root=/path/to/backend"]
     }
   }
 }
@@ -226,7 +226,7 @@ npx @sylphx/coderag-mcp --root=/path/to/project
       "command": "npx",
       "args": [
         "-y",
-        "@sylphx/coderag-mcp",
+        "@sylphx/locus",
         "--root=/path/to/project",
         "--max-size=2097152",
         "--no-auto-index"

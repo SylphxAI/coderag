@@ -41,7 +41,7 @@ right code block**, not a directory of keyword accidents.
 ## Try the fix in 30 seconds
 
 ```bash
-claude mcp add coderag -- npx @sylphx/coderag-mcp --root=/absolute/path/to/project
+claude mcp add coderag -- npx @sylphx/locus --root=/absolute/path/to/project
 ```
 
 ```json

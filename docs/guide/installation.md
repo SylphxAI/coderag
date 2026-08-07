@@ -114,10 +114,10 @@ For AI assistant integration (Claude, Cursor, etc.):
 
 ```bash
 # Run directly with npx (no installation needed)
-npx @sylphx/coderag-mcp --root=/path/to/project
+npx @sylphx/locus --root=/path/to/project
 
 # Or install globally
-npm install -g @sylphx/coderag-mcp
+npm install -g @sylphx/locus
 coderag-mcp --root=/path/to/project
 ```
 

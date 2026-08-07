@@ -9,7 +9,7 @@
 
 ## Context
 
-CodeRAG ships an npm MCP package (`@sylphx/coderag-mcp`) whose production consumer
+CodeRAG ships an npm MCP package (`@sylphx/locus`) whose production consumer
 path is a **Rust rmcp** binary (stdio + Streamable HTTP) with multi-arch
 `optionalDependencies` platform packages. The TypeScript stdio adapter
 (`packages/mcp-server/src/index.ts`) was deleted on main historically; four
@@ -25,7 +25,7 @@ in-scope capabilities track the MCP cutover denominator:
 Evidence package already admitted on main (PR #80 canary bind + tick014
 `prod_audit_pass` + independent `ACCEPT_PROD_AUDIT_PASS`):
 
-- npm `@sylphx/coderag-mcp@0.4.1` `gitHead=8fd7a45…`
+- npm `@sylphx/locus@0.4.1` `gitHead=8fd7a45…`
 - `imageDigest` = npm tarball sha256 `1e6f569f0a333230ccfc998432701b31c46b18ebe6c29515026d46cb466a1ff9`
 - Differential CI merge_group [29142069368](https://github.com/SylphxAI/coderag/actions/runs/29142069368) — cases=9 (tool=3 stdio=3 http=3)
 - Darwin arm64 install + MCP initialize + `tools/list=codebase_search` PASS
@@ -41,7 +41,7 @@ Evidence package already admitted on main (PR #80 canary bind + tick014
 | MCP Streamable HTTP | Rust `http_transport.rs` / `StreamableHttpService` | none |
 | MCP tool `codebase_search` | Rust `codebase_search.rs` + `coderag-core` | TS `rust-engine.ts` oracle for differential only |
 | npm consumer bin | `bin/coderag-mcp` arch-aware, optionalDeps-first, fail-closed | embedded linux ELF fallback under arch gate |
-| Platform natives | `@sylphx/coderag-mcp-{darwin-arm64,darwin-x64,linux-x64-gnu,linux-arm64-gnu}` | win32/musl out of declared matrix |
+| Platform natives | `@sylphx/locus-{darwin-arm64,darwin-x64,linux-x64-gnu,linux-arm64-gnu}` | win32/musl out of declared matrix |
 | Library / oracle TS | `packages/core`, `packages/mcp-server/src/{rust-engine,doctor,evidence,search-coordinator}.ts` | **not** MCP production authority |
 
 ### 2. Full-denominator `ts_deleted` admission (TICK023)
@@ -101,5 +101,5 @@ evidence-bound. **Fleet FCP is not claimed** by this ADR.
 - `bash scripts/check-no-ts-{stdio-backend,http-backend,codebase-search}.sh` PASS
 - `bash scripts/check-ts-adapter-deletion-ready.sh` PASS
 - bun matrix tests for ledger + gates PASS
-- npm `@sylphx/coderag-mcp@0.4.1` gitHead + integrity reconfirm
+- npm `@sylphx/locus@0.4.1` gitHead + integrity reconfirm
 - Differential main_durable evidence retained at bound SHA `8fd7a45…`

@@ -32,7 +32,7 @@ Edit `claude_desktop_config.json`:
   "mcpServers": {
     "coderag": {
       "command": "npx",
-      "args": ["-y", "@sylphx/coderag-mcp", "--root=/path/to/project"]
+      "args": ["-y", "@sylphx/locus", "--root=/path/to/project"]
     }
   }
 }
@@ -47,7 +47,7 @@ Replace `/path/to/project` with your project's absolute path.
   "mcpServers": {
     "coderag": {
       "command": "npx",
-      "args": ["-y", "@sylphx/coderag-mcp", "--root=/path/to/project"],
+      "args": ["-y", "@sylphx/locus", "--root=/path/to/project"],
       "env": {
         "OPENAI_API_KEY": "sk-..."
       }
@@ -65,7 +65,7 @@ Replace `/path/to/project` with your project's absolute path.
       "command": "npx",
       "args": [
         "-y",
-        "@sylphx/coderag-mcp",
+        "@sylphx/locus",
         "--root=/path/to/project",
         "--max-size=2097152"
       ],
@@ -115,7 +115,7 @@ Create or edit `~/.cursor/mcp.json`:
   "mcpServers": {
     "coderag": {
       "command": "npx",
-      "args": ["-y", "@sylphx/coderag-mcp", "--root=/path/to/project"]
+      "args": ["-y", "@sylphx/locus", "--root=/path/to/project"]
     }
   }
 }
@@ -130,7 +130,7 @@ Use current workspace folder:
   "mcpServers": {
     "coderag": {
       "command": "npx",
-      "args": ["-y", "@sylphx/coderag-mcp", "--root=${workspaceFolder}"]
+      "args": ["-y", "@sylphx/locus", "--root=${workspaceFolder}"]
     }
   }
 }
@@ -171,7 +171,7 @@ Edit `config.json` to add MCP servers:
   "mcpServers": {
     "coderag": {
       "command": "npx",
-      "args": ["-y", "@sylphx/coderag-mcp", "--root=${workspaceFolder}"]
+      "args": ["-y", "@sylphx/locus", "--root=${workspaceFolder}"]
     }
   }
 }
@@ -187,7 +187,7 @@ Create `.vscode/mcp.json` in your project:
     "servers": {
       "coderag": {
         "command": "npx",
-        "args": ["-y", "@sylphx/coderag-mcp", "--root=${workspaceFolder}"]
+        "args": ["-y", "@sylphx/locus", "--root=${workspaceFolder}"]
       }
     }
   }
@@ -232,7 +232,7 @@ Create or edit `mcp_config.json`:
   "mcpServers": {
     "coderag": {
       "command": "npx",
-      "args": ["-y", "@sylphx/coderag-mcp", "--root=/path/to/project"]
+      "args": ["-y", "@sylphx/locus", "--root=/path/to/project"]
     }
   }
 }
@@ -255,15 +255,15 @@ Configure multiple CodeRAG instances for different projects.
   "mcpServers": {
     "coderag-frontend": {
       "command": "npx",
-      "args": ["-y", "@sylphx/coderag-mcp", "--root=/path/to/frontend"]
+      "args": ["-y", "@sylphx/locus", "--root=/path/to/frontend"]
     },
     "coderag-backend": {
       "command": "npx",
-      "args": ["-y", "@sylphx/coderag-mcp", "--root=/path/to/backend"]
+      "args": ["-y", "@sylphx/locus", "--root=/path/to/backend"]
     },
     "coderag-mobile": {
       "command": "npx",
-      "args": ["-y", "@sylphx/coderag-mcp", "--root=/path/to/mobile"]
+      "args": ["-y", "@sylphx/locus", "--root=/path/to/mobile"]
     }
   }
 }
@@ -289,7 +289,7 @@ For monorepos, index the entire repository:
   "mcpServers": {
     "coderag-monorepo": {
       "command": "npx",
-      "args": ["-y", "@sylphx/coderag-mcp", "--root=/path/to/monorepo"]
+      "args": ["-y", "@sylphx/locus", "--root=/path/to/monorepo"]
     }
   }
 }
@@ -313,7 +313,7 @@ Use path filters in search queries:
   "mcpServers": {
     "coderag": {
       "command": "npx",
-      "args": ["-y", "@sylphx/coderag-mcp", "--root=/path/to/project"],
+      "args": ["-y", "@sylphx/locus", "--root=/path/to/project"],
       "env": {
         "OPENAI_API_KEY": "sk-dev-key"
       }
@@ -352,7 +352,7 @@ Use path filters in search queries:
   "mcpServers": {
     "coderag": {
       "command": "npx",
-      "args": ["-y", "@sylphx/coderag-mcp", "--root=/path/to/project"],
+      "args": ["-y", "@sylphx/locus", "--root=/path/to/project"],
       "env": {
         "OPENAI_API_KEY": "sk-or-v1-...",
         "OPENAI_BASE_URL": "https://openrouter.ai/api/v1"
@@ -369,7 +369,7 @@ Use path filters in search queries:
   "mcpServers": {
     "coderag": {
       "command": "npx",
-      "args": ["-y", "@sylphx/coderag-mcp", "--root=/path/to/project"],
+      "args": ["-y", "@sylphx/locus", "--root=/path/to/project"],
       "env": {
         "OPENAI_API_KEY": "your-together-api-key",
         "OPENAI_BASE_URL": "https://api.together.xyz/v1",
@@ -388,7 +388,7 @@ Use path filters in search queries:
   "mcpServers": {
     "coderag": {
       "command": "npx",
-      "args": ["-y", "@sylphx/coderag-mcp", "--root=/path/to/project"],
+      "args": ["-y", "@sylphx/locus", "--root=/path/to/project"],
       "env": {
         "OPENAI_API_KEY": "your-azure-key",
         "OPENAI_BASE_URL": "https://your-resource.openai.azure.com/openai/deployments/your-deployment",
@@ -412,7 +412,7 @@ For projects with 10,000+ files:
       "command": "npx",
       "args": [
         "-y",
-        "@sylphx/coderag-mcp",
+        "@sylphx/locus",
         "--root=/path/to/large-project",
         "--max-size=524288"
       ]
@@ -437,7 +437,7 @@ For limited memory or CPU:
       "command": "npx",
       "args": [
         "-y",
-        "@sylphx/coderag-mcp",
+        "@sylphx/locus",
         "--root=/path/to/project",
         "--max-size=262144"
       ]
@@ -470,7 +470,7 @@ Get-Content $env:APPDATA\Claude\claude_desktop_config.json | ConvertFrom-Json
 Test CodeRAG MCP outside of your AI assistant:
 
 ```bash
-npx @sylphx/coderag-mcp --root=/path/to/project
+npx @sylphx/locus --root=/path/to/project
 ```
 
 You should see:

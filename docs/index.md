@@ -148,7 +148,7 @@ bun add @sylphx/coderag
 Use CodeRAG with Claude, Cursor, or any MCP-compatible AI assistant:
 
 ```bash
-npx @sylphx/coderag-mcp --root=/path/to/project
+npx @sylphx/locus --root=/path/to/project
 ```
 
 Or add to your `claude_desktop_config.json`:
@@ -158,7 +158,7 @@ Or add to your `claude_desktop_config.json`:
   "mcpServers": {
     "coderag": {
       "command": "npx",
-      "args": ["-y", "@sylphx/coderag-mcp", "--root=/path/to/project"]
+      "args": ["-y", "@sylphx/locus", "--root=/path/to/project"]
     }
   }
 }

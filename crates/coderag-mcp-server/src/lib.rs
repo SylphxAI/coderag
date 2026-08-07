@@ -22,7 +22,7 @@ pub struct CodebaseSearchRequest {
 }
 
 pub const SERVER_NAME: &str = "locus";
-pub const SERVER_VERSION: &str = "0.3.33";
+pub const SERVER_VERSION: &str = "0.5.0";
 pub const SERVER_INSTRUCTIONS: &str =
     "CodeRAG MCP server (Rust rmcp transport). Use codebase_search for deterministic Rust TF-IDF retrieval with score explainability.";
 

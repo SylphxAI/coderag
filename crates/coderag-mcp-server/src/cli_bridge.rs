@@ -67,6 +67,53 @@ pub fn resolve_cli_binary() -> Option<PathBuf> {
     None
 }
 
+fn with_family_envelope(tool: &str, mut envelope: Value) -> Value {
+    use crate::SERVER_VERSION;
+    let obj = match envelope.as_object_mut() {
+        Some(o) => o,
+        None => return envelope,
+    };
+    let status = obj
+        .get("status")
+        .and_then(|v| v.as_str())
+        .unwrap_or("ok")
+        .to_string();
+    let warnings = obj
+        .get("warnings")
+        .cloned()
+        .unwrap_or_else(|| serde_json::json!([]));
+    let gaps = obj
+        .get("gaps")
+        .cloned()
+        .unwrap_or_else(|| serde_json::json!([]));
+    obj.insert("envelope_version".into(), serde_json::json!("1"));
+    obj.insert("status".into(), serde_json::json!(status));
+    obj.insert("tool".into(), serde_json::json!(tool));
+    obj.insert("product".into(), serde_json::json!("locus"));
+    obj.insert("product_version".into(), serde_json::json!(SERVER_VERSION));
+    if let Some(r) = obj.get("route").cloned() {
+        if r.is_string() {
+            obj.insert("domain_route".into(), r);
+        }
+    }
+    let path = obj
+        .get("domain_route")
+        .and_then(|v| v.as_str())
+        .unwrap_or(tool);
+    obj.insert(
+        "route".into(),
+        serde_json::json!({ "engine": "rust-core", "path": path }),
+    );
+    obj.insert("warnings".into(), warnings);
+    obj.insert("gaps".into(), gaps);
+    obj.entry("confidence".to_string())
+        .or_insert(serde_json::json!({ "kind": "deterministic", "notes": [] }));
+    if let Some(results) = obj.get("results").cloned() {
+        obj.entry("payload".to_string()).or_insert(results);
+    }
+    envelope
+}
+
 pub fn invoke_cli_tool(tool: &str, arguments: Value) -> Result<CallToolResult, rmcp::ErrorData> {
     let cli = resolve_cli_binary().ok_or_else(|| {
         rmcp::ErrorData::invalid_request(
@@ -130,5 +177,7 @@ pub fn invoke_cli_tool(tool: &str, arguments: Value) -> Result<CallToolResult, r
         return Err(rmcp::ErrorData::internal_error(message.to_string(), None));
     }
 
-    Ok(CallToolResult::structured(envelope))
+    Ok(CallToolResult::structured(with_family_envelope(
+        tool, envelope,
+    )))
 }

@@ -119,6 +119,35 @@ jobs:
           VER=$(node -p "require('./packages/mcp-server/package.json').version")
           echo "MCP version $VER"
           ls -laR artifacts
+          publish_one() {
+            local name="$1" ver="$2" dest="$3" key="$4"
+            if npm view "$name@$ver" version >/dev/null 2>&1; then
+              echo already "$name@$ver"
+              return 0
+            fi
+            local log="/tmp/npm-pub-$key.log"
+            (cd "$dest" && npm publish --access public) 2>&1 | tee "$log"
+            # Prefer registry package document over CLI view (CDN lag on new names)
+            local ok=0
+            for i in $(seq 1 60); do
+              if npm view "$name@$ver" version >/dev/null 2>&1; then ok=1; break; fi
+              enc=$(node -p "encodeURIComponent(process.argv[1])" "$name")
+              code=$(curl -sS -o /tmp/reg-pkg.json -w '%{http_code}' "https://registry.npmjs.org/$enc/$ver" || true)
+              if [ "$code" = "200" ]; then ok=1; break; fi
+              sleep 5
+            done
+            if [ "$ok" = "1" ]; then
+              echo "readback ok $name@$ver"
+              return 0
+            fi
+            if grep -qE "\+ $name@$ver" "$log"; then
+              echo "WARN: publish success for $name@$ver but registry view lagged; continuing"
+              return 0
+            fi
+            echo "FATAL: failed publish/readback $name@$ver" >&2
+            cat "$log" >&2 || true
+            return 1
+          }
           for key in darwin-arm64 darwin-x64 linux-x64-gnu linux-arm64-gnu; do
             srcdir=$(find artifacts -type d -name "native-$key" | head -1)
             test -n "$srcdir"
@@ -129,13 +158,7 @@ jobs:
             chmod +x "$dest"/*
             node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync(process.argv[1],'utf8'));p.version=process.argv[2];fs.writeFileSync(process.argv[1],JSON.stringify(p,null,2)+'\n')" "$dest/package.json" "$VER"
             name=$(node -p "require('./'+process.argv[1]+'/package.json').name" "$dest")
-            if npm view "$name@$VER" version >/dev/null 2>&1; then
-              echo already "$name@$VER"
-            else
-              (cd "$dest" && npm publish --access public)
-              for i in $(seq 1 24); do npm view "$name@$VER" version >/dev/null 2>&1 && break; sleep 5; done
-              npm view "$name@$VER" version
-            fi
+            publish_one "$name" "$VER" "$dest" "$key"
           done
           node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('packages/mcp-server/package.json','utf8'));p.dependencies={'@sylphx/coderag':'workspace:*'};fs.writeFileSync('packages/mcp-server/package.json',JSON.stringify(p,null,2));"
           bun install --frozen-lockfile || bun install
@@ -152,7 +175,10 @@ jobs:
             npm publish --access public
             for i in $(seq 1 24); do npm view "$NAME@$VER" version >/dev/null 2>&1 && break; sleep 5; done
           fi
-          npm view "$NAME@$VER" version bin dependencies
           # Package is brand-sole @sylphx/locus; dual-publish alias path retired.
-          npm view "$NAME@$VER" version bin optionalDependencies || true
           test "$NAME" = '@sylphx/locus'
+          if npm view "$NAME@$VER" version >/dev/null 2>&1; then
+            npm view "$NAME@$VER" version bin dependencies optionalDependencies || true
+          else
+            echo "WARN: main package registry view lag for $NAME@$VER"
+          fi

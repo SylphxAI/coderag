@@ -9,16 +9,16 @@ fn is_file(path: &Path) -> bool {
     path.is_file()
 }
 
-/// Resolve the `coderag-cli` binary used by the MCP server for tool execution.
+/// Resolve the `locus-cli` binary used by the MCP server for tool execution.
 ///
 /// Search order (first hit wins):
-/// 1. `CODERAG_RUST_CLI` environment override
-/// 2. Sibling of the running `coderag-mcp-server` binary (npm multi-arch
+/// 1. `LOCUS_RUST_CLI` environment override
+/// 2. Sibling of the running `locus-mcp-server` binary (npm multi-arch
 ///    optionalDependency layout: both natives ship in the same platform package)
 /// 3. Staged `bin/native` and monorepo `target/{release,debug}` near the binary
 /// 4. CWD-relative monorepo / staged paths
 pub fn resolve_cli_binary() -> Option<PathBuf> {
-    if let Ok(path) = std::env::var("CODERAG_RUST_CLI") {
+    if let Ok(path) = std::env::var("LOCUS_RUST_CLI") {
         let candidate = PathBuf::from(path);
         if is_file(&candidate) {
             return Some(candidate);
@@ -28,7 +28,7 @@ pub fn resolve_cli_binary() -> Option<PathBuf> {
     if let Ok(exe) = std::env::current_exe() {
         if let Some(parent) = exe.parent() {
             // Primary consumer drop-in path: platform package ships both natives.
-            let sibling = parent.join("coderag-cli");
+            let sibling = parent.join("locus-cli");
             if is_file(&sibling) {
                 return Some(sibling);
             }
@@ -38,11 +38,11 @@ pub fn resolve_cli_binary() -> Option<PathBuf> {
             for _ in 0..5 {
                 let Some(current) = dir else { break };
                 for candidate in [
-                    current.join("coderag-cli"),
-                    current.join("bin/native/coderag-cli"),
-                    current.join("native/coderag-cli"),
-                    current.join("target/release/coderag-cli"),
-                    current.join("target/debug/coderag-cli"),
+                    current.join("locus-cli"),
+                    current.join("bin/native/locus-cli"),
+                    current.join("native/locus-cli"),
+                    current.join("target/release/locus-cli"),
+                    current.join("target/debug/locus-cli"),
                 ] {
                     if is_file(&candidate) {
                         return Some(candidate);
@@ -54,10 +54,10 @@ pub fn resolve_cli_binary() -> Option<PathBuf> {
     }
 
     for candidate in [
-        PathBuf::from("target/release/coderag-cli"),
-        PathBuf::from("target/debug/coderag-cli"),
-        PathBuf::from("bin/native/coderag-cli"),
-        PathBuf::from("packages/mcp-server/bin/native/coderag-cli"),
+        PathBuf::from("target/release/locus-cli"),
+        PathBuf::from("target/debug/locus-cli"),
+        PathBuf::from("bin/native/locus-cli"),
+        PathBuf::from("packages/mcp-server/bin/native/locus-cli"),
     ] {
         if is_file(&candidate) {
             return Some(candidate);
@@ -117,7 +117,7 @@ fn with_family_envelope(tool: &str, mut envelope: Value) -> Value {
 pub fn invoke_cli_tool(tool: &str, arguments: Value) -> Result<CallToolResult, rmcp::ErrorData> {
     let cli = resolve_cli_binary().ok_or_else(|| {
         rmcp::ErrorData::invalid_request(
-            "coderag-cli is unavailable. Install @sylphx/locus (platform optionalDependency includes coderag-cli) or run `bun run build:rust`.",
+            "locus-cli is unavailable. Install @sylphx/locus (platform optionalDependency includes locus-cli) or run `bun run build:rust`.",
             None,
         )
     })?;
@@ -133,7 +133,7 @@ pub fn invoke_cli_tool(tool: &str, arguments: Value) -> Result<CallToolResult, r
         .stderr(Stdio::piped())
         .spawn()
         .map_err(|error| {
-            rmcp::ErrorData::internal_error(format!("Failed to spawn coderag-cli: {error}"), None)
+            rmcp::ErrorData::internal_error(format!("Failed to spawn locus-cli: {error}"), None)
         })?;
 
     if let Some(mut stdin) = child.stdin.take() {
@@ -143,14 +143,14 @@ pub fn invoke_cli_tool(tool: &str, arguments: Value) -> Result<CallToolResult, r
     }
 
     let output = child.wait_with_output().map_err(|error| {
-        rmcp::ErrorData::internal_error(format!("coderag-cli failed: {error}"), None)
+        rmcp::ErrorData::internal_error(format!("locus-cli failed: {error}"), None)
     })?;
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
         return Err(rmcp::ErrorData::internal_error(
             format!(
-                "coderag-cli exited with status {:?}: {stderr}",
+                "locus-cli exited with status {:?}: {stderr}",
                 output.status.code()
             ),
             None,
@@ -159,13 +159,13 @@ pub fn invoke_cli_tool(tool: &str, arguments: Value) -> Result<CallToolResult, r
 
     let stdout = String::from_utf8(output.stdout).map_err(|error| {
         rmcp::ErrorData::internal_error(
-            format!("coderag-cli returned non-UTF8 output: {error}"),
+            format!("locus-cli returned non-UTF8 output: {error}"),
             None,
         )
     })?;
 
     let envelope: Value = serde_json::from_str(&stdout).map_err(|error| {
-        rmcp::ErrorData::internal_error(format!("coderag-cli returned invalid JSON: {error}"), None)
+        rmcp::ErrorData::internal_error(format!("locus-cli returned invalid JSON: {error}"), None)
     })?;
 
     if envelope.get("status").and_then(Value::as_str) != Some("ok") {
@@ -173,7 +173,7 @@ pub fn invoke_cli_tool(tool: &str, arguments: Value) -> Result<CallToolResult, r
             .get("message")
             .and_then(Value::as_str)
             .or_else(|| envelope.get("code").and_then(Value::as_str))
-            .unwrap_or("coderag-cli returned an error envelope");
+            .unwrap_or("locus-cli returned an error envelope");
         return Err(rmcp::ErrorData::internal_error(message.to_string(), None));
     }
 

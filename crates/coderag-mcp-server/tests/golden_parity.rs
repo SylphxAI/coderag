@@ -10,13 +10,13 @@ fn repo_root() -> PathBuf {
 }
 
 fn resolve_cli_binary() -> PathBuf {
-    for relative in ["target/release/coderag-cli", "target/debug/coderag-cli"] {
+    for relative in ["target/release/locus-cli", "target/debug/locus-cli"] {
         let candidate = repo_root().join(relative);
         if candidate.is_file() {
             return candidate;
         }
     }
-    panic!("coderag-cli is not built; run `cargo build -p coderag-cli` (debug is enough for CI)");
+    panic!("locus-cli is not built; run `cargo build -p coderag-cli` (debug is enough for CI)");
 }
 
 fn fixture_root() -> PathBuf {
@@ -27,7 +27,7 @@ fn fixture_root() -> PathBuf {
 fn codebase_search_matches_golden_baseline_paths() {
     // SAFETY: test-only single-threaded env mutation.
     unsafe {
-        std::env::set_var("CODERAG_RUST_CLI", resolve_cli_binary());
+        std::env::set_var("LOCUS_RUST_CLI", resolve_cli_binary());
     }
 
     let root = fixture_root();

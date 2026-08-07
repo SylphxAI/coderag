@@ -63,15 +63,15 @@ function platformPackageDir(): string | null {
 }
 
 export function resolveRustCliBinary(): string {
-	const env = process.env.CODERAG_RUST_CLI
+	const env = process.env.LOCUS_RUST_CLI
 	if (env && existsSync(env)) return env
 
 	// Prefer host-matched platform package (dev monorepo layout).
 	const plat = platformPackageDir()
 	if (plat) {
 		const hostMatched = [
-			join(here, '../npm', plat, 'coderag-cli'),
-			join(here, '../../mcp-server/npm', plat, 'coderag-cli'),
+			join(here, '../npm', plat, 'locus-cli'),
+			join(here, '../../mcp-server/npm', plat, 'locus-cli'),
 		]
 		for (const candidate of hostMatched) {
 			if (existsSync(candidate)) return candidate
@@ -80,24 +80,24 @@ export function resolveRustCliBinary(): string {
 
 	// Staged natives next to the published package (bin/native layout).
 	const staged = [
-		join(here, '../bin/native/coderag-cli'),
-		join(here, '../../../bin/native/coderag-cli'),
+		join(here, '../bin/native/locus-cli'),
+		join(here, '../../../bin/native/locus-cli'),
 	]
 	for (const candidate of staged) {
 		if (existsSync(candidate)) return candidate
 	}
 
-	const release = join(here, '../../../target/release/coderag-cli')
+	const release = join(here, '../../../target/release/locus-cli')
 	if (existsSync(release)) return release
 
-	const debug = join(here, '../../../target/debug/coderag-cli')
+	const debug = join(here, '../../../target/debug/locus-cli')
 	if (existsSync(debug)) return debug
 
-	return 'coderag-cli'
+	return 'locus-cli'
 }
 
 export function isRustCliAvailable(): boolean {
-	return resolveRustCliBinary() !== 'coderag-cli'
+	return resolveRustCliBinary() !== 'locus-cli'
 }
 
 export function invokeRustEngine(tool: string, input: Record<string, unknown>): RustSearchEnvelope {

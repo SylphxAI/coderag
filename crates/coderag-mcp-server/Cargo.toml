@@ -9,7 +9,7 @@ description = "Rust-native MCP server for coderag (rmcp)"
 path = "src/lib.rs"
 
 [[bin]]
-name = "coderag-mcp-server"
+name = "locus-mcp-server"
 path = "src/main.rs"
 
 [dependencies]

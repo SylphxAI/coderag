@@ -20,7 +20,7 @@ describe('Rust core boundary', () => {
 		expect(shouldUseRustEngine()).toBe(true)
 	})
 
-	test('indexes and searches fixture corpus via coderag-cli', () => {
+	test('indexes and searches fixture corpus via locus-cli', () => {
 		const index = invokeRustEngine('coderag_index', { root: fixtureRoot, mode: 'full' })
 		expect(index.status).toBe('ok')
 

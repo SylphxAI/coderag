@@ -33,8 +33,8 @@ jobs:
           set -euo pipefail
           cargo build --release -p coderag-mcp-server -p coderag-cli --target ${{ matrix.target }}
           mkdir -p native-out
-          cp target/${{ matrix.target }}/release/coderag-mcp-server native-out/
-          cp target/${{ matrix.target }}/release/coderag-cli native-out/
+          cp target/${{ matrix.target }}/release/locus-mcp-server native-out/
+          cp target/${{ matrix.target }}/release/locus-cli native-out/
           chmod +x native-out/*
       - uses: actions/upload-artifact@v4
         with:
@@ -54,8 +54,8 @@ jobs:
           set -euo pipefail
           cargo build --release -p coderag-mcp-server -p coderag-cli --target x86_64-unknown-linux-gnu
           mkdir -p native-out
-          cp target/x86_64-unknown-linux-gnu/release/coderag-mcp-server native-out/
-          cp target/x86_64-unknown-linux-gnu/release/coderag-cli native-out/
+          cp target/x86_64-unknown-linux-gnu/release/locus-mcp-server native-out/
+          cp target/x86_64-unknown-linux-gnu/release/locus-cli native-out/
           chmod +x native-out/*
       - uses: actions/upload-artifact@v4
         with:
@@ -79,8 +79,8 @@ jobs:
           cargo install cargo-zigbuild --version 0.23.0 --locked
           cargo zigbuild --release -p coderag-mcp-server -p coderag-cli --target aarch64-unknown-linux-gnu.2.17
           mkdir -p native-out
-          cp target/aarch64-unknown-linux-gnu/release/coderag-mcp-server native-out/
-          cp target/aarch64-unknown-linux-gnu/release/coderag-cli native-out/
+          cp target/aarch64-unknown-linux-gnu/release/locus-mcp-server native-out/
+          cp target/aarch64-unknown-linux-gnu/release/locus-cli native-out/
           chmod +x native-out/*
       - uses: actions/upload-artifact@v4
         with:
@@ -124,8 +124,8 @@ jobs:
             test -n "$srcdir"
             dest=packages/mcp-server/npm/$key
             mkdir -p "$dest"
-            cp "$srcdir/coderag-mcp-server" "$dest/"
-            cp "$srcdir/coderag-cli" "$dest/"
+            cp "$srcdir/locus-mcp-server" "$dest/"
+            cp "$srcdir/locus-cli" "$dest/"
             chmod +x "$dest"/*
             node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync(process.argv[1],'utf8'));p.version=process.argv[2];fs.writeFileSync(process.argv[1],JSON.stringify(p,null,2)+'\n')" "$dest/package.json" "$VER"
             name=$(node -p "require('./'+process.argv[1]+'/package.json').name" "$dest")

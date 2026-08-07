@@ -8,7 +8,7 @@ on:
       - 'Cargo.toml'
       - 'Cargo.lock'
       - 'packages/mcp-server/**'
-      - 'bin/coderag-mcp'
+      - 'bin/locus'
       - 'scripts/stage-rust-mcp.ts'
       - 'scripts/assemble-multiarch-natives.ts'
       - 'scripts/verify-linux-arm64-artifact.sh'
@@ -21,7 +21,7 @@ on:
       - 'Cargo.toml'
       - 'Cargo.lock'
       - 'packages/mcp-server/**'
-      - 'bin/coderag-mcp'
+      - 'bin/locus'
       - 'scripts/stage-rust-mcp.ts'
       - 'scripts/assemble-multiarch-natives.ts'
       - 'scripts/verify-linux-arm64-artifact.sh'
@@ -71,7 +71,7 @@ jobs:
           set -euo pipefail
           cargo build --release -p coderag-mcp-server -p coderag-cli --target ${{ matrix.target }}
           mkdir -p native-out
-          for name in coderag-mcp-server coderag-cli; do
+          for name in locus-mcp-server locus-cli; do
             bin="target/${{ matrix.target }}/release/${name}"
             test -f "$bin"
             chmod +x "$bin"
@@ -118,7 +118,7 @@ jobs:
           target=x86_64-unknown-linux-gnu
           cargo build --release -p coderag-mcp-server -p coderag-cli --target "$target"
           mkdir -p native-out
-          for name in coderag-mcp-server coderag-cli; do
+          for name in locus-mcp-server locus-cli; do
             bin="target/${target}/release/${name}"
             test -f "$bin"
             chmod +x "$bin"
@@ -174,7 +174,7 @@ jobs:
           # The package promise is glibc >= 2.17, the oldest arm64 glibc ABI.
           cargo zigbuild --release -p coderag-mcp-server -p coderag-cli --target "${target}.2.17"
           mkdir -p native-out
-          for name in coderag-mcp-server coderag-cli; do
+          for name in locus-mcp-server locus-cli; do
             bin="target/${target}/release/${name}"
             test -f "$bin"
             chmod +x "$bin"
@@ -218,7 +218,7 @@ jobs:
           for dir in packages/mcp-server/npm/*/; do
             echo "== $dir =="
             ls -la "$dir"
-            for name in coderag-mcp-server coderag-cli; do
+            for name in locus-mcp-server locus-cli; do
               test -x "${dir}${name}"
               file "${dir}${name}" || true
             done
@@ -227,16 +227,16 @@ jobs:
       - name: Arch-aware wrapper smoke (host linux x64)
         run: |
           set -euo pipefail
-          chmod +x bin/coderag-mcp packages/mcp-server/bin/coderag-mcp
+          chmod +x bin/locus packages/mcp-server/bin/locus
           # Stage both host natives into bin/native from linux-x64 package
           mkdir -p bin/native packages/mcp-server/bin/native
-          for name in coderag-mcp-server coderag-cli; do
+          for name in locus-mcp-server locus-cli; do
             cp "packages/mcp-server/npm/linux-x64-gnu/${name}" "bin/native/${name}"
             cp "packages/mcp-server/npm/linux-x64-gnu/${name}" "packages/mcp-server/bin/native/${name}"
             chmod +x "bin/native/${name}" "packages/mcp-server/bin/native/${name}"
           done
           # Wrapper should resolve staged native and fail-closed without TS
-          timeout 3s bin/coderag-mcp --help >/tmp/coderag-help.txt 2>&1 || true
+          timeout 3s bin/locus --help >/tmp/coderag-help.txt 2>&1 || true
           # Binary may not support --help; ensure we did not print TS fallback message
           if grep -qi 'use_ts_transport\|dist/index.js' /tmp/coderag-help.txt; then
             echo "FAIL: TS fallback path detected"
@@ -244,13 +244,13 @@ jobs:
             exit 1
           fi
           # Direct exec of assembled linux binary + doctor must resolve sibling CLI
-          timeout 2s packages/mcp-server/npm/linux-x64-gnu/coderag-mcp-server --help >/dev/null 2>&1 || true
-          test -x packages/mcp-server/npm/linux-x64-gnu/coderag-mcp-server
-          test -x packages/mcp-server/npm/linux-x64-gnu/coderag-cli
-          doctor_out="$(packages/mcp-server/npm/linux-x64-gnu/coderag-mcp-server doctor 2>&1 || true)"
+          timeout 2s packages/mcp-server/npm/linux-x64-gnu/locus-mcp-server --help >/dev/null 2>&1 || true
+          test -x packages/mcp-server/npm/linux-x64-gnu/locus-mcp-server
+          test -x packages/mcp-server/npm/linux-x64-gnu/locus-cli
+          doctor_out="$(packages/mcp-server/npm/linux-x64-gnu/locus-mcp-server doctor 2>&1 || true)"
           echo "$doctor_out"
-          if ! printf '%s' "$doctor_out" | grep -q 'engine cli: .*/coderag-cli'; then
-            echo "FAIL: doctor did not resolve sibling coderag-cli from platform package"
+          if ! printf '%s' "$doctor_out" | grep -q 'engine cli: .*/locus-cli'; then
+            echo "FAIL: doctor did not resolve sibling locus-cli from platform package"
             exit 1
           fi
           if printf '%s' "$doctor_out" | grep -qi 'engine cli: unavailable'; then

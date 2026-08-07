@@ -40,7 +40,7 @@ Evidence package already admitted on main (PR #80 canary bind + tick014
 | MCP stdio transport | Rust `crates/coderag-mcp-server` via `rmcp::transport::stdio()` | none |
 | MCP Streamable HTTP | Rust `http_transport.rs` / `StreamableHttpService` | none |
 | MCP tool `codebase_search` | Rust `codebase_search.rs` + `coderag-core` | TS `rust-engine.ts` oracle for differential only |
-| npm consumer bin | `bin/coderag-mcp` arch-aware, optionalDeps-first, fail-closed | embedded linux ELF fallback under arch gate |
+| npm consumer bin | `bin/locus` arch-aware, optionalDeps-first, fail-closed | embedded linux ELF fallback under arch gate |
 | Platform natives | `@sylphx/locus-{darwin-arm64,darwin-x64,linux-x64-gnu,linux-arm64-gnu}` | win32/musl out of declared matrix |
 | Library / oracle TS | `packages/core`, `packages/mcp-server/src/{rust-engine,doctor,evidence,search-coordinator}.ts` | **not** MCP production authority |
 

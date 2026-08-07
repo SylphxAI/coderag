@@ -5,7 +5,7 @@ import os from 'node:os'
 import path from 'node:path'
 
 const repoRoot = path.resolve(import.meta.dirname, '..')
-const rustCliBin = path.join(repoRoot, 'target/release/coderag-cli')
+const rustCliBin = path.join(repoRoot, 'target/release/locus-cli')
 const fixtureRoot = path.join(repoRoot, 'fixtures/benchmark-corpus')
 
 type CliEnvelope = {
@@ -77,9 +77,9 @@ describe('shipped path matrix (Rust core, no legacy flags)', () => {
 	})
 
 	it('default bin resolves staged rmcp server', () => {
-		const bin = path.join(repoRoot, 'bin/coderag-mcp')
+		const bin = path.join(repoRoot, 'bin/locus')
 		expect(existsSync(bin)).toBe(true)
-		const staged = path.join(repoRoot, 'bin/native/coderag-mcp-server')
+		const staged = path.join(repoRoot, 'bin/native/locus-mcp-server')
 		expect(existsSync(staged)).toBe(true)
 	})
 })

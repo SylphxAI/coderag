@@ -82,7 +82,7 @@ jobs:
                 pkg.bin = Object.assign({}, pkg.bin, { "coderag-mcp": primary, locus: primary });
               }
             } else if (!pkg.bin) {
-              pkg.bin = { "coderag-mcp": "./bin/coderag-mcp", locus: "./bin/coderag-mcp" };
+              pkg.bin = { "coderag-mcp": "./bin/locus", locus: "./bin/locus" };
             }
             if (pkg.scripts) {
               delete pkg.scripts.prepublishOnly;

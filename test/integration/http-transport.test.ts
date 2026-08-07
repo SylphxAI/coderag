@@ -10,8 +10,8 @@ import net from 'node:net'
 import path from 'node:path'
 
 const repoRoot = path.resolve(import.meta.dirname, '../..')
-const binWrapper = path.join(repoRoot, 'bin/coderag-mcp')
-const rustCliBin = path.join(repoRoot, 'target/release/coderag-cli')
+const binWrapper = path.join(repoRoot, 'bin/locus')
+const rustCliBin = path.join(repoRoot, 'target/release/locus-cli')
 const fixtureRoot = path.join(repoRoot, 'fixtures/benchmark-corpus')
 const baselinePath = path.join(repoRoot, 'fixtures/golden-retrieval-baseline.json')
 const RUST_HTTP_READY = 'Streamable HTTP MCP listening on http://'
@@ -162,7 +162,7 @@ describe('MCP Server HTTP Transport Integration (Rust rmcp)', () => {
 				CODERAG_MCP_TRANSPORT: 'http',
 				MCP_HTTP_PORT: testPort.toString(),
 				MCP_HTTP_HOST: TEST_HOST,
-				CODERAG_RUST_CLI: rustCliBin,
+				LOCUS_RUST_CLI: rustCliBin,
 			},
 		})
 
@@ -280,7 +280,7 @@ describe('MCP Server HTTP Transport Authentication (Rust rmcp)', () => {
 				MCP_HTTP_PORT: testPort.toString(),
 				MCP_HTTP_HOST: TEST_HOST,
 				MCP_API_KEY: API_KEY,
-				CODERAG_RUST_CLI: rustCliBin,
+				LOCUS_RUST_CLI: rustCliBin,
 			},
 		})
 

@@ -328,7 +328,7 @@ Use path filters in search queries:
 {
   "mcpServers": {
     "coderag": {
-      "command": "/usr/local/bin/coderag-mcp",
+      "command": "/usr/local/bin/locus",
       "args": [
         "--root=/var/www/project",
         "--max-size=5242880",

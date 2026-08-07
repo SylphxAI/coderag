@@ -38,7 +38,7 @@
 				"description": "The core indexing, TF-IDF/vector search, AST chunking, embeddings, storage, cache, and language configuration packages under packages/core."
 			},
 			{
-				"name": "coderag-mcp-server",
+				"name": "locus-mcp-server",
 				"description": "The MCP server package, tool surface, installation docs, configuration docs, and integration examples under packages/mcp-server and docs/mcp."
 			}
 		],

@@ -39,7 +39,7 @@ Claude Desktop is Anthropic's official desktop application for Claude AI.
      "mcpServers": {
        "coderag": {
          "command": "npx",
-         "args": ["-y", "@sylphx/coderag-mcp", "--root=/path/to/your/project"]
+         "args": ["-y", "@sylphx/locus", "--root=/path/to/your/project"]
        }
      }
    }
@@ -66,7 +66,7 @@ Add your OpenAI API key to enable natural language queries:
   "mcpServers": {
     "coderag": {
       "command": "npx",
-      "args": ["-y", "@sylphx/coderag-mcp", "--root=/path/to/project"],
+      "args": ["-y", "@sylphx/locus", "--root=/path/to/project"],
       "env": {
         "OPENAI_API_KEY": "sk-..."
       }
@@ -84,11 +84,11 @@ Configure multiple CodeRAG instances:
   "mcpServers": {
     "frontend": {
       "command": "npx",
-      "args": ["-y", "@sylphx/coderag-mcp", "--root=/path/to/frontend"]
+      "args": ["-y", "@sylphx/locus", "--root=/path/to/frontend"]
     },
     "backend": {
       "command": "npx",
-      "args": ["-y", "@sylphx/coderag-mcp", "--root=/path/to/backend"]
+      "args": ["-y", "@sylphx/locus", "--root=/path/to/backend"]
     }
   }
 }
@@ -104,7 +104,7 @@ Tell Claude which project to search:
 **Server doesn't start:**
 - Check logs: `~/Library/Logs/Claude/mcp*.log` (macOS)
 - Verify Node.js is installed: `node --version`
-- Test manually: `npx @sylphx/coderag-mcp --root=/path/to/project`
+- Test manually: `npx @sylphx/locus --root=/path/to/project`
 
 **No results returned:**
 - Wait for initial indexing (check logs)
@@ -151,7 +151,7 @@ Cursor is an AI-powered code editor built on VS Code.
      "mcpServers": {
        "coderag": {
          "command": "npx",
-         "args": ["-y", "@sylphx/coderag-mcp", "--root=/path/to/project"]
+         "args": ["-y", "@sylphx/locus", "--root=/path/to/project"]
        }
      }
    }
@@ -176,7 +176,7 @@ Create `.cursor/mcp.json` in your project root:
   "mcpServers": {
     "coderag": {
       "command": "npx",
-      "args": ["-y", "@sylphx/coderag-mcp", "--root=${workspaceFolder}"]
+      "args": ["-y", "@sylphx/locus", "--root=${workspaceFolder}"]
     }
   }
 }
@@ -240,7 +240,7 @@ VS Code supports MCP through the Continue extension.
      "mcpServers": {
        "coderag": {
          "command": "npx",
-         "args": ["-y", "@sylphx/coderag-mcp", "--root=${workspaceFolder}"]
+         "args": ["-y", "@sylphx/locus", "--root=${workspaceFolder}"]
        }
      }
    }
@@ -264,7 +264,7 @@ Create `.vscode/mcp.json` in your project:
     "servers": {
       "coderag": {
         "command": "npx",
-        "args": ["-y", "@sylphx/coderag-mcp", "--root=${workspaceFolder}"]
+        "args": ["-y", "@sylphx/locus", "--root=${workspaceFolder}"]
       }
     }
   }
@@ -325,7 +325,7 @@ Windsurf is an AI-powered development environment by Codeium.
      "mcpServers": {
        "coderag": {
          "command": "npx",
-         "args": ["-y", "@sylphx/coderag-mcp", "--root=/path/to/project"]
+         "args": ["-y", "@sylphx/locus", "--root=/path/to/project"]
        }
      }
    }
@@ -348,11 +348,11 @@ For project-specific setup, adjust the `--root` path:
   "mcpServers": {
     "coderag-project1": {
       "command": "npx",
-      "args": ["-y", "@sylphx/coderag-mcp", "--root=/path/to/project1"]
+      "args": ["-y", "@sylphx/locus", "--root=/path/to/project1"]
     },
     "coderag-project2": {
       "command": "npx",
-      "args": ["-y", "@sylphx/coderag-mcp", "--root=/path/to/project2"]
+      "args": ["-y", "@sylphx/locus", "--root=/path/to/project2"]
     }
   }
 }
@@ -384,7 +384,7 @@ Claude Code is Anthropic's CLI tool for Claude AI.
 1. **Add MCP Server**
 
    ```bash
-   claude mcp add coderag -- npx -y @sylphx/coderag-mcp --root=/path/to/project
+   claude mcp add coderag -- npx -y @sylphx/locus --root=/path/to/project
    ```
 
 2. **Verify Configuration**
@@ -405,7 +405,7 @@ Claude Code is Anthropic's CLI tool for Claude AI.
 
 ```bash
 claude mcp remove coderag
-claude mcp add coderag -- npx -y @sylphx/coderag-mcp --root=/path/to/project
+claude mcp add coderag -- npx -y @sylphx/locus --root=/path/to/project
 ```
 
 ### Troubleshooting
@@ -425,7 +425,7 @@ CodeRAG MCP works with any MCP-compatible client. General setup pattern:
   "mcpServers": {
     "coderag": {
       "command": "npx",
-      "args": ["-y", "@sylphx/coderag-mcp", "--root=/path/to/project"]
+      "args": ["-y", "@sylphx/locus", "--root=/path/to/project"]
     }
   }
 }
@@ -459,15 +459,15 @@ Configure multiple projects and let AI choose:
   "mcpServers": {
     "web-frontend": {
       "command": "npx",
-      "args": ["-y", "@sylphx/coderag-mcp", "--root=/projects/web-frontend"]
+      "args": ["-y", "@sylphx/locus", "--root=/projects/web-frontend"]
     },
     "web-backend": {
       "command": "npx",
-      "args": ["-y", "@sylphx/coderag-mcp", "--root=/projects/web-backend"]
+      "args": ["-y", "@sylphx/locus", "--root=/projects/web-backend"]
     },
     "mobile-app": {
       "command": "npx",
-      "args": ["-y", "@sylphx/coderag-mcp", "--root=/projects/mobile"]
+      "args": ["-y", "@sylphx/locus", "--root=/projects/mobile"]
     }
   }
 }
@@ -487,7 +487,7 @@ Development and production environments:
   "mcpServers": {
     "coderag-dev": {
       "command": "npx",
-      "args": ["-y", "@sylphx/coderag-mcp", "--root=/dev/project"],
+      "args": ["-y", "@sylphx/locus", "--root=/dev/project"],
       "env": {
         "OPENAI_API_KEY": "sk-dev-..."
       }
@@ -512,7 +512,7 @@ Index entire monorepo with path filtering:
   "mcpServers": {
     "monorepo": {
       "command": "npx",
-      "args": ["-y", "@sylphx/coderag-mcp", "--root=/path/to/monorepo"]
+      "args": ["-y", "@sylphx/locus", "--root=/path/to/monorepo"]
     }
   }
 }
@@ -539,7 +539,7 @@ For projects with 10,000+ files:
       "command": "npx",
       "args": [
         "-y",
-        "@sylphx/coderag-mcp",
+        "@sylphx/locus",
         "--root=/path/to/large-project",
         "--max-size=262144"
       ]
@@ -565,7 +565,7 @@ For limited memory/CPU:
       "command": "npx",
       "args": [
         "-y",
-        "@sylphx/coderag-mcp",
+        "@sylphx/locus",
         "--root=/path/to/project",
         "--max-size=131072"
       ]
@@ -603,7 +603,7 @@ Most MCP clients log server output. Check these locations:
 Run CodeRAG MCP outside the client:
 
 ```bash
-npx @sylphx/coderag-mcp --root=/path/to/project
+npx @sylphx/locus --root=/path/to/project
 ```
 
 Expected output:
@@ -630,7 +630,7 @@ If this works but integration doesn't, the issue is with client configuration.
 **Command not found:**
 - Verify Node.js is in PATH
 - Try absolute path: `/usr/local/bin/node`
-- Use global install: `npm install -g @sylphx/coderag-mcp`
+- Use global install: `npm install -g @sylphx/locus`
 
 ## Best Practices
 

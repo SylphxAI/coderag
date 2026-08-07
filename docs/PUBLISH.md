@@ -5,7 +5,7 @@
 | Brand | Locus |
 | Brand npm | `@sylphx/locus` |
 | Brand version (live) | `0.4.4` |
-| Transitional MCP npm | `@sylphx/coderag-mcp` |
+| Transitional MCP npm | `@sylphx/locus` |
 | Transitional MCP version (live) | `0.4.4` |
 | Transitional core npm | `@sylphx/coderag` |
 | Core version (live) | `0.1.26` |
@@ -18,7 +18,7 @@
 # preferred brand
 npx -y @sylphx/locus --root=/abs/path
 # transitional still valid during expand
-npx -y @sylphx/coderag-mcp --root=/abs/path
+npx -y @sylphx/locus --root=/abs/path
 ```
 
 ## Expand note

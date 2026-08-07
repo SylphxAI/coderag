@@ -1,6 +1,6 @@
 {
 	"name": "@sylphx/locus",
-	"version": "0.5.1",
+	"version": "0.5.2",
 	"description": "Locus \u2014 local-first hybrid code search MCP/CLI/SDK for agents.",
 	"type": "module",
 	"main": "./dist/rust-engine.js",
@@ -37,10 +37,10 @@
 		"@sylphx/coderag": "workspace:*"
 	},
 	"optionalDependencies": {
-		"@sylphx/locus-darwin-arm64": "0.5.1",
-		"@sylphx/locus-darwin-x64": "0.5.1",
-		"@sylphx/locus-linux-x64-gnu": "0.5.1",
-		"@sylphx/locus-linux-arm64-gnu": "0.5.1"
+		"@sylphx/locus-darwin-arm64": "0.5.2",
+		"@sylphx/locus-darwin-x64": "0.5.2",
+		"@sylphx/locus-linux-x64-gnu": "0.5.2",
+		"@sylphx/locus-linux-arm64-gnu": "0.5.2"
 	},
 	"devDependencies": {
 		"@types/bun": "^1.3.3",

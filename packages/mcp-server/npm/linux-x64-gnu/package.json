@@ -1,6 +1,6 @@
 {
 	"name": "@sylphx/locus-linux-x64-gnu",
-	"version": "0.5.1",
+	"version": "0.5.2",
 	"description": "Locus native MCP server binary for linux-x64-gnu",
 	"os": [
 		"linux"

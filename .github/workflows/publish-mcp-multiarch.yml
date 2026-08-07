@@ -49,14 +49,29 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-unknown-linux-gnu
-      - name: Build
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: 0.14.1
+      - name: Build linux-x64 via zig portable glibc 2.17
         run: |
           set -euo pipefail
-          cargo build --release -p coderag-mcp-server -p coderag-cli --target x86_64-unknown-linux-gnu
+          # Host cargo on modern runners links GLIBC_2.39; customers on 2.35 fail.
+          cargo install cargo-zigbuild --version 0.23.0 --locked
+          cargo zigbuild --release -p coderag-mcp-server -p coderag-cli --target x86_64-unknown-linux-gnu.2.17
           mkdir -p native-out
           cp target/x86_64-unknown-linux-gnu/release/locus-mcp-server native-out/
           cp target/x86_64-unknown-linux-gnu/release/locus-cli native-out/
           chmod +x native-out/*
+          if command -v objdump >/dev/null 2>&1; then
+            mapfile -t vers < <(objdump -T native-out/locus-mcp-server | sed -n 's/.*GLIBC_\([0-9][0-9.]*\).*/\1/p' | sort -u)
+            echo "GLIBC symbols: ${vers[*]}"
+            for v in "${vers[@]}"; do
+              major=${v%%.*}; rest=${v#*.}; minor=${rest%%.*}
+              if [ "$major" -gt 2 ] || { [ "$major" -eq 2 ] && [ "${minor:-0}" -gt 35 ]; }; then
+                echo "::error::linux-x64-gnu requires GLIBC_$v (> 2.35)"; exit 1
+              fi
+            done
+          fi
       - uses: actions/upload-artifact@v4
         with:
           name: native-linux-x64-gnu

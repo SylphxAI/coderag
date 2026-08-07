@@ -10,4 +10,4 @@ npx -y @sylphx/locus --root=/absolute/path/to/project
 
 Native optionalDependencies still use historical `@sylphx/coderag-mcp-<platform>` names until the native rename train; versions match `@sylphx/locus`.
 
-Family law: SylphxAI/skills `instrument-family-standard`.
+Family law: SylphxAI/skills `apply-instrument-family`.

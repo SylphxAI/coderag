@@ -1,5 +1,5 @@
 /**
- * Sync optionalDependency + platform package versions to @sylphx/coderag-mcp version.
+ * Sync optionalDependency + platform package versions to @sylphx/locus version (natives may still use coderag-mcp-* names).
  * Run after `changeset version` so platform packages publish at the same version.
  */
 import fs from 'node:fs'

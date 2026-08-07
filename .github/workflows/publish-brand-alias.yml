@@ -1,133 +1,29 @@
 name: Publish brand alias
 
+# RETIRED (brand-sole hard cut): @sylphx/locus is the sole public MCP package id.
+# Dual-publish from @sylphx/coderag-mcp is no longer valid. Use "Publish MCP npm"
+# or "Publish Locus MCP multi-arch" which publish @sylphx/locus directly.
+
 on:
   workflow_dispatch:
     inputs:
       confirm:
-        description: 'Type PUBLISH'
+        description: 'Type RETIRED (workflow intentionally fails closed)'
         required: true
-        type: string
-      version:
-        description: 'Transitional version to pack (default: npm latest of transitional)'
-        required: false
-        type: string
-      brand_version:
-        description: 'Optional brand package version if transitional version is burned/unpublished on brand id'
-        required: false
         type: string
 
 permissions:
   contents: read
 
 jobs:
-  publish-brand:
-    if: ${{ inputs.confirm == 'PUBLISH' }}
-    runs-on: sylphx-linux-standard
+  retired:
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          registry-url: 'https://registry.npmjs.org'
-          always-auth: true
-      - name: Dual-publish @sylphx/locus from @sylphx/coderag-mcp
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          BRAND: '@sylphx/locus'
-          TRANSITIONAL: '@sylphx/coderag-mcp'
-          VERSION_INPUT: ${{ inputs.version }}
-          BRAND_VERSION_INPUT: ${{ inputs.brand_version }}
+      - name: Brand-sole — dual alias path retired
         run: |
           set -euo pipefail
-          TOKEN="${NODE_AUTH_TOKEN:-$NPM_TOKEN}"
-          test -n "$TOKEN"
-          printf '//registry.npmjs.org/:_authToken=%s\nalways-auth=true\n' "$TOKEN" > "$HOME/.npmrc"
-          export NPM_CONFIG_USERCONFIG="$HOME/.npmrc"
-          npm whoami
-          VER="${VERSION_INPUT:-}"
-          if [ -z "$VER" ]; then
-            VER=$(npm view "$TRANSITIONAL" version)
-          fi
-          BRAND_VER="${BRAND_VERSION_INPUT:-$VER}"
-          echo "Alias $BRAND@$BRAND_VER <= $TRANSITIONAL@$VER"
-          if npm view "$BRAND@$BRAND_VER" version >/dev/null 2>&1; then
-            echo already "$BRAND@$BRAND_VER"
-            npm view "$BRAND" version dist-tags
-            exit 0
-          fi
-          if ! npm view "$TRANSITIONAL@$VER" version >/dev/null 2>&1; then
-            echo "Transitional $TRANSITIONAL@$VER missing on registry" >&2
-            exit 1
-          fi
-          export BRAND_VER
-          WORK=$(mktemp -d)
-          cd "$WORK"
-          npm pack "$TRANSITIONAL@$VER"
-          TGZ=$(ls -1 *.tgz | head -1)
-          tar -xzf "$TGZ"
-          cd package
-          node -e '
-            const fs=require("fs");
-            const pkg=JSON.parse(fs.readFileSync("package.json","utf8"));
-            pkg.name=process.env.BRAND;
-            if (process.env.BRAND_VER) pkg.version=process.env.BRAND_VER;
-            pkg.private=false;
-            pkg.publishConfig=Object.assign({}, pkg.publishConfig||{}, {access:"public"});
-            // brand-facing description
-            pkg.description="Locus — local-first hybrid code search MCP for agents (brand alias of " + process.env.TRANSITIONAL + ")";
-            // ensure brand + transitional bins point at same launcher
-            if (pkg.bin && typeof pkg.bin === "object") {
-              const primary = pkg.bin["coderag-mcp"] || pkg.bin["locus"] || Object.values(pkg.bin)[0];
-              if (primary) {
-                pkg.bin = Object.assign({}, pkg.bin, { "coderag-mcp": primary, locus: primary });
-              }
-            } else if (!pkg.bin) {
-              pkg.bin = { "coderag-mcp": "./bin/locus", locus: "./bin/locus" };
-            }
-            if (pkg.scripts) {
-              delete pkg.scripts.prepublishOnly;
-              delete pkg.scripts.prepare;
-              delete pkg.scripts.prepack;
-              delete pkg.scripts.postinstall;
-            }
-            fs.writeFileSync("package.json", JSON.stringify(pkg,null,2));
-            console.log("publishing", pkg.name, pkg.version, "bins", pkg.bin, "unpacked from", process.env.TRANSITIONAL);
-          '
-          # drop devDependencies from alias (not needed for consumers)
-          node -e '
-            const fs=require("fs");
-            const pkg=JSON.parse(fs.readFileSync("package.json","utf8"));
-            delete pkg.devDependencies;
-            if (pkg.repository && typeof pkg.repository==="object") {
-              let u=pkg.repository.url||"";
-              if (u && !u.startsWith("git+")) pkg.repository.url="git+"+u.replace(/^git\+/,"");
-            }
-            fs.writeFileSync("package.json", JSON.stringify(pkg,null,2));
-          '
-          npm publish --access public --ignore-scripts --json | tee /tmp/publish.json || {
-            echo "publish failed; json:"; cat /tmp/publish.json || true
-            exit 1
-          }
-          echo "publish json:"; cat /tmp/publish.json || true
-          # long CDN/index wait (new package names can lag)
-          for i in $(seq 1 36); do
-            if OUT=$(npm view "$BRAND@$BRAND_VER" version 2>/dev/null); then
-              echo "readback $OUT"
-              npm view "$BRAND" version dist-tags bin description
-              exit 0
-            fi
-            echo "wait readback $i"
-            sleep 5
-          done
-          echo "view delayed; verifying via registry API + search"
-          code=$(curl -sS -o /tmp/b.json -w '%{http_code}' "https://registry.npmjs.org/$(node -p 'encodeURIComponent(process.env.BRAND)')")
-          echo "http $code"
-          head -c 400 /tmp/b.json; echo
-          curl -sS "https://registry.npmjs.org/-/v1/search?text=$(node -p 'encodeURIComponent(process.env.BRAND)')&size=5" | head -c 500; echo
-          npm ping || true
-          npm view "$BRAND" --json 2>&1 | head -c 500 || true
-          # If publish said success but registry has no package, fail with clear residual
-          if [ "$code" != "200" ]; then
-            echo "RESIDUAL: npm publish reported success but registry still missing $BRAND@$BRAND_VER" >&2
-            exit 1
-          fi
+          echo "::error::publish-brand-alias is retired. Canonical package is @sylphx/locus."
+          echo "Use workflow 'Publish MCP npm' or 'Publish Locus MCP multi-arch' with confirm=PUBLISH."
+          echo "Transitional @sylphx/coderag-mcp is not a publish source."
+          exit 1
+

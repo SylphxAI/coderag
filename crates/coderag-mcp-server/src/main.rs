@@ -5,7 +5,7 @@ use rmcp::ServiceExt;
 async fn main() -> anyhow::Result<()> {
     if std::env::args().nth(1).as_deref() == Some("doctor") {
         eprintln!(
-            "coderag-mcp Rust MCP server {SERVER_VERSION} ({})",
+            "Locus Rust MCP server {SERVER_VERSION} ({})",
             coderag_core::ENGINE_NAME
         );
         if let Some(cli) = cli_bridge::resolve_cli_binary() {

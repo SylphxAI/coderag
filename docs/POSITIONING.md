@@ -23,7 +23,7 @@ Compose both via public MCP/SDK contracts. Do not merge products.
 | Surface | Role |
 | --- | --- |
 | MCP | Agent tools over stdio (`codebase_search`) |
-| CLI | Human/scriptable brand bin (`locus` / `coderag-mcp`) |
+| CLI | Human/scriptable brand bin (`locus`) |
 | SDK | `@sylphx/coderag` programmatic library for apps and dogfood |
 
 ## Primary tools

@@ -204,20 +204,20 @@ pub async fn serve_http(config: HttpConfig) -> anyhow::Result<()> {
 
     let app = Router::new().nest("/mcp", mcp_router);
 
-    eprintln!("[coderag-mcp] Streamable HTTP MCP listening on http://{addr}/mcp");
-    eprintln!("[coderag-mcp] Health check: http://{addr}/mcp/health");
+    eprintln!("[locus] Streamable HTTP MCP listening on http://{addr}/mcp");
+    eprintln!("[locus] Health check: http://{addr}/mcp/health");
     if let Some(api_key) = shared_config.api_key.as_deref() {
         let _ = api_key;
-        eprintln!("[coderag-mcp] API key authentication enabled (X-API-Key header)");
+        eprintln!("[locus] API key authentication enabled (X-API-Key header)");
     } else if !shared_config.is_loopback_host() {
         eprintln!(
-            "[coderag-mcp] WARNING: bound to non-loopback host {} with no API key. \
+            "[locus] WARNING: bound to non-loopback host {} with no API key. \
              Set MCP_API_KEY or bind MCP_HTTP_HOST=127.0.0.1.",
             shared_config.host
         );
     }
     if let Some(origin) = shared_config.cors_origin.as_deref() {
-        eprintln!("[coderag-mcp] CORS allowed origin: {origin}");
+        eprintln!("[locus] CORS allowed origin: {origin}");
     }
 
     let listener = tokio::net::TcpListener::bind(addr).await?;

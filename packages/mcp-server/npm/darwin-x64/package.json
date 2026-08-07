@@ -1,28 +1,28 @@
 {
-  "name": "@sylphx/locus-darwin-x64",
-  "version": "0.5.0",
-  "description": "Locus native MCP server binary for darwin-x64",
-  "os": [
-    "darwin"
-  ],
-  "cpu": [
-    "x64"
-  ],
-  "files": [
-    "locus-mcp-server",
-    "locus-cli"
-  ],
-  "license": "MIT",
-  "publishConfig": {
-    "access": "public",
-    "registry": "https://registry.npmjs.org"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/SylphxAI/coderag.git",
-    "directory": "packages/mcp-server/npm/darwin-x64"
-  },
-  "engines": {
-    "node": ">=18.0.0"
-  }
+	"name": "@sylphx/locus-darwin-x64",
+	"version": "0.5.1",
+	"description": "Locus native MCP server binary for darwin-x64",
+	"os": [
+		"darwin"
+	],
+	"cpu": [
+		"x64"
+	],
+	"files": [
+		"locus-mcp-server",
+		"locus-cli"
+	],
+	"license": "MIT",
+	"publishConfig": {
+		"access": "public",
+		"registry": "https://registry.npmjs.org"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/SylphxAI/coderag.git",
+		"directory": "packages/mcp-server/npm/darwin-x64"
+	},
+	"engines": {
+		"node": ">=18.0.0"
+	}
 }

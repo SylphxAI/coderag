@@ -6,7 +6,7 @@ Policy: **few, powerful, obvious** tools. Prefer the primary search tool first.
 | --- | --- |
 | `codebase_search` | Primary hybrid retrieval (index + ranked AST chunks) |
 | CLI `locus` | Brand CLI / MCP launcher |
-| CLI `coderag-mcp` | Transitional launcher (same binary path) |
+| CLI `locus` | Brand launcher |
 | SDK `@sylphx/coderag` | Programmatic library |
 
 ## Rules

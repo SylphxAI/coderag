@@ -118,7 +118,7 @@ npx @sylphx/locus --root=/path/to/project
 
 # Or install globally
 npm install -g @sylphx/locus
-coderag-mcp --root=/path/to/project
+locus --root=/path/to/project
 ```
 
 ## Verifying Installation

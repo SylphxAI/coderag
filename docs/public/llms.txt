@@ -56,7 +56,7 @@ Model Context Protocol server for AI assistants (Claude, Cursor, VS Code). Provi
 ## Packages
 
 - @sylphx/coderag - Core library (TF-IDF, storage, indexer)
-- @sylphx/coderag-mcp - MCP server for AI assistants
+- @sylphx/locus - Locus code search MCP for AI assistants
 
 ## Quick Start
 
@@ -73,7 +73,7 @@ const results = await indexer.search('authentication middleware')
 ## MCP Server Usage
 
 ```bash
-npx @sylphx/coderag-mcp --root=/path/to/project
+npx @sylphx/locus --root=/path/to/project
 ```
 
 ## Supported Languages

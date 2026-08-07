@@ -103,7 +103,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
-      - name: Stage platforms, publish natives + mcp + brand
+      - name: Stage platforms, publish natives + @sylphx/locus
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -140,10 +140,10 @@ jobs:
           node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('packages/mcp-server/package.json','utf8'));p.dependencies={'@sylphx/coderag':'workspace:*'};fs.writeFileSync('packages/mcp-server/package.json',JSON.stringify(p,null,2));"
           bun install --frozen-lockfile || bun install
           bun run --filter @sylphx/coderag build
-          bun run --filter @sylphx/coderag-mcp build
+          bun run --filter @sylphx/locus build
           STAGE=$(mktemp -d)
           cp -a packages/mcp-server/. "$STAGE/"
-          node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync(process.argv[1],'utf8'));p.dependencies={'@sylphx/coderag':'0.1.27'};p.private=false;p.publishConfig={access:'public'};delete p.scripts;fs.writeFileSync(process.argv[1],JSON.stringify(p,null,2));" "$STAGE/package.json"
+          node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync(process.argv[1],'utf8'));const coreVer=JSON.parse(fs.readFileSync('packages/core/package.json','utf8')).version;p.dependencies={'@sylphx/coderag':coreVer};p.private=false;p.publishConfig={access:'public'};delete p.scripts;if(p.bin&&typeof p.bin==='object'){const primary=p.bin.locus||Object.values(p.bin)[0];p.bin={locus:primary};}fs.writeFileSync(process.argv[1],JSON.stringify(p,null,2));" "$STAGE/package.json"
           cd "$STAGE"
           NAME=$(node -p "require('./package.json').name")
           if npm view "$NAME@$VER" version >/dev/null 2>&1; then
@@ -153,16 +153,6 @@ jobs:
             for i in $(seq 1 24); do npm view "$NAME@$VER" version >/dev/null 2>&1 && break; sleep 5; done
           fi
           npm view "$NAME@$VER" version bin dependencies
-          if npm view "@sylphx/locus@$VER" version >/dev/null 2>&1; then
-            echo already brand
-          else
-            WORK=$(mktemp -d)
-            cd "$WORK"
-            npm pack "$NAME@$VER"
-            tar -xzf *.tgz
-            cd package
-            node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf8'));p.name='@sylphx/locus';p.description='Locus brand alias of @sylphx/coderag-mcp';const b=p.bin&&(p.bin['coderag-mcp']||Object.values(p.bin)[0]);p.bin={locus:b,'coderag-mcp':b};delete p.scripts;fs.writeFileSync('package.json',JSON.stringify(p,null,2));"
-            npm publish --access public --ignore-scripts
-            for i in $(seq 1 24); do npm view "@sylphx/locus@$VER" version >/dev/null 2>&1 && break; sleep 5; done
-          fi
-          npm view @sylphx/locus@$VER version bin
+          # Package is brand-sole @sylphx/locus; dual-publish alias path retired.
+          npm view "$NAME@$VER" version bin optionalDependencies || true
+          test "$NAME" = '@sylphx/locus'

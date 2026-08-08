@@ -48,3 +48,11 @@ See [COMPETITIVE.md](./COMPETITIVE.md).
 ## Completion bar
 
 See [IPPB.md](./IPPB.md).
+
+## Zero-config CTA
+
+```bash
+npx -y @sylphx/locus --root=/absolute/path/to/project
+```
+
+Live **@sylphx/locus@0.5.2**. Bare MCP stdio for agents.

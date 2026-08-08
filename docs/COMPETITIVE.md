@@ -32,3 +32,11 @@ Default path needs no API key, no Docker vector DB, no remote index.
 
 - **Locus** finds the right **implementation chunk**.
 - **Spine** answers path / trace / impact on the **architecture graph**.
+
+## Zero-config CTA
+
+```bash
+npx -y @sylphx/locus --root=/absolute/path/to/project
+```
+
+Live **@sylphx/locus@0.5.2**. Bare MCP stdio for agents.

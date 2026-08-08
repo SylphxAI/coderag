@@ -2,15 +2,15 @@
 layout: home
 
 hero:
-  name: CodeRAG
-  text: Did it find the right code?
-  tagline: Local-first hybrid search with AST chunking — MCP-ready for AI assistants
+  name: Locus
+  text: Did it find the right code — with evidence?
+  tagline: Zero-config local hybrid code search for agents. `npx -y @sylphx/locus --root=/path` — AST chunks, TF-IDF, optional vectors. No Docker required.
   image:
     src: /logo.svg
-    alt: CodeRAG
+    alt: Locus
   actions:
     - theme: brand
-      text: Get Started
+      text: Zero-config npx
       link: /guide/getting-started
     - theme: alt
       text: MCP Server
@@ -70,6 +70,7 @@ import { VPTeamMembers } from 'vitepress/theme'
 ## Quick Example
 
 ```typescript
+// SDK path (optional). Most agents just use: npx -y @sylphx/locus --root=...
 import { CodebaseIndexer, PersistentStorage } from '@sylphx/coderag'
 
 // Create persistent storage (SQLite)

@@ -15,7 +15,6 @@ local-first hybrid code search for AI assistants. One MCP call indexes your repo
 **semantic AST chunks** — functions, classes, and methods — not noisy grep dumps or slow cloud pipelines.
 
 [![npm brand](https://img.shields.io/npm/v/@sylphx/locus?style=flat-square&label=locus)](https://www.npmjs.com/package/@sylphx/locus)
-[![npm mcp](https://img.shields.io/npm/v/@sylphx/locus?style=flat-square&label=locus)](https://www.npmjs.com/package/@sylphx/locus)
 [![npm core](https://img.shields.io/npm/v/@sylphx/coderag?style=flat-square&label=core)](https://www.npmjs.com/package/@sylphx/coderag)
 [![CI](https://img.shields.io/github/actions/workflow/status/SylphxAI/coderag/ci.yml?style=flat-square)](https://github.com/SylphxAI/coderag/actions)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
@@ -32,6 +31,21 @@ This repository is product SSOT. Sibling agent tools live in separate repos
 </div>
 
 ---
+
+## Zero-config (no install)
+
+```bash
+npx -y @sylphx/locus --root=/absolute/path/to/project
+```
+
+No Docker. No Chroma. No embedding API required for the default TF-IDF path.  
+**Live:** `@sylphx/locus@0.5.2` · bin **`locus` only** · brand-sole `serverInfo.name=locus`.
+
+| Setup | Command |
+| --- | --- |
+| Zero-config MCP | `npx -y @sylphx/locus --root=/abs/path` |
+| Claude Code | `claude mcp add locus -- npx -y @sylphx/locus --root=/abs/path` |
+| Cursor / Desktop | `"command":"npx","args":["-y","@sylphx/locus","--root=/abs/path"]` |
 
 ## Product docs
 
@@ -55,6 +69,14 @@ This repository is product SSOT. Sibling agent tools live in separate repos
 | Repo | [coderag](https://github.com/SylphxAI/coderag) | [architecture-reader-mcp](https://github.com/SylphxAI/architecture-reader-mcp) |
 | Primary tool | `codebase_search` | `architecture_*` |
 | Brand npm | `@sylphx/locus` | `@sylphx/spine` |
+
+## Why Locus wins for agents
+
+1. **Right chunk, not a folder dump** — AST-aware retrieval agents can patch from.
+2. **Zero-config** — `npx -y @sylphx/locus --root=…` (no vector DB required by default).
+3. **Explainable scores** — TF-IDF + matched terms, not opaque cloud ranks.
+4. **Local-first** — code never has to leave the machine for baseline search.
+5. **Pairs with Spine** — Locus finds *code*; Spine maps *architecture*.
 
 ## The problem
 

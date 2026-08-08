@@ -1,6 +1,12 @@
 # Installation
 
-## Package Installation
+## Zero-config
+
+```bash
+npx -y @sylphx/locus --root=/absolute/path/to/project
+```
+
+Package Installation
 
 ::: code-group
 
@@ -114,7 +120,7 @@ For AI assistant integration (Claude, Cursor, etc.):
 
 ```bash
 # Run directly with npx (no installation needed)
-npx @sylphx/locus --root=/path/to/project
+npx -y @sylphx/locus --root=/path/to/project
 
 # Or install globally
 npm install -g @sylphx/locus

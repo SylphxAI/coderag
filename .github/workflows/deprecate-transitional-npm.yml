@@ -1,0 +1,43 @@
+name: Deprecate transitional npm id
+
+# Clean break: mark @sylphx/coderag-mcp as retired install CTA.
+# Brand-sole production is @sylphx/locus (bin: locus).
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: Type DEPRECATE_CODERAG_MCP
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  deprecate:
+    if: ${{ inputs.confirm == 'DEPRECATE_CODERAG_MCP' }}
+    runs-on: sylphx-linux-standard
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+          always-auth: true
+      - name: npm deprecate transitional package
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -euo pipefail
+          TOKEN="${NODE_AUTH_TOKEN:-$NPM_TOKEN}"
+          test -n "$TOKEN"
+          printf '//registry.npmjs.org/:_authToken=%s\nalways-auth=true\n' "$TOKEN" > "$HOME/.npmrc"
+          export NPM_CONFIG_USERCONFIG="$HOME/.npmrc"
+          npm whoami
+          MSG='Retired install CTA. Use brand-sole @sylphx/locus (bin: locus). Do not install @sylphx/coderag-mcp.'
+          npm deprecate "@sylphx/coderag-mcp" "$MSG"
+          echo "=== sample ==="
+          npm view @sylphx/coderag-mcp version deprecated dist-tags || true
+          echo "=== brand remains ==="
+          npm view @sylphx/locus version bin dist-tags

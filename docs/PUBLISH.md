@@ -37,3 +37,14 @@ Do **not** install `@sylphx/coderag-mcp` — transitional id is retired as a pub
 
 Dual-publish brand-alias workflow is retired.
 
+
+
+## Host proof (linux-x64)
+
+| Field | Value |
+| --- | --- |
+| Version | `0.5.2` |
+| Evidence | `verification/locus-host-install-runtime-proof-0.5.2-linux-x64-gnu.json` |
+| serverInfo | `name=locus`, `version=0.5.2` |
+| GLIBC | max observed `2.17` (portable zigbuild) |
+| Burned | `0.5.0` stale native identity; `0.5.1` GLIBC_2.39 linux-x64 |

@@ -1,0 +1,32 @@
+{
+	"schemaVersion": 1,
+	"profile": "locus_host_install_runtime_proof",
+	"reviewedAt": "2026-08-08T00:26:36Z",
+	"package": "@sylphx/locus",
+	"version": "0.5.2",
+	"host": {
+		"platform": "linux-x64-gnu",
+		"install": "npm install @sylphx/locus@0.5.2 --omit=dev",
+		"nativePackage": "@sylphx/locus-linux-x64-gnu@0.5.2",
+		"nativeBinary": "locus-mcp-server",
+		"glibcMaxObserved": "2.17",
+		"glibcGate": "<=2.35",
+		"note": "0.5.1 latest was burned (GLIBC_2.39 host cargo). 0.5.2 uses zigbuild .2.17."
+	},
+	"mcp": {
+		"initialize": {
+			"serverInfo": {
+				"name": "locus",
+				"version": "0.5.2",
+				"description": "Locus \u2014 local-first hybrid code search MCP (Rust rmcp transport)"
+			}
+		},
+		"toolsListIncludes": ["codebase_search"]
+	},
+	"burnedVersions": {
+		"0.5.0": "stale native serverInfo.name=coderag-mcp version=0.3.33",
+		"0.5.1": "linux-x64 native required GLIBC_2.39"
+	},
+	"outcome": "host_install_runtime_pass_linux_x64_gnu_0_5_2",
+	"sourceMainAtRecording": "e795a9ba0249bbe5f4cb8e05a7b0b19a41049da6"
+}

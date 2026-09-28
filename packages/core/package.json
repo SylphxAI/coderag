@@ -72,7 +72,7 @@
 		"@sylphx/synth-yaml": "^0.2.3",
 		"@ai-sdk/openai": "^1.0.11",
 		"@huggingface/transformers": "^3.7.6",
-		"ai": "^4.0.35"
+		"ai": "^7.0.0"
 	},
 	"devDependencies": {
 		"@types/node": "^26.0.0",

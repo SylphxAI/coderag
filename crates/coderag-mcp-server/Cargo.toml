@@ -25,4 +25,4 @@ tokio = { version = "1", features = ["full"] }
 tokio-util = { version = "0.7", features = ["rt"] }
 
 [dev-dependencies]
-ureq = "2"
+ureq = "3"

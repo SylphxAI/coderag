@@ -52,7 +52,7 @@
 		"ignore": "^7.0.5"
 	},
 	"optionalDependencies": {
-		"@lancedb/lancedb": "^0.22.3",
+		"@lancedb/lancedb": "^0.39.0",
 		"@sylphx/synth-c": "^0.3.1",
 		"@sylphx/synth-go": "^0.3.1",
 		"@sylphx/synth-html": "^0.2.3",

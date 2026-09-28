@@ -43,7 +43,7 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.3.8",
-		"@changesets/cli": "2.31.1",
+		"@changesets/cli": "3.0.3",
 		"@sylphx/biome-config": "^0.4.0",
 		"lefthook": "^2.0.4",
 		"turbo": "^2.6.1",
